@@ -4,13 +4,7 @@
 
 ```text
 exp-message/
-├── 01-infrastructure/           # 인프라 설정
-│   ├── k8s/                   # Kubernetes 매니페스트
-│   ├── docker/                # Docker 설정
-│   ├── kafka/                 # Kafka 설정
-│   ├── redis/                 # Redis 설정
-│   ├── databases/             # 데이터베이스 설정 및 마이그레이션
-│   └── monitoring/            # 모니터링 설정
+├── 01-infrastructure/           # 인프라 설정 (자세한 내용은 01-infrastructure/README.md 파일 참고)
 ├── 02-backend/                 # 백엔드 (마이크로서비스)
 │   ├── 01-api-gateway/        # API Gateway 서비스
 │   ├── 02-user-service/       # 사용자 서비스
@@ -32,7 +26,7 @@ exp-message/
 ├── 05-scripts/                 # 스크립트
 │   ├── setup.sh               # 초기 설정 스크립트
 │   └── deploy.sh              # 배포 스크립트
-├── docs/                       # 문서
+├── 00-docs/                    # 문서
 │   ├── patch/                 # 패치노트
 │   ├── architecture.md        # 아키텍처 문서
 │   └── project-structure.md   # 프로젝트 구조 문서
@@ -112,34 +106,14 @@ test/
 
 ## 인프라 구조
 
-```text
-infrastructure/
-├── k8s/                      # Kubernetes 매니페스트 (중앙 집중식)
-│   ├── frontend/             # 프론트엔드 배포
-│   │   ├── deployment.yaml
-│   │   └── service.yaml
-│   ├── backend/              # 백엔드 서비스 배포
-│   │   ├── api-gateway/
-│   │   ├── user-service/
-│   │   ├── chat-room-service/
-│   │   ├── message-service/
-│   │   ├── search-service/
-│   │   ├── notification-service/
-│   │   └── websocket-service/
-│   └── monitoring/           # 모니터링 배포
-├── docker/                   # Docker 설정
-│   └── docker-compose.yml    # 로컬 개발용
-├── kafka/                    # Kafka 설정
-├── redis/                    # Redis 설정
-├── databases/                # 데이터베이스 설정
-│   ├── user-db/              # User Service DB 마이그레이션
-│   ├── chat-room-db/         # Chat Room Service DB 마이그레이션
-│   ├── message-db/          # Message Service DB 마이그레이션 (샤딩)
-│   └── search-index/         # Elasticsearch 인덱스 설정
-└── monitoring/               # 모니터링 설정
-    ├── prometheus/           # Prometheus 설정
-    └── grafana/              # Grafana 설정
-```
+인프라 설정에 대한 자세한 내용은 [01-infrastructure/README.md](../01-infrastructure/README.md)를 참고하세요.
+
+주요 구조:
+
+- `01-service-resources/`: 서비스별 독립적인 리소스 (데이터베이스 등)
+- `02-inter-service-resources/`: 서비스 간 공유 리소스 (Redis, Kafka 등)
+- `03-deployment/`: 배포 및 오케스트레이션 설정 (docker-compose, k8s)
+- `04-monitoring/`: 모니터링 설정
 
 ## 구조 채택 이유
 
