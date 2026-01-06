@@ -4,39 +4,39 @@
 
 ```text
 exp-message/
-├── frontend/                    # 프론트엔드
-│   └── (프레임워크 선정 후 구조 결정)
-├── backend/                     # 백엔드 (마이크로서비스)
-│   ├── api-gateway/            # API Gateway 서비스
-│   ├── user-service/           # 사용자 서비스
-│   ├── chat-room-service/      # 채팅방 서비스
-│   ├── message-service/        # 메시지 서비스
-│   ├── search-service/         # 검색 서비스
-│   ├── notification-service/  # 알림 서비스
-│   ├── websocket-service/      # WebSocket 서비스
-│   └── shared/                 # 공유 라이브러리/유틸리티
-│       ├── common/            # 공통 코드
-│       ├── proto/             # gRPC 프로토콜 정의 (선택)
-│       └── config/            # 공통 설정
-├── test/                        # 시스템 레벨 테스트
-│   ├── integration-test/      # 통합 테스트 (서비스 간)
-│   ├── load-test/             # 부하 테스트
-│   └── stress-test/           # 스트레스 테스트
-├── infrastructure/              # 인프라 설정
+├── 01-infrastructure/           # 인프라 설정
 │   ├── k8s/                   # Kubernetes 매니페스트
 │   ├── docker/                # Docker 설정
 │   ├── kafka/                 # Kafka 설정
 │   ├── redis/                 # Redis 설정
 │   ├── databases/             # 데이터베이스 설정 및 마이그레이션
 │   └── monitoring/            # 모니터링 설정
-├── scripts/                     # 스크립트
+├── 02-backend/                 # 백엔드 (마이크로서비스)
+│   ├── 01-api-gateway/        # API Gateway 서비스
+│   ├── 02-user-service/       # 사용자 서비스
+│   ├── 03-chat-room-service/  # 채팅방 서비스
+│   ├── 04-message-service/    # 메시지 서비스
+│   ├── 05-search-service/     # 검색 서비스
+│   ├── 06-notification-service/ # 알림 서비스
+│   ├── 07-websocket-service/ # WebSocket 서비스
+│   └── shared/                # 공유 라이브러리/유틸리티
+│       ├── common/            # 공통 코드
+│       ├── proto/             # gRPC 프로토콜 정의 (선택)
+│       └── config/            # 공통 설정
+├── 03-frontend/                # 프론트엔드
+│   └── (프레임워크 선정 후 구조 결정)
+├── 04-test/                    # 시스템 레벨 테스트
+│   ├── integration-test/      # 통합 테스트 (서비스 간)
+│   ├── load-test/             # 부하 테스트
+│   └── stress-test/           # 스트레스 테스트
+├── 05-scripts/                 # 스크립트
 │   ├── setup.sh               # 초기 설정 스크립트
 │   └── deploy.sh              # 배포 스크립트
-├── docs/                        # 문서
+├── docs/                       # 문서
 │   ├── patch/                 # 패치노트
 │   ├── architecture.md        # 아키텍처 문서
 │   └── project-structure.md   # 프로젝트 구조 문서
-└── README.md                    # 프로젝트 메인 README
+└── README.md                   # 프로젝트 메인 README
 ```
 
 ## 프론트엔드 구조

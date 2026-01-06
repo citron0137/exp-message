@@ -19,7 +19,7 @@ exp-message는 여러 기술 스택을 활용하여 구축하는 **아주 튼튼
 - **부하테스트/스트레스 테스트**: 성능 검증
 - **MSA (Microservices Architecture)**: 마이크로서비스 아키텍처
 
-자세한 아키텍처 설계는 [docs/architecture.md](./docs/architecture.md)를 참고하세요.
+자세한 아키텍처 설계는 [00-docs/architecture.md](./00-docs/architecture.md)를 참고하세요.
 
 ## 시작하기
 
@@ -53,13 +53,13 @@ exp-message는 여러 기술 스택을 활용하여 구축하는 **아주 튼튼
 
 ## 문서
 
-- [아키텍처 설계](./docs/architecture.md)
-- [프로젝트 구조](./docs/project-structure.md)
-- [패치노트](./docs/patch)
+- [아키텍처 설계](./00-docs/architecture.md)
+- [프로젝트 구조](./00-docs/project-structure.md)
+- [패치노트](./00-docs/patch)
 
 ## 패치노트
 
-데일리 패치노트는 [docs/patch](./docs/patch) 디렉토리에서 확인할 수 있습니다.
+데일리 패치노트는 [00-docs/patch](./00-docs/patch) 디렉토리에서 확인할 수 있습니다.
 
 ## 라이선스
 
