@@ -47,6 +47,10 @@ spec:
         - name: mysql-config
           mountPath: /etc/mysql/conf.d
           readOnly: true
+        {{- if .Values.persistence.enabled }}
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         livenessProbe:
@@ -78,4 +82,9 @@ spec:
           items:
           - key: my.cnf
             path: my.cnf
+      {{- if .Values.persistence.enabled }}
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: {{ include "mysql.fullname" . }}-data
+      {{- end }}
 

@@ -36,13 +36,10 @@ resources:
 # PersistentVolumeClaim Configuration
 persistence:
   enabled: true
-  storageClass: "hostpath"
+  type: "storageClass"
+  storageClass: "standard"
   accessMode: ReadWriteOnce
   size: 10Gi
-  # HostPath for local development (optional)
-  # If set, creates a HostPath PersistentVolume instead of using StorageClass
-  # Example: "/data/mysql" or "/tmp/mysql-data"
-  hostPath: ""
 
 # Service Configuration
 service:
