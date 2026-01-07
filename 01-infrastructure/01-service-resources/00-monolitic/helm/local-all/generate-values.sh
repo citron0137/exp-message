@@ -83,10 +83,10 @@ mysql:
   
   persistence:
     enabled: true
-    storageClass: "hostpath"  # Matches PV storageClassName
+    type: "storageClass"
+    storageClass: "standard"
     accessMode: ReadWriteOnce
     size: 10Gi
-    hostPath: "${HOST_PATH}"
   
   service:
     type: ClusterIP  # 기본값: 클러스터 내부 접근만 허용 (안전)
