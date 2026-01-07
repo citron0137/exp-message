@@ -9,11 +9,19 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 import site.rahoon.message.__monolitic.common.domain.DomainException
 import site.rahoon.message.__monolitic.user.domain.component.BCryptUserPasswordHasher
+import site.rahoon.message.__monolitic.user.domain.component.UserCreateValidatorImpl
+import site.rahoon.message.__monolitic.user.domain.component.UserUpdateValidatorImpl
 import site.rahoon.message.__monolitic.user.infrastructure.UserJpaRepository
 import site.rahoon.message.__monolitic.user.infrastructure.UserRepositoryImpl
 
 @DataJpaTest
-@Import(UserRepositoryImpl::class, BCryptUserPasswordHasher::class, UserDomainService::class)
+@Import(
+    UserRepositoryImpl::class,
+    BCryptUserPasswordHasher::class,
+    UserCreateValidatorImpl::class,
+    UserUpdateValidatorImpl::class,
+    UserDomainService::class
+)
 class UserDomainServiceTest {
 
     @Autowired
@@ -25,11 +33,22 @@ class UserDomainServiceTest {
     @Autowired
     private lateinit var passwordHasher: BCryptUserPasswordHasher
 
+    @Autowired
+    private lateinit var userCreateValidator: UserCreateValidatorImpl
+
+    @Autowired
+    private lateinit var userUpdateValidator: UserUpdateValidatorImpl
+
     private lateinit var userDomainService: UserDomainService
 
     @BeforeEach
     fun setUp() {
-        userDomainService = UserDomainService(userRepository, passwordHasher)
+        userDomainService = UserDomainService(
+            userRepository,
+            passwordHasher,
+            userCreateValidator,
+            userUpdateValidator
+        )
     }
 
     @Test
@@ -42,15 +61,15 @@ class UserDomainServiceTest {
         )
 
         // when
-        val user = userDomainService.create(command)
+        val userInfo = userDomainService.create(command)
 
         // then
-        assertNotNull(user.id)
-        assertEquals("test@example.com", user.email)
-        assertEquals("testuser", user.nickname)
-        assertNotEquals("password123", user.passwordHash) // 해시된 비밀번호
-        assertNotNull(user.createdAt)
-        assertNotNull(user.updatedAt)
+        assertNotNull(userInfo.id)
+        assertEquals("test@example.com", userInfo.email)
+        assertEquals("testuser", userInfo.nickname)
+        assertNotNull(userInfo.createdAt)
+        assertNotNull(userInfo.updatedAt)
+        // passwordHash는 UserInfo.Detail에 포함되지 않음
     }
 
     @Test
@@ -85,20 +104,20 @@ class UserDomainServiceTest {
             password = "password123",
             nickname = "oldnickname"
         )
-        val user = userDomainService.create(createCommand)
+        val userInfo = userDomainService.create(createCommand)
         val updateCommand = UserCommand.Update(
-            id = user.id,
+            id = userInfo.id,
             nickname = "newnickname"
         )
 
         // when
-        val updatedUser = userDomainService.update(updateCommand)
+        val updatedUserInfo = userDomainService.update(updateCommand)
 
         // then
-        assertEquals("newnickname", updatedUser.nickname)
-        assertEquals(user.id, updatedUser.id)
-        assertEquals(user.email, updatedUser.email)
-        assertTrue(updatedUser.updatedAt.isAfter(user.updatedAt))
+        assertEquals("newnickname", updatedUserInfo.nickname)
+        assertEquals(userInfo.id, updatedUserInfo.id)
+        assertEquals(userInfo.email, updatedUserInfo.email)
+        assertTrue(updatedUserInfo.updatedAt.isAfter(userInfo.updatedAt))
     }
 
     @Test
@@ -124,15 +143,15 @@ class UserDomainServiceTest {
             password = "password123",
             nickname = "todelete"
         )
-        val user = userDomainService.create(createCommand)
-        val deleteCommand = UserCommand.Delete(id = user.id)
+        val userInfo = userDomainService.create(createCommand)
+        val deleteCommand = UserCommand.Delete(id = userInfo.id)
 
         // when
-        val deletedUser = userDomainService.delete(deleteCommand)
+        val deletedUserInfo = userDomainService.delete(deleteCommand)
 
         // then
-        assertEquals(user.id, deletedUser.id)
-        assertNull(userRepository.findById(user.id))
+        assertEquals(userInfo.id, deletedUserInfo.id)
+        assertNull(userRepository.findById(userInfo.id))
     }
 
     @Test
@@ -145,6 +164,149 @@ class UserDomainServiceTest {
             userDomainService.delete(deleteCommand)
         }
         assertEquals(UserError.USER_NOT_FOUND, exception.error)
+    }
+
+    @Test
+    fun `이메일이 비어있을 때 예외 발생`() {
+        // given
+        val command = UserCommand.Create(
+            email = "",
+            password = "password123",
+            nickname = "testuser"
+        )
+
+        // then
+        val exception = assertThrows(DomainException::class.java) {
+            userDomainService.create(command)
+        }
+        assertEquals(UserError.INVALID_EMAIL, exception.error)
+    }
+
+    @Test
+    fun `잘못된 이메일 형식일 때 예외 발생`() {
+        // given
+        val command = UserCommand.Create(
+            email = "invalid-email",
+            password = "password123",
+            nickname = "testuser"
+        )
+
+        // then
+        val exception = assertThrows(DomainException::class.java) {
+            userDomainService.create(command)
+        }
+        assertEquals(UserError.INVALID_EMAIL, exception.error)
+    }
+
+    @Test
+    fun `비밀번호가 8자 미만일 때 예외 발생`() {
+        // given
+        val command = UserCommand.Create(
+            email = "test@example.com",
+            password = "short",
+            nickname = "testuser"
+        )
+
+        // then
+        val exception = assertThrows(DomainException::class.java) {
+            userDomainService.create(command)
+        }
+        assertEquals(UserError.INVALID_PASSWORD, exception.error)
+    }
+
+    @Test
+    fun `닉네임이 2자 미만일 때 예외 발생`() {
+        // given
+        val command = UserCommand.Create(
+            email = "test@example.com",
+            password = "password123",
+            nickname = "a"
+        )
+
+        // then
+        val exception = assertThrows(DomainException::class.java) {
+            userDomainService.create(command)
+        }
+        assertEquals(UserError.INVALID_NICKNAME, exception.error)
+    }
+
+    @Test
+    fun `닉네임이 20자 초과일 때 예외 발생`() {
+        // given
+        val command = UserCommand.Create(
+            email = "test@example.com",
+            password = "password123",
+            nickname = "a".repeat(21)
+        )
+
+        // then
+        val exception = assertThrows(DomainException::class.java) {
+            userDomainService.create(command)
+        }
+        assertEquals(UserError.INVALID_NICKNAME, exception.error)
+    }
+
+    @Test
+    fun `업데이트 시 닉네임이 비어있을 때 예외 발생`() {
+        // given
+        val createCommand = UserCommand.Create(
+            email = "update@example.com",
+            password = "password123",
+            nickname = "testuser"
+        )
+        val userInfo = userDomainService.create(createCommand)
+        val updateCommand = UserCommand.Update(
+            id = userInfo.id,
+            nickname = ""
+        )
+
+        // then
+        val exception = assertThrows(DomainException::class.java) {
+            userDomainService.update(updateCommand)
+        }
+        assertEquals(UserError.INVALID_NICKNAME, exception.error)
+    }
+
+    @Test
+    fun `업데이트 시 닉네임이 2자 미만일 때 예외 발생`() {
+        // given
+        val createCommand = UserCommand.Create(
+            email = "update@example.com",
+            password = "password123",
+            nickname = "testuser"
+        )
+        val userInfo = userDomainService.create(createCommand)
+        val updateCommand = UserCommand.Update(
+            id = userInfo.id,
+            nickname = "a"
+        )
+
+        // then
+        val exception = assertThrows(DomainException::class.java) {
+            userDomainService.update(updateCommand)
+        }
+        assertEquals(UserError.INVALID_NICKNAME, exception.error)
+    }
+
+    @Test
+    fun `업데이트 시 닉네임이 20자 초과일 때 예외 발생`() {
+        // given
+        val createCommand = UserCommand.Create(
+            email = "update@example.com",
+            password = "password123",
+            nickname = "testuser"
+        )
+        val userInfo = userDomainService.create(createCommand)
+        val updateCommand = UserCommand.Update(
+            id = userInfo.id,
+            nickname = "a".repeat(21)
+        )
+
+        // then
+        val exception = assertThrows(DomainException::class.java) {
+            userDomainService.update(updateCommand)
+        }
+        assertEquals(UserError.INVALID_NICKNAME, exception.error)
     }
 }
 
