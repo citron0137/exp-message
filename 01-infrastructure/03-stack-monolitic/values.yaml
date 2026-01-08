@@ -41,7 +41,7 @@ app-monolitic:
     name: 00-monolitic
     port: 8080
   database:
-    host: mysql  # MySQL service name from mysql chart
+    host: ""  # Empty to use auto-generated name: Release.Name-mysql
     port: 3306
     name: message_db
     username: message_user

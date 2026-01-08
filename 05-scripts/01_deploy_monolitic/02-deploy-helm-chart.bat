@@ -36,8 +36,17 @@ REM Project root directory
 set PROJECT_ROOT=%SCRIPT_DIR%..\..
 set CHART_DIR=%PROJECT_ROOT%\01-infrastructure\03-stack-monolitic
 
-REM Registry image
-set REGISTRY_IMAGE=%REGISTRY_HOST%:%REGISTRY_PORT%\%IMAGE_NAME%
+REM Build registry and repository separately
+if "%REGISTRY_PORT%"=="" (
+    set REGISTRY=%REGISTRY_HOST%
+    set IMAGE_REPOSITORY=%IMAGE_NAME%
+) else if "%REGISTRY_PORT%"=="0" (
+    set REGISTRY=%REGISTRY_HOST%
+    set IMAGE_REPOSITORY=%IMAGE_NAME%
+) else (
+    set REGISTRY=%REGISTRY_HOST%:%REGISTRY_PORT%
+    set IMAGE_REPOSITORY=%IMAGE_NAME%
+)
 
 REM Check for remote kubeconfig in same directory
 set REMOTE_KUBECONFIG=%SCRIPT_DIR%remote-kubeconfig.yaml
@@ -169,7 +178,8 @@ if "%DEPLOY_ACTION%"=="delete" (
         helm upgrade %RELEASE_NAME% . ^
             --namespace %NAMESPACE% ^
             --kubeconfig="%KUBECONFIG_PATH%" ^
-            --set app-monolitic.image.repository=%REGISTRY_IMAGE% ^
+            --set app-monolitic.image.registry=%REGISTRY% ^
+            --set app-monolitic.image.repository=%IMAGE_REPOSITORY% ^
             --set app-monolitic.image.tag=%IMAGE_TAG% ^
             --set app-monolitic.image.pullPolicy=IfNotPresent
     )
@@ -187,14 +197,16 @@ if "%DEPLOY_ACTION%"=="delete" (
         helm install %RELEASE_NAME% . ^
             --namespace %NAMESPACE% ^
             --create-namespace ^
-            --set app-monolitic.image.repository=%REGISTRY_IMAGE% ^
+            --set app-monolitic.image.registry=%REGISTRY% ^
+            --set app-monolitic.image.repository=%IMAGE_REPOSITORY% ^
             --set app-monolitic.image.tag=%IMAGE_TAG% ^
             --set app-monolitic.image.pullPolicy=IfNotPresent
     ) else (
         echo    Upgrading existing release...
         helm upgrade %RELEASE_NAME% . ^
             --namespace %NAMESPACE% ^
-            --set app-monolitic.image.repository=%REGISTRY_IMAGE% ^
+            --set app-monolitic.image.registry=%REGISTRY% ^
+            --set app-monolitic.image.repository=%IMAGE_REPOSITORY% ^
             --set app-monolitic.image.tag=%IMAGE_TAG% ^
             --set app-monolitic.image.pullPolicy=IfNotPresent
     )

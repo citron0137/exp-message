@@ -127,3 +127,57 @@ kubectl delete deployment hello-world
 
 6. storage class 없어서 안되는 것 같음..
 => storage class 없애보자..
+
+### Windows Docker Desktop에서 HTTP 레지스트리 사용 설정
+
+**로컬 개발 환경에서 HTTP 레지스트리 사용:**
+```
+1. Docker Desktop 열기
+2. Settings (톱니바퀴 아이콘) 클릭
+3. Docker Engine 메뉴 선택
+4. JSON 설정에 "insecure-registries" 추가:
+   {
+     "insecure-registries": ["10.137.0.195:5000"]
+   }
+5. "Apply & Restart" 클릭
+```
+
+**설정 예시:**
+```json
+{
+  "builder": {
+    "gc": {
+      "defaultKeepStorage": "20GB",
+      "enabled": true
+    }
+  },
+  "experimental": false,
+  "insecure-registries": ["10.137.0.195:5000"]
+}
+```
+
+**중요: `.env` 파일 설정 확인**
+```
+# .env 파일에 반드시 포트를 포함해야 합니다:
+REGISTRY_HOST=10.137.0.195
+REGISTRY_PORT=5000
+IMAGE_NAME=00-monolitic
+IMAGE_TAG=latest
+```
+
+**포트가 없으면 Docker가 기본 HTTPS(443) 포트로 접근합니다:**
+- ❌ 잘못된 설정: `REGISTRY_PORT=` (빈 값) → `10.137.0.195/00-monolitic:latest` → HTTPS 443 포트로 접근 시도
+- ✅ 올바른 설정: `REGISTRY_PORT=5000` → `10.137.0.195:5000/00-monolitic:latest` → HTTP 5000 포트로 접근
+
+**문제 해결:**
+```bash
+# 1. .env 파일 확인
+cat .env | grep REGISTRY
+
+# 2. 이미지 이름 확인 (포트가 포함되어야 함)
+# 스크립트 실행 시 출력되는 "Full Image" 확인
+# 예: 10.137.0.195:5000/00-monolitic:latest (올바름)
+# 예: 10.137.0.195/00-monolitic:latest (잘못됨 - 포트 없음)
+
+# 3. Docker Desktop 재시작 후 다시 시도
+```

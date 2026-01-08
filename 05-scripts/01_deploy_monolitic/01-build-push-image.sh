@@ -32,12 +32,22 @@ IMAGE_TAG="${IMAGE_TAG:-latest}"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 MONOLITIC_DIR="$PROJECT_ROOT/02-backend/00-monolitic"
 
+# Build registry image name (포트가 없거나 0인 경우 처리)
+if [ -z "$REGISTRY_PORT" ] || [ "$REGISTRY_PORT" = "0" ] || [ "$REGISTRY_PORT" = "" ]; then
+    REGISTRY_IMAGE="$REGISTRY_HOST/$IMAGE_NAME:$IMAGE_TAG"
+    REGISTRY_DISPLAY="$REGISTRY_HOST"
+else
+    REGISTRY_IMAGE="$REGISTRY_HOST:$REGISTRY_PORT/$IMAGE_NAME:$IMAGE_TAG"
+    REGISTRY_DISPLAY="$REGISTRY_HOST:$REGISTRY_PORT"
+fi
+
 echo "=========================================="
-echo "모놀리틱 서버 빌드 및 푸시"
+echo "Monolitic Server Build and Push"
 echo "=========================================="
-echo "레지스트리: $REGISTRY_HOST:$REGISTRY_PORT"
-echo "이미지: $IMAGE_NAME:$IMAGE_TAG"
-echo "디렉토리: $MONOLITIC_DIR"
+echo "Registry: $REGISTRY_DISPLAY"
+echo "Image: $IMAGE_NAME:$IMAGE_TAG"
+echo "Full Image: $REGISTRY_IMAGE"
+echo "Directory: $MONOLITIC_DIR"
 echo "=========================================="
 
 # 디렉토리 확인
@@ -54,24 +64,23 @@ fi
 
 # 이미지 빌드
 echo ""
-echo "1. Docker 이미지 빌드 중..."
+echo "1. Building Docker image..."
 cd "$MONOLITIC_DIR"
 docker build -t "$IMAGE_NAME:$IMAGE_TAG" .
 
 # 레지스트리 주소로 태그 지정
-REGISTRY_IMAGE="$REGISTRY_HOST:$REGISTRY_PORT/$IMAGE_NAME:$IMAGE_TAG"
 echo ""
-echo "2. 레지스트리 태그 지정: $REGISTRY_IMAGE"
+echo "2. Tagging for registry: $REGISTRY_IMAGE"
 docker tag "$IMAGE_NAME:$IMAGE_TAG" "$REGISTRY_IMAGE"
 
 # 레지스트리에 푸시
 echo ""
-echo "3. 레지스트리에 푸시 중..."
+echo "3. Pushing to registry..."
 docker push "$REGISTRY_IMAGE"
 
 echo ""
 echo "=========================================="
-echo "완료!"
-echo "이미지: $REGISTRY_IMAGE"
+echo "Done!"
+echo "Image: $REGISTRY_IMAGE"
 echo "=========================================="
 

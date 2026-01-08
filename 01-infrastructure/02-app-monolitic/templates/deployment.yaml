@@ -25,7 +25,7 @@ spec:
           protocol: TCP
         env:
         - name: DB_HOST
-          value: {{ .Values.database.host | quote }}
+          value: {{ if .Values.database.host }}{{ .Values.database.host | quote }}{{ else }}{{ printf "%s-%s" .Release.Name "mysql" | quote }}{{ end }}
         - name: DB_PORT
           value: {{ .Values.database.port | quote }}
         - name: DB_NAME
@@ -48,11 +48,11 @@ spec:
         - name: DB_MIN_IDLE
           value: {{ .Values.database.minIdle | quote }}
         - name: DB_CONNECTION_TIMEOUT
-          value: {{ .Values.database.connectionTimeout | quote }}
+          value: {{ printf "%.0f" .Values.database.connectionTimeout | quote }}
         - name: DB_IDLE_TIMEOUT
-          value: {{ .Values.database.idleTimeout | quote }}
+          value: {{ printf "%.0f" .Values.database.idleTimeout | quote }}
         - name: DB_MAX_LIFETIME
-          value: {{ .Values.database.maxLifetime | quote }}
+          value: {{ printf "%.0f" .Values.database.maxLifetime | quote }}
         - name: DB_DDL_AUTO
           value: {{ .Values.database.ddlAuto | quote }}
         - name: DB_SHOW_SQL
