@@ -1,0 +1,85 @@
+# Application Image Configuration
+image:
+  # For local development (minikube, kind, k3d):
+  # - Build image locally and load into cluster
+  # - Set pullPolicy to IfNotPresent or Never
+  repository: 00-monolitic
+  tag: "latest"
+  pullPolicy: IfNotPresent  # IfNotPresent or Never for local images
+  
+  # For production (image registry):
+  # Uncomment and set registry if using image registry:
+  # registry: "your-registry.com"
+  # repository: "namespace/00-monolitic"
+  # pullPolicy: Always
+
+# Application Configuration
+app:
+  name: 00-monolitic
+  port: 8080
+
+# Database Configuration
+database:
+  host: mysql  # Service name of MySQL
+  port: 3306
+  name: message_db
+  username: message_user
+  password: message_password
+  # Connection Pool Settings
+  maxPoolSize: 10
+  minIdle: 5
+  connectionTimeout: 30000
+  idleTimeout: 600000
+  maxLifetime: 1800000
+  # JPA Settings
+  ddlAuto: update
+  showSql: true
+  formatSql: true
+  useSqlComments: true
+
+# Resource Configuration
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "500m"
+
+# Service Configuration
+service:
+  type: ClusterIP  # Options: ClusterIP, NodePort, LoadBalancer
+  port: 8080
+  # NodePort configuration (when type is NodePort)
+  nodePort: null  # If null, Kubernetes will assign a random port (30000-32767)
+  # Example: nodePort: 30080
+
+# Health Check Configuration
+healthCheck:
+  liveness:
+    httpGet:
+      path: /actuator/health
+      port: 8080
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    httpGet:
+      path: /actuator/health
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Deployment Configuration
+replicas: 1
+
+# Namespace
+namespace: default
+
+# Java Options
+javaOpts: ""
+# Example: "-Xmx512m -Xms256m"
+

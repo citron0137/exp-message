@@ -1,0 +1,91 @@
+# MySQL Configuration
+mysql:
+  enabled: true
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+  mysql:
+    rootPassword: rootpassword
+    database: message_db
+    user: message_user
+    password: message_password
+    port: 3306
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  persistence:
+    enabled: true
+    type: "storageClass"
+    storageClass: "standard"
+    accessMode: ReadWriteOnce
+    size: 10Gi
+  service:
+    type: ClusterIP
+    port: 3306
+  replicas: 1
+  namespace: default
+
+# Application Configuration
+app-monolitic:
+  enabled: true
+  image:
+    repository: 00-monolitic
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  app:
+    name: 00-monolitic
+    port: 8080
+  database:
+    host: mysql  # MySQL service name from mysql chart
+    port: 3306
+    name: message_db
+    username: message_user
+    password: message_password
+    maxPoolSize: 10
+    minIdle: 5
+    connectionTimeout: 30000
+    idleTimeout: 600000
+    maxLifetime: 1800000
+    ddlAuto: update
+    showSql: true
+    formatSql: true
+    useSqlComments: true
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  service:
+    type: ClusterIP
+    port: 8080
+  replicas: 1
+  namespace: default
+
+# Ingress Configuration
+ingress:
+  enabled: true
+  className: "nginx"  # nginx, traefik, etc.
+  annotations:
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: localhost  # Default for local testing. Change to your domain for production.
+      paths:
+        - path: /
+          pathType: Prefix
+  # TLS configuration (optional)
+  tls: []
+  # - secretName: app-tls
+  #   hosts:
+  #     - localhost
+
+# Global namespace
+namespace: default
+

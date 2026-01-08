@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app-monolitic.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "app-monolitic.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "app-monolitic.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "app-monolitic.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: app
+        image: {{ include "app-monolitic.image" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.app.port }}
+          name: http
+          protocol: TCP
+        env:
+        - name: DB_HOST
+          value: {{ .Values.database.host | quote }}
+        - name: DB_PORT
+          value: {{ .Values.database.port | quote }}
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "app-monolitic.fullname" . }}-secret
+              key: DB_NAME
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "app-monolitic.fullname" . }}-secret
+              key: DB_USERNAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "app-monolitic.fullname" . }}-secret
+              key: DB_PASSWORD
+        - name: DB_MAX_POOL_SIZE
+          value: {{ .Values.database.maxPoolSize | quote }}
+        - name: DB_MIN_IDLE
+          value: {{ .Values.database.minIdle | quote }}
+        - name: DB_CONNECTION_TIMEOUT
+          value: {{ .Values.database.connectionTimeout | quote }}
+        - name: DB_IDLE_TIMEOUT
+          value: {{ .Values.database.idleTimeout | quote }}
+        - name: DB_MAX_LIFETIME
+          value: {{ .Values.database.maxLifetime | quote }}
+        - name: DB_DDL_AUTO
+          value: {{ .Values.database.ddlAuto | quote }}
+        - name: DB_SHOW_SQL
+          value: {{ .Values.database.showSql | quote }}
+        - name: DB_FORMAT_SQL
+          value: {{ .Values.database.formatSql | quote }}
+        - name: DB_USE_SQL_COMMENTS
+          value: {{ .Values.database.useSqlComments | quote }}
+        {{- if .Values.javaOpts }}
+        - name: JAVA_OPTS
+          value: {{ .Values.javaOpts | quote }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        livenessProbe:
+          {{- toYaml .Values.healthCheck.liveness | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.healthCheck.readiness | nindent 10 }}
+
