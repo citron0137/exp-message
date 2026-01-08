@@ -35,6 +35,7 @@ DEPLOY_MODE="${DEPLOY_MODE:-}"
 # Project root directory
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CHART_DIR="$PROJECT_ROOT/01-infrastructure/03-stack-monolitic"
+VALUES_FILE="$SCRIPT_DIR/values.yaml"
 
 # Build registry and repository separately
 if [ -z "$REGISTRY_PORT" ] || [ "$REGISTRY_PORT" = "0" ]; then
@@ -151,23 +152,23 @@ elif [ "$DEPLOY_MODE" = "remote" ]; then
     
     if [ "$DEPLOY_ACTION" = "install" ]; then
         echo "   Installing new release..."
-        helm install "$RELEASE_NAME" . \
+        helm install "$RELEASE_NAME" "$CHART_DIR" \
             --namespace "$NAMESPACE" \
             --create-namespace \
             --kubeconfig="$KUBECONFIG_PATH" \
+            --values "$VALUES_FILE" \
             --set app-monolitic.image.registry="$REGISTRY" \
             --set app-monolitic.image.repository="$IMAGE_REPOSITORY" \
-            --set app-monolitic.image.tag="$IMAGE_TAG" \
-            --set app-monolitic.image.pullPolicy=IfNotPresent
+            --set app-monolitic.image.tag="$IMAGE_TAG"
     else
         echo "   Upgrading existing release..."
-        helm upgrade "$RELEASE_NAME" . \
+        helm upgrade "$RELEASE_NAME" "$CHART_DIR" \
             --namespace "$NAMESPACE" \
             --kubeconfig="$KUBECONFIG_PATH" \
+            --values "$VALUES_FILE" \
             --set app-monolitic.image.registry="$REGISTRY" \
             --set app-monolitic.image.repository="$IMAGE_REPOSITORY" \
-            --set app-monolitic.image.tag="$IMAGE_TAG" \
-            --set app-monolitic.image.pullPolicy=IfNotPresent
+            --set app-monolitic.image.tag="$IMAGE_TAG"
     fi
     
     echo ""
@@ -186,21 +187,21 @@ else
     
     if [ "$DEPLOY_ACTION" = "install" ]; then
         echo "   Installing new release..."
-        helm install "$RELEASE_NAME" . \
+        helm install "$RELEASE_NAME" "$CHART_DIR" \
             --namespace "$NAMESPACE" \
             --create-namespace \
+            --values "$VALUES_FILE" \
             --set app-monolitic.image.registry="$REGISTRY" \
             --set app-monolitic.image.repository="$IMAGE_REPOSITORY" \
-            --set app-monolitic.image.tag="$IMAGE_TAG" \
-            --set app-monolitic.image.pullPolicy=IfNotPresent
+            --set app-monolitic.image.tag="$IMAGE_TAG"
     else
         echo "   Upgrading existing release..."
-        helm upgrade "$RELEASE_NAME" . \
+        helm upgrade "$RELEASE_NAME" "$CHART_DIR" \
             --namespace "$NAMESPACE" \
+            --values "$VALUES_FILE" \
             --set app-monolitic.image.registry="$REGISTRY" \
             --set app-monolitic.image.repository="$IMAGE_REPOSITORY" \
-            --set app-monolitic.image.tag="$IMAGE_TAG" \
-            --set app-monolitic.image.pullPolicy=IfNotPresent
+            --set app-monolitic.image.tag="$IMAGE_TAG"
     fi
     
     echo ""

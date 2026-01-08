@@ -1,30 +1,6 @@
 # 패치노트 - 2026-01-08
 
-## 목표했던 내용: Kubernetes 배포 환경 구축
-
-- 실제 서버에 Kubernetes 클러스터 구축
-- Docker Desktop Kubernetes 에러 해결 또는 다른 배포 환경 구축 중 선택 필요
-
-## 변경사항
-
-### 기술 스택 결정
-
-- **k3s 선택**: kubeadm 대신 k3s로 결정
-  - 이유: 빠른 구축, 단일 서버에 적합, 리소스 효율적, 프로덕션 사용 가능
-  - kubeadm은 멀티 노드/프로덕션 환경에 적합하지만 복잡도 높음
-
-### 테스트 환경 구성
-
-- **기존 Ubuntu VM 사용 결정**
-- **현재 VM 사양**:
-  - CPU: 4 cores (권장과 동일)
-  - RAM: 16GB (권장 4GB보다 여유 있음, 현재 1.69GB 사용 중)
-  - 디스크: 128GB (권장 40GB보다 여유 있음)
-  - 상태: running
-- **사양 분석**:
-  - 권장 사양(4 cores, 4GB RAM, 40GB 디스크) 충족
-  - 리소스 여유가 많아 확장 가능
-  - 기존 VM 재사용으로 효율적
+## Kubernetes 배포 환경 구축 (k3s)
 
 ### k3s, Helm 설치 및 확인
 
@@ -51,6 +27,27 @@ curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 helm version
 ```
 
+**Nginx Ingress Controller 설치:**
+
+```bash
+# Helm repository 추가
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+# Nginx Ingress Controller 설치 (NodePort: 30080/30443)
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --create-namespace \
+  --set controller.service.type=NodePort \
+  --set controller.service.nodePorts.http=30080 \
+  --set controller.service.nodePorts.https=30443
+
+# 설치 확인
+kubectl get pods -n ingress-nginx
+kubectl get ingressclass
+```
+
+
 ### Docker 레지스트리 설정
 
 **로컬 Docker 레지스트리 실행:**
@@ -62,71 +59,34 @@ docker run -d -p 5000:5000 --name registry \
   registry:2
 ```
 
-**k3s에서 레지스트리 사용 설정:**
+**k3s 레지스트리 설정 (HTTP insecure):**
 
 ```bash
-# k3s 레지스트리 설정 파일 생성
+# registries.yaml 생성 (외부 레지스트리 포함)
 sudo mkdir -p /etc/rancher/k3s
 sudo cat > /etc/rancher/k3s/registries.yaml <<EOF
 mirrors:
   localhost:5000:
     endpoint:
       - "http://localhost:5000"
+  10.137.0.195:5000:
+    endpoint:
+      - "http://10.137.0.195:5000"
+configs:
+  "10.137.0.195:5000":
+    tls:
+      insecure_skip_verify: true
+  "localhost:5000":
+    tls:
+      insecure_skip_verify: true
 EOF
 
-# k3s 재시작 (설정 적용)
+# k3s 재시작
 sudo systemctl restart k3s
-```
 
-**레지스트리 확인:**
-
-```bash
-# 레지스트리 동작 확인
+# 확인
 curl http://localhost:5000/v2/_catalog
-
-# hello-world 이미지 테스트
-docker pull hello-world
-docker tag hello-world:latest localhost:5000/hello-world:latest
-docker push localhost:5000/hello-world:latest
-
-# Kubernetes에 서비스로 배포
-kubectl create deployment hello-world --image=localhost:5000/hello-world:latest
-kubectl expose deployment hello-world --type=NodePort --port=8080
-kubectl get pods,svc
-
-# 삭제
-kubectl delete service hello-world
-kubectl delete deployment hello-world
 ```
-
-### 로컬 개발 환경에서 이미지 배포하기
-
-**필요한 작업 리스트:**
-
-1. 레지스트리를 외부에서 접근 가능하도록 설정
-   - 방화벽 포트 오픈 (5000)
-   - 레지스트리 컨테이너를 외부 IP로 바인딩 (0.0.0.0:5000)
-   => 완료
-
-2. 로컬 개발 환경에서 이미지 빌드
-   - Dockerfile로 이미지 빌드
-   - 서버 IP로 태그 지정
-   => 완료
-
-3. 레지스트리에 이미지 푸시
-   - 로컬에서 서버 레지스트리로 푸시
-   => 완료
-
-4. k3s에서 외부 레지스트리 접근 설정
-   - registries.yaml에 서버 IP 추가 (완료)
-   - insecure registry 설정 (따로 설정 x)
-
-5. Helm 차트 배포
-   - Helm 차트로 애플리케이션 배포
-   => 완료
-
-6. storage class 없어서 안되는 것 같음..
-=> storage class 없애보자..
 
 ### Windows Docker Desktop에서 HTTP 레지스트리 사용 설정
 
@@ -142,42 +102,37 @@ kubectl delete deployment hello-world
 5. "Apply & Restart" 클릭
 ```
 
-**설정 예시:**
-```json
-{
-  "builder": {
-    "gc": {
-      "defaultKeepStorage": "20GB",
-      "enabled": true
-    }
-  },
-  "experimental": false,
-  "insecure-registries": ["10.137.0.195:5000"]
-}
+**중요: `.env` 파일 설정**
 ```
-
-**중요: `.env` 파일 설정 확인**
-```
-# .env 파일에 반드시 포트를 포함해야 합니다:
 REGISTRY_HOST=10.137.0.195
 REGISTRY_PORT=5000
 IMAGE_NAME=00-monolitic
 IMAGE_TAG=latest
 ```
 
-**포트가 없으면 Docker가 기본 HTTPS(443) 포트로 접근합니다:**
-- ❌ 잘못된 설정: `REGISTRY_PORT=` (빈 값) → `10.137.0.195/00-monolitic:latest` → HTTPS 443 포트로 접근 시도
-- ✅ 올바른 설정: `REGISTRY_PORT=5000` → `10.137.0.195:5000/00-monolitic:latest` → HTTP 5000 포트로 접근
+### Ingress 접근 방법
 
-**문제 해결:**
+**Ingress 상태 확인:**
 ```bash
-# 1. .env 파일 확인
-cat .env | grep REGISTRY
+kubectl get ingress
+kubectl describe ingress monolitic-stack-stack-monolitic-ingress
+```
 
-# 2. 이미지 이름 확인 (포트가 포함되어야 함)
-# 스크립트 실행 시 출력되는 "Full Image" 확인
-# 예: 10.137.0.195:5000/00-monolitic:latest (올바름)
-# 예: 10.137.0.195/00-monolitic:latest (잘못됨 - 포트 없음)
+**Nginx Ingress Controller가 NodePort로 설치된 경우:**
+```bash
+# 서버 IP와 NodePort를 사용하여 접근
+# HTTP: http://10.137.0.195:30080
+# HTTPS: https://10.137.0.195:30443
 
-# 3. Docker Desktop 재시작 후 다시 시도
+# 또는 localhost로 접근하려면 Host 헤더 추가
+curl -H "Host: localhost" http://10.137.0.195:30080/actuator/health
+```
+
+**Ingress 문제 해결:**
+```bash
+# Ingress Controller 로그 확인
+kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller
+
+# Ingress 이벤트 확인
+kubectl describe ingress monolitic-stack-stack-monolitic-ingress
 ```

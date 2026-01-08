@@ -35,6 +35,7 @@ if "%DEPLOY_ACTION%"=="" set DEPLOY_ACTION=install-or-upgrade
 REM Project root directory
 set PROJECT_ROOT=%SCRIPT_DIR%..\..
 set CHART_DIR=%PROJECT_ROOT%\01-infrastructure\03-stack-monolitic
+set VALUES_FILE=%SCRIPT_DIR%values.yaml
 
 REM Build registry and repository separately
 if "%REGISTRY_PORT%"=="" (
@@ -166,22 +167,23 @@ if "%DEPLOY_ACTION%"=="delete" (
     
     if "%DEPLOY_ACTION%"=="install" (
         echo    Installing new release...
-        helm install %RELEASE_NAME% . ^
+        helm install %RELEASE_NAME% %CHART_DIR% ^
             --namespace %NAMESPACE% ^
             --create-namespace ^
             --kubeconfig="%KUBECONFIG_PATH%" ^
-            --set app-monolitic.image.repository=%REGISTRY_IMAGE% ^
-            --set app-monolitic.image.tag=%IMAGE_TAG% ^
-            --set app-monolitic.image.pullPolicy=IfNotPresent
-    ) else (
-        echo    Upgrading existing release...
-        helm upgrade %RELEASE_NAME% . ^
-            --namespace %NAMESPACE% ^
-            --kubeconfig="%KUBECONFIG_PATH%" ^
+            --values "%VALUES_FILE%" ^
             --set app-monolitic.image.registry=%REGISTRY% ^
             --set app-monolitic.image.repository=%IMAGE_REPOSITORY% ^
-            --set app-monolitic.image.tag=%IMAGE_TAG% ^
-            --set app-monolitic.image.pullPolicy=IfNotPresent
+            --set app-monolitic.image.tag=%IMAGE_TAG%
+    ) else (
+        echo    Upgrading existing release...
+        helm upgrade %RELEASE_NAME% %CHART_DIR% ^
+            --namespace %NAMESPACE% ^
+            --kubeconfig="%KUBECONFIG_PATH%" ^
+            --values "%VALUES_FILE%" ^
+            --set app-monolitic.image.registry=%REGISTRY% ^
+            --set app-monolitic.image.repository=%IMAGE_REPOSITORY% ^
+            --set app-monolitic.image.tag=%IMAGE_TAG%
     )
     
     echo.
@@ -194,21 +196,21 @@ if "%DEPLOY_ACTION%"=="delete" (
     
     if "%DEPLOY_ACTION%"=="install" (
         echo    Installing new release...
-        helm install %RELEASE_NAME% . ^
+        helm install %RELEASE_NAME% %CHART_DIR% ^
             --namespace %NAMESPACE% ^
             --create-namespace ^
+            --values "%VALUES_FILE%" ^
             --set app-monolitic.image.registry=%REGISTRY% ^
             --set app-monolitic.image.repository=%IMAGE_REPOSITORY% ^
-            --set app-monolitic.image.tag=%IMAGE_TAG% ^
-            --set app-monolitic.image.pullPolicy=IfNotPresent
+            --set app-monolitic.image.tag=%IMAGE_TAG%
     ) else (
         echo    Upgrading existing release...
-        helm upgrade %RELEASE_NAME% . ^
+        helm upgrade %RELEASE_NAME% %CHART_DIR% ^
             --namespace %NAMESPACE% ^
+            --values "%VALUES_FILE%" ^
             --set app-monolitic.image.registry=%REGISTRY% ^
             --set app-monolitic.image.repository=%IMAGE_REPOSITORY% ^
-            --set app-monolitic.image.tag=%IMAGE_TAG% ^
-            --set app-monolitic.image.pullPolicy=IfNotPresent
+            --set app-monolitic.image.tag=%IMAGE_TAG%
     )
     
     echo.
