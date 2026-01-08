@@ -29,6 +29,7 @@ dependencies {
 	implementation("org.springframework:spring-tx")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+	runtimeOnly("com.mysql:mysql-connector-j")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testRuntimeOnly("com.h2database:h2")
@@ -43,4 +44,20 @@ kotlin {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+tasks.bootRun {
+	val dotEnv = file(".env")
+	if (dotEnv.exists()) {
+		dotEnv.readLines()
+			.filter { it.isNotBlank() && !it.startsWith("#") }
+			.forEach { line ->
+				val parts = line.split("=", limit = 2)
+				if (parts.size == 2) {
+					val key = parts[0].trim()
+					val value = parts[1].trim()
+					environment(key, value)
+				}
+			}
+	}
 }
