@@ -136,3 +136,73 @@ kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller
 # Ingress 이벤트 확인
 kubectl describe ingress monolitic-stack-stack-monolitic-ingress
 ```
+
+### 배포 스크립트 사용
+
+**배포 스크립트 위치:**
+- `05-scripts/01_deploy_monolitic/`
+
+**주요 파일:**
+- `00-fetch-kubeconfig.sh`: 원격 서버에서 kubeconfig 가져오기
+- `01-build-push-image.sh` / `01-build-push-image.bat`: 이미지 빌드 및 레지스트리 푸시
+- `02-deploy-helm-chart.sh` / `02-deploy-helm-chart.bat`: Helm 차트 배포
+- `values.yaml`: Helm 차트 설정 (참고: `01-infrastructure/03-stack-monolitic/values.yaml`)
+- `default.env`: 환경 변수 기본값
+
+**배포 프로세스:**
+
+```bash
+# 1. 원격 kubeconfig 가져오기 (원격 배포 시)
+./00-fetch-kubeconfig.sh --host 10.137.0.195 --user root
+
+# 2. 이미지 빌드 및 푸시
+./01-build-push-image.sh
+
+# 3. Helm 차트 배포
+./02-deploy-helm-chart.sh
+```
+
+**환경 변수 설정 (`.env` 파일):**
+```bash
+# Registry Settings
+REGISTRY_HOST=10.137.0.195
+REGISTRY_PORT=5000
+
+# Image Settings
+IMAGE_NAME=00-monolitic
+IMAGE_TAG=latest
+
+# Helm Deployment Settings
+RELEASE_NAME=monolitic-stack
+NAMESPACE=default
+DEPLOY_MODE=remote  # remote or local
+DEPLOY_ACTION=install-or-upgrade  # install, upgrade, delete, or install-or-upgrade
+```
+
+**Ingress 설정 (여러 서비스 지원):**
+
+`values.yaml`에서 Ingress 설정:
+```yaml
+ingress:
+  hosts:
+    - host: "message.rahoon.site"
+      paths:
+        - path: /api(/|$)(.*)
+          pathType: ImplementationSpecific
+          service: app-monolitic
+          port: 8080
+          rewrite: true  # /api prefix 제거
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 3000
+          # rewrite 없음 - path 유지
+```
+
+**Path Rewrite 동작:**
+- `rewrite: true`: Ingress에서 path prefix 제거 후 서비스로 전달
+  - 요청: `http://message.rahoon.site/api/users`
+  - 서비스: `http://app-monolitic:8080/users` (prefix 제거)
+- `rewrite: false` 또는 없음: path 그대로 전달
+  - 요청: `http://message.rahoon.site/`
+  - 서비스: `http://frontend:3000/` (path 유지)
