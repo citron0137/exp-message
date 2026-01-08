@@ -1,0 +1,42 @@
+# Build outputs
+build/
+.gradle/
+out/
+bin/
+
+# Test sources (not needed for Docker build)
+src/test/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+HELP.md
+
+# Environment files
+.env
+default.env
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Data
+.data/
+
+# OS
+.DS_Store
+Thumbs.db
+
