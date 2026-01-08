@@ -78,8 +78,17 @@ ingress:
   hosts:
     - host: localhost  # Default for local testing. Change to your domain for production.
       paths:
-        - path: /
-          pathType: Prefix
+        - path: /api(/|$)(.*)
+          pathType: ImplementationSpecific
+          service: app-monolitic  # Service name (without Release.Name prefix)
+          port: 8080
+          rewrite: true  # Remove /api prefix when forwarding to service
+        # Example: Add more services
+        # - path: /
+        #   pathType: Prefix
+        #   service: frontend
+        #   port: 3000
+        #   rewrite: false  # Keep path as-is
   # TLS configuration (optional)
   tls: []
   # - secretName: app-tls

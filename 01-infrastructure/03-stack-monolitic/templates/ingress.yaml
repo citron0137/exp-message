@@ -6,10 +6,21 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     {{- include "stack-monolitic.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- if .Values.ingress.annotations }}
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+    {{- end }}
+    {{- $hasRewrite := false }}
+    {{- range .Values.ingress.hosts }}
+      {{- range .paths }}
+        {{- if .rewrite }}
+          {{- $hasRewrite = true }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if $hasRewrite }}
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    {{- end }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
@@ -31,25 +42,25 @@ spec:
       http:
         paths:
           {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          - path: {{ if .rewrite }}{{ .path }}{{ else }}{{ .path }}{{ end }}
+            pathType: {{ if .rewrite }}ImplementationSpecific{{ else }}{{ .pathType }}{{ end }}
             backend:
               service:
-                name: {{ printf "%s-%s" $.Release.Name "app-monolitic" | trunc 63 | trimSuffix "-" }}
+                name: {{ printf "%s-%s" $.Release.Name (.service | default "app-monolitic") | trunc 63 | trimSuffix "-" }}
                 port:
-                  number: {{ index $.Values "app-monolitic" "service" "port" }}
+                  number: {{ .port | default (index $.Values "app-monolitic" "service" "port") }}
           {{- end }}
     {{- else }}
     - http:
         paths:
           {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          - path: {{ if .rewrite }}{{ .path }}{{ else }}{{ .path }}{{ end }}
+            pathType: {{ if .rewrite }}ImplementationSpecific{{ else }}{{ .pathType }}{{ end }}
             backend:
               service:
-                name: {{ printf "%s-%s" $.Release.Name "app-monolitic" | trunc 63 | trimSuffix "-" }}
+                name: {{ printf "%s-%s" $.Release.Name (.service | default "app-monolitic") | trunc 63 | trimSuffix "-" }}
                 port:
-                  number: {{ index $.Values "app-monolitic" "service" "port" }}
+                  number: {{ .port | default (index $.Values "app-monolitic" "service" "port") }}
           {{- end }}
     {{- end }}
     {{- end }}
