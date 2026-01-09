@@ -74,6 +74,7 @@
   - k3s+Helm 배포 → Ingress로 동일 시나리오 확인(health 포함) → 실패 로그/이슈를 문서에 남기기
 
 - **API 문서화(= 생산성 + 설득력)**
+  - 현재 리포지토리 기준으로는 SpringDoc/Swagger 설정 흔적이 없어서(의존성/설정 검색 0건) **우선 “미적용” 전제로 진행**
   - SpringDoc OpenAPI(Swagger UI) 적용
   - Ingress 경로(`/api-docs`, `/swagger-ui`) 노출 및 “시연 URL” 확보
 
