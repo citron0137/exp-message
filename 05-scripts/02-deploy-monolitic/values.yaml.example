@@ -37,6 +37,7 @@ app-monolitic:
     registry: "localhost:5000"  # Used by Helm chart and build scripts
     repository: 00-monolitic
     tag: "latest"
+    pullPolicy: Always  # Always pull image to get latest version
   app:
     name: 00-monolitic
     port: 8080

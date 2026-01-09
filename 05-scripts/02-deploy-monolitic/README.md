@@ -109,7 +109,11 @@ docker push $DOCKER_REGISTRY/00-monolitic:latest
 # 2. Helm upgrade로 새 이미지 배포
 helm upgrade message-stack . --kubeconfig=./kubeconfig.yaml --values ./values.yaml
 
-# 3. 배포 상태 확인
+# 3. Pod 강제 재시작 (latest 태그 사용 시 필요)
+# Helm upgrade만으로는 이미지 변경이 감지되지 않을 수 있으므로 pod를 재시작해야 함
+kubectl rollout restart deployment/message-stack-app-monolitic --kubeconfig=./kubeconfig.yaml
+
+# 4. 배포 상태 확인
 kubectl get pods --kubeconfig=./kubeconfig.yaml -l app.kubernetes.io/instance=message-stack
 ```
 
@@ -125,7 +129,11 @@ docker push "$env:DOCKER_REGISTRY/00-monolitic:latest"
 # 2. Helm upgrade로 새 이미지 배포
 helm upgrade message-stack . --kubeconfig=./kubeconfig.yaml --values ./values.yaml
 
-# 3. 배포 상태 확인
+# 3. Pod 강제 재시작 (latest 태그 사용 시 필요)
+# Helm upgrade만으로는 이미지 변경이 감지되지 않을 수 있으므로 pod를 재시작해야 함
+kubectl rollout restart deployment/message-stack-app-monolitic --kubeconfig=./kubeconfig.yaml
+
+# 4. 배포 상태 확인
 kubectl get pods --kubeconfig=./kubeconfig.yaml -l app.kubernetes.io/instance=message-stack
 ```
 
