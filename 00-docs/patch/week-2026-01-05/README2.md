@@ -1,15 +1,67 @@
 # 주간 패치노트 (2026-01-05)
 
 ## 1. 해당주차에 진행한 작업
-- TODO: 이번 주에 완료한 작업을 항목별로 정리해주세요.
+- **프로젝트 기반/문서 체계 구축**
+  - 프로젝트 소개 `README.md` 작성 및 목표(“아주 튼튼한 채팅 서버”) 명시
+  - 패치노트 디렉토리/가이드 구축 (`00-docs/patch/README.md`) 및 템플릿 정리
+  - 프로젝트 전체 디렉토리 구조 초안 정리(Infra/Backend/Frontend/Test/Scripts/Docs)
+
+- **기술 스택/아키텍처 의사결정 정리**
+  - 프론트엔드: React + TypeScript 선택(백엔드 검증용 최소 UI)
+  - 백엔드: Kotlin + Spring Boot 중심으로 통일(필요 시 Go/NestJS 후보)
+  - 데이터: MySQL 선택 + Redis/Elasticsearch/Kafka/모니터링(Grafana 계열)/부하테스트(k6) 방향성 확정
+  - MSA 목표 구조(게이트웨이/User/Chat/Message/Search/Notification/WebSocket) 및 데이터 흐름 정리
+  - Database per Service 패턴 및 샤딩/파티셔닝(애플리케이션 레벨 우선 검토) 원칙 정리
+
+- **인프라/배포 기반 구성**
+  - 인프라 디렉토리 설계 원칙 정리 및 구조 문서화
+  - 로컬 개발환경: Docker Compose 기반 MySQL 구성 방향 + binlog 기반 복구 전략 정리
+  - k3s + Helm + ingress-nginx 설치/검증 및 로컬 레지스트리(insecure) 설정 절차 문서화
+  - 모놀리식 앱 Helm 차트 + Umbrella(스택) 차트 구성(MySQL + App + Ingress)
+  - 배포 스크립트 구성(`05-scripts/01_deploy_monolitic/`) 및 환경변수(.env) 기반 배포 흐름 정리
+  - 실서버 인증서 만료 이슈 해결(OPNsense ACME Client로 신규 발급/적용/자동갱신 설정)
+
+- **백엔드(모놀리식) 구현 진척**
+  - 공통 예외/에러 모델 정리(DomainError/DomainException/ApplicationException) 및 트랜잭션 유틸(`Tx`) 구성
+  - User 도메인 구현(엔티티/커맨드/도메인 서비스/검증/비밀번호 해싱)
+  - JPA 기반 `UserRepository` 구현(Entity/JpaRepository/Impl) + 통합 테스트 작성(H2)
+  - 공통 API 응답 템플릿(`ApiResponse`) + 전역 예외 처리 + Health API + E2E 테스트 구성
+  - 실행 환경: MySQL datasource 설정/환경변수 주입, JDBC 드라이버/Actuator 추가, `bootRun`의 `.env` 로드 지원
+  - Dockerfile(멀티 스테이지), `.dockerignore`, docker-compose(MySQL + App) 작성
 
 ## 2. 다음주차에 진행할 작업
-- TODO: 다음 주에 진행할 작업과 목표를 항목별로 정리해주세요.
+- **API 문서화/운영 편의**
+  - SpringDoc OpenAPI(Swagger UI) 적용 및 Ingress 경로(`/api-docs`, `/swagger-ui`) 노출
+
+- **프론트엔드 최소 기능 구축 및 배포**
+  - React 기반 최소 UI 생성(서버 상태/간단한 API 호출/기본 화면)
+  - 프론트엔드 Docker 이미지 빌드 파이프라인 추가
+  - Helm 차트/Ingress에 프론트엔드 서비스(`/`) 라우팅 추가(백엔드 `/api`와 분리)
+
+- **실배포/검증 루프 만들기**
+  - 로컬/원격 배포 절차를 실제로 반복 실행하며 문서/스크립트 보강
+  - Helm values 정리(환경별: local/remote), 배포 실패 케이스 대응 가이드 보완
+
+- **성능/품질 기반 작업 착수**
+  - k6 부하테스트 시나리오 초안 작성(로그인/메시지 전송/조회/WebSocket 등)
+  - 관찰성(health/metrics/log) 최소 셋업을 “운영 가능한 수준”으로 구체화
 
 ## 3. AI피드백 (잘한점, 아쉬운점)
 ### 잘한점
-- TODO: 잘한 점을 구체적인 근거와 함께 작성해주세요.
+- **문서화가 빠르고 밀도가 높음**
+  - 기술 스택/아키텍처/인프라/배포까지 “선택 이유”와 “운영 관점”이 함께 남아 있어, 이후 변경에도 근거 추적이 쉬움
+- **점진적 분리 전략이 현실적임**
+  - 모놀리식 → 부하테스트/병목 기반 → 분리(우선순위 포함) 흐름이 과도한 엔지니어링을 피함
+- **기반 코드 품질을 초기에 잡음**
+  - 공통 응답/예외 처리, Health/E2E 테스트, 도메인-인프라 분리(User vs JPA Entity) 등 “초기 표준화”가 됨
+- **배포/운영 이슈를 실제로 처리함**
+  - 인증서 만료 같은 운영 이슈를 해결하고 자동갱신까지 구성한 점은 실서비스 관점에서 큰 진척
 
 ### 아쉬운점
-- TODO: 아쉬운 점(개선 포인트)을 구체적으로 작성해주세요.
+- **‘완료’와 ‘계획’이 문서에서 섞여 보일 수 있음**
+  - 예: “k8s로 DB 구축” 문서는 절차/계획 성격이 커서, 실제 적용/검증 결과(명령/출력/이슈/해결)가 추가되면 좋음
+- **주차 산출물의 단일 요약본이 더 강해질 여지가 있음**
+  - 현재는 일일 문서가 잘 쌓였고, 주간 요약에서는 “이번 주에 실제로 동작 확인한 것(예: 배포 성공/헬스체크 접근)”을 체크리스트로 명확히 적으면 더 좋음
+- **파일/문서 네이밍 정리 필요**
+  - 오타/중복 가능성이 있는 파일명(예: `기슬` 등)과 중복 문서(…문서.md)들을 정리하면 탐색성이 좋아짐
 
