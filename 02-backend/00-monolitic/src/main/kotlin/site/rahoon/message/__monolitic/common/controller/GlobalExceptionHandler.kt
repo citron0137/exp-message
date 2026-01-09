@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.servlet.resource.NoResourceFoundException
 import site.rahoon.message.__monolitic.common.application.ApplicationException
 import site.rahoon.message.__monolitic.common.controller.ApiResponse
 import site.rahoon.message.__monolitic.common.domain.DomainException
@@ -90,6 +91,25 @@ class GlobalExceptionHandler {
         )
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response)
+    }
+
+    /**
+     * 리소스를 찾을 수 없을 때 처리 (404)
+     */
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNoResourceFoundException(
+        e: NoResourceFoundException,
+        request: HttpServletRequest
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        val response = ApiResponse.error<Nothing>(
+            code = "NOT_FOUND",
+            message = "요청한 리소스를 찾을 수 없습니다",
+            details = mapOf("resourcePath" to e.resourcePath),
+            occurredAt = ZonedDateTime.now(),
+            path = request.requestURI
+        )
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response)
     }
 
     /**
