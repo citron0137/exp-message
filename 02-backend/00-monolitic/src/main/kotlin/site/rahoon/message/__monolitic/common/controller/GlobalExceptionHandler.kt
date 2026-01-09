@@ -1,10 +1,12 @@
 package site.rahoon.message.__monolitic.common.controller
 
 import jakarta.servlet.http.HttpServletRequest
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import site.rahoon.message.__monolitic.common.application.ApplicationException
 import site.rahoon.message.__monolitic.common.controller.ApiResponse
@@ -17,6 +19,8 @@ import java.time.ZonedDateTime
  */
 @RestControllerAdvice
 class GlobalExceptionHandler {
+
+    private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     /**
      * DomainException 처리
@@ -96,6 +100,17 @@ class GlobalExceptionHandler {
         e: Exception,
         request: HttpServletRequest
     ): ResponseEntity<ApiResponse<Nothing>> {
+        val queryString = request.queryString?.let { "?$it" } ?: ""
+        logger.error(
+            """
+            |Internal Server Error
+            |├─ Request: ${request.method} ${request.requestURI}$queryString
+            |├─ Exception: ${e.javaClass.simpleName}
+            |└─ Message: ${e.message ?: "No message"}
+            """.trimMargin(),
+            e
+        )
+
         val response = ApiResponse.error<Nothing>(
             code = "INTERNAL_SERVER_ERROR",
             message = "서버 오류가 발생했습니다",
