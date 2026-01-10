@@ -10,11 +10,16 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
+data class IssuedAccessToken(
+    val token: String,
+    val expiresAt: LocalDateTime
+)
+
 @Component
 class JwtAccessTokenIssuer(
     private val jwtProperties: JwtProperties,
     private val clock: Clock = Clock.systemUTC()
-) : AccessTokenIssuer {
+) {
     private val key by lazy {
         val secretBytes = jwtProperties.secret.toByteArray(StandardCharsets.UTF_8)
         require(secretBytes.size >= 32) {
@@ -23,7 +28,7 @@ class JwtAccessTokenIssuer(
         Keys.hmacShaKeyFor(secretBytes)
     }
 
-    override fun issue(userId: String): IssuedAccessToken {
+    fun issue(userId: String): IssuedAccessToken {
         val now: Instant = Instant.now(clock)
         val expiresAtInstant = now.plusSeconds(jwtProperties.accessTokenTtlSeconds)
         val expiresAt: LocalDateTime = LocalDateTime.ofInstant(expiresAtInstant, ZoneOffset.UTC)

@@ -2,7 +2,7 @@ package site.rahoon.message.__monolitic.authtoken.domain
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import site.rahoon.message.__monolitic.authtoken.domain.component.AccessTokenIssuer
+import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenIssuer
 import java.util.UUID
 
 /**
@@ -12,7 +12,7 @@ import java.util.UUID
 @Service
 @Transactional(readOnly = true)
 class AuthTokenDomainService(
-    private val accessTokenIssuer: AccessTokenIssuer
+    private val accessTokenIssuer: JwtAccessTokenIssuer
 ) {
 
     @Transactional
