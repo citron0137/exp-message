@@ -1,4 +1,29 @@
-# 주간 패치노트 (2026-01-05)
+# 주간 패치노트 (2026-01-05 ~ 2026-01-11)
+
+## 0. 일일 패치노트 링크
+- **2026-01-06 (화)**
+  - [`day2-01-프로젝트초기설정.md`](./day2-01-프로젝트초기설정.md)
+  - (중복/보조 문서) [`day2-01-프로젝트초기설정문서.md`](./day2-01-프로젝트초기설정문서.md)
+  - [`day2-02-기술스택선정.md`](./day2-02-기술스택선정.md)
+  - (오타/중복 문서) [`day2-02-기슬스택선정문서.md`](./day2-02-기슬스택선정문서.md)
+  - [`day2-03-인프라구조설계.md`](./day2-03-인프라구조설계.md)
+  - [`day2-04-백엔드서비스설계전략.md`](./day2-04-백엔드서비스설계전략.md)
+  - [`day2-05-데이터구조설계.md`](./day2-05-데이터구조설계.md)
+  - [`day2-06-User도메인구현.md`](./day2-06-User도메인구현.md)
+- **2026-01-07 (수)**
+  - [`day3-01-UserRepository구현.md`](./day3-01-UserRepository구현.md)
+  - [`day3-02-ApiResponseTemplate구현.md`](./day3-02-ApiResponseTemplate구현.md)
+  - [`day3-03-k8s로DB구축.md`](./day3-03-k8s로DB구축.md)
+  - [`day3-04-내일목표구체화.md`](./day3-04-내일목표구체화.md)
+- **2026-01-08 (목)**
+  - [`day4-01-인프라구성완료.md`](./day4-01-인프라구성완료.md)
+  - [`day4-02-k8s배포환경구축.md`](./day4-02-k8s배포환경구축.md)
+  - [`day4-03-인증서교체.md`](./day4-03-인증서교체.md)
+  - [`day4-04-내일할일.md`](./day4-04-내일할일.md)
+- **2026-01-09 (금)**
+  - [`day5-01-인프라개선.md`](./day5-01-인프라개선.md)
+  - [`day5-02-NOTFOUND추가.md`](./day5-02-NOTFOUND추가.md)
+  - [`day5-03-내일할일.md`](./day5-03-내일할일.md)
 
 ## 1. 이번 주 진행한 내용
 - **프로젝트 기반/문서 체계 구축**
@@ -17,9 +42,10 @@
   - 인프라 디렉토리 설계 원칙 정리 및 구조 문서화
   - 로컬 개발환경: Docker Compose 기반 MySQL 구성 방향 + binlog 기반 복구 전략 정리
   - k3s + Helm + ingress-nginx 설치/검증 및 로컬 레지스트리(insecure) 설정 절차 문서화
-  - 모놀리식 앱 Helm 차트 + Umbrella(스택) 차트 구성(MySQL + App + Ingress)
-  - 배포 스크립트 구성(`05-scripts/01_deploy_monolitic/`) 및 환경변수(.env) 기반 배포 흐름 정리
+  - 모놀리식 앱 Helm 차트 구성 + Umbrella(스택) 구조 통합(MySQL + App + Ingress)
+  - 배포 스크립트/차트 통합 구성(`05-scripts/02-deploy-monolitic/`) 및 환경변수(.env) 기반 배포 흐름 정리
   - 실서버 인증서 만료 이슈 해결(OPNsense ACME Client로 신규 발급/적용/자동갱신 설정)
+  - Ingress 경로 처리 보강(`/api` rewrite + `X-Forwarded-Prefix`로 redirect 경로 문제 해결)
 
 - **백엔드(모놀리식) 구현 진척**
   - 공통 예외/에러 모델 정리(DomainError/DomainException/ApplicationException) 및 트랜잭션 유틸(`Tx`) 구성
@@ -28,6 +54,9 @@
   - 공통 API 응답 템플릿(`ApiResponse`) + 전역 예외 처리 + Health API + E2E 테스트 구성
   - 실행 환경: MySQL datasource 설정/환경변수 주입, JDBC 드라이버/Actuator 추가, `bootRun`의 `.env` 로드 지원
   - Dockerfile(멀티 스테이지), `.dockerignore`, docker-compose(MySQL + App) 작성
+  - Swagger UI(OpenAPI) 추가로 운영 환경에서 API 문서/테스트 가능하도록 구성
+  - E2E/점검용 `TestController` 추가
+  - `NoResourceFoundException` 404 처리 추가(유효하지 않은 리소스 요청 시 500 → 404)
 
 ## 2. AI 피드백
 ### 잘한점
