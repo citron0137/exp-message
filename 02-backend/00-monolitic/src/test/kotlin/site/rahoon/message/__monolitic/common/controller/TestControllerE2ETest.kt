@@ -1,7 +1,6 @@
 package site.rahoon.message.__monolitic.common.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.type.TypeFactory
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -16,11 +15,11 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * Health Check API E2E 테스트
+ * Test Controller E2E 테스트
  * 실제 HTTP 요청을 통해 전체 스택을 테스트합니다.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class HealthControllerE2ETest {
+class TestControllerE2ETest {
 
     @LocalServerPort
     private var port: Int = 0
@@ -31,7 +30,7 @@ class HealthControllerE2ETest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    private fun baseUrl(): String = "http://localhost:$port/api/health"
+    private fun baseUrl(): String = "http://localhost:$port/test"
 
     @Test
     fun `health check 성공`() {
@@ -47,22 +46,17 @@ class HealthControllerE2ETest {
         assertEquals(HttpStatus.OK, response.statusCode)
         assertNotNull(response.body)
 
-        val typeFactory = TypeFactory.defaultInstance()
-        val mapType = typeFactory.constructMapType(Map::class.java, String::class.java, Any::class.java)
-        val type = typeFactory.constructParametricType(
-            ApiResponse::class.java,
-            mapType
-        )
-        val responseBody = objectMapper.readValue<ApiResponse<Map<String, Any>>>(
-            response.body!!,
-            type
-        )
+        @Suppress("UNCHECKED_CAST")
+        val responseMap = objectMapper.readValue(response.body!!, Map::class.java) as Map<String, Any>
 
         // 응답 검증
-        assertTrue(responseBody.success)
-        assertNotNull(responseBody.data)
-        assertEquals("ok", responseBody.data?.get("status"))
-        assertEquals("Service is running", responseBody.data?.get("message"))
+        assertTrue(responseMap["success"] as Boolean)
+        assertNotNull(responseMap["data"])
+        
+        val dataMap = responseMap["data"] as? Map<*, *>
+        assertNotNull(dataMap)
+        assertEquals("ok", dataMap["status"])
+        assertEquals("Service is running", dataMap["message"])
     }
 
     @Test

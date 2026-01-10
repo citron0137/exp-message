@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestController
@@ -110,6 +111,43 @@ class GlobalExceptionHandler {
         )
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response)
+    }
+
+    /**
+     * JSON 파싱 오류 처리 (400)
+     * 필수 필드 누락이나 잘못된 JSON 형식일 때 발생
+     */
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadableException(
+        e: HttpMessageNotReadableException,
+        request: HttpServletRequest
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        val errorMessage = e.message?.let {
+            when {
+                it.contains("missing") || it.contains("NULL") -> "필수 필드가 누락되었습니다"
+                it.contains("JSON parse error") -> "잘못된 JSON 형식입니다"
+                else -> "요청 본문을 읽을 수 없습니다"
+            }
+        } ?: "요청 본문을 읽을 수 없습니다"
+
+        logger.debug(
+            """
+            |Bad Request - JSON Parse Error
+            |├─ Request: ${request.method} ${request.requestURI}
+            |├─ Exception: ${e.javaClass.simpleName}
+            |└─ Message: ${e.message ?: "No message"}
+            """.trimMargin()
+        )
+
+        val response = ApiResponse.error<Nothing>(
+            code = "BAD_REQUEST",
+            message = errorMessage,
+            details = mapOf("originalMessage" to (e.message ?: "")),
+            occurredAt = ZonedDateTime.now(),
+            path = request.requestURI
+        )
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response)
     }
 
     /**

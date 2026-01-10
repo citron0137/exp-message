@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
+import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -24,6 +25,7 @@ class JacksonConfig {
     fun objectMapper(builder: Jackson2ObjectMapperBuilder): ObjectMapper {
         val module = SimpleModule()
         module.addSerializer(ZonedDateTime::class.java, ZonedDateTimeSerializer())
+        module.addSerializer(LocalDateTime::class.java, LocalDateTimeSerializer())
         
         return builder
             .modules(module, KotlinModule.Builder().build())
@@ -44,6 +46,23 @@ private class ZonedDateTimeSerializer : JsonSerializer<ZonedDateTime>() {
             gen.writeNull()
         } else {
             gen.writeString(value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+        }
+    }
+}
+
+/**
+ * LocalDateTime을 ISO-8601 형식으로 직렬화하는 Serializer
+ */
+private class LocalDateTimeSerializer : JsonSerializer<LocalDateTime>() {
+    override fun serialize(
+        value: LocalDateTime?,
+        gen: JsonGenerator,
+        serializers: SerializerProvider?
+    ) {
+        if (value == null) {
+            gen.writeNull()
+        } else {
+            gen.writeString(value.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
         }
     }
 }
