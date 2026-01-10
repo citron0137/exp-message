@@ -1,4 +1,4 @@
-package site.rahoon.message.__monolitic.authtoken.application
+package site.rahoon.message.__monolitic.authtoken.domain
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

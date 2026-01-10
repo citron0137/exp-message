@@ -1,9 +1,17 @@
 package site.rahoon.message.__monolitic.authtoken.domain
 
+import io.jsonwebtoken.ExpiredJwtException
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.security.Keys
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenIssuer
+import site.rahoon.message.__monolitic.common.domain.DomainException
+import site.rahoon.message.__monolitic.common.global.config.JwtProperties
+import java.nio.charset.StandardCharsets
+import java.time.Clock
 import java.util.UUID
+import java.time.LocalDateTime
 
 /**
  * 인증 토큰 도메인 서비스
@@ -12,7 +20,11 @@ import java.util.UUID
 @Service
 @Transactional(readOnly = true)
 class AuthTokenDomainService(
-    private val accessTokenIssuer: JwtAccessTokenIssuer
+    private val accessTokenIssuer: JwtAccessTokenIssuer,
+    private val authTokenRepository: AuthTokenRepository,
+    private val authTokenProperties: AuthTokenProperties,
+    private val jwtProperties: JwtProperties,
+    private val clock: Clock = Clock.systemUTC()
 ) {
 
     @Transactional
@@ -22,21 +34,62 @@ class AuthTokenDomainService(
         val issuedAccessToken = accessTokenIssuer.issue(command.userId)
 
         val refreshToken = "refresh.${command.userId}.${UUID.randomUUID()}"
-        return AuthToken.create(
+        val token = AuthToken.create(
             accessToken = issuedAccessToken.token,
             refreshToken = refreshToken,
             expiresAt = issuedAccessToken.expiresAt
         )
+
+        authTokenRepository.saveRefreshToken(
+            userId = command.userId,
+            refreshToken = refreshToken,
+            expiresAt = LocalDateTime.now(clock).plusSeconds(authTokenProperties.refreshTokenTtlSeconds)
+        )
+
+        return token
     }
 
     @Transactional
     fun refresh(command: AuthTokenCommand.Refresh): AuthToken {
-        TODO("토큰 갱신 로직 구현")
+        val userId = authTokenRepository.findUserIdByRefreshToken(command.refreshToken)
+            ?: throw DomainException(
+                error = AuthTokenError.TOKEN_NOT_FOUND,
+                details = mapOf("refreshToken" to command.refreshToken)
+            )
+
+        // refresh token rotation: 기존 토큰 제거 후 새 토큰 발급
+        authTokenRepository.deleteRefreshToken(command.refreshToken)
+
+        return issue(AuthTokenCommand.Issue(userId = userId))
     }
 
     @Transactional
     fun logout(command: AuthTokenCommand.Logout) {
-        TODO("로그아웃 로직 구현")
+        val userId = extractUserIdFromAccessToken(command.accessToken)
+        authTokenRepository.deleteAllRefreshTokensByUserId(userId)
+    }
+
+    private fun extractUserIdFromAccessToken(accessTokenOrAuthorizationHeader: String): String {
+        val rawToken = accessTokenOrAuthorizationHeader
+            .trim()
+            .removePrefix("Bearer ")
+            .trim()
+
+        val key = Keys.hmacShaKeyFor(jwtProperties.secret.toByteArray(StandardCharsets.UTF_8))
+
+        try {
+            val claims = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(rawToken)
+                .payload
+            return claims.subject
+                ?: throw DomainException(error = AuthTokenError.INVALID_TOKEN)
+        } catch (e: ExpiredJwtException) {
+            throw DomainException(error = AuthTokenError.TOKEN_EXPIRED)
+        } catch (e: Exception) {
+            throw DomainException(error = AuthTokenError.INVALID_TOKEN)
+        }
     }
 }
 
