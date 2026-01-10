@@ -11,7 +11,8 @@ import java.time.LocalDateTime
 @Table(
     name = "refresh_tokens",
     indexes = [
-        Index(name = "idx_refresh_tokens_user_id", columnList = "user_id")
+        Index(name = "idx_refresh_tokens_user_id", columnList = "user_id"),
+        Index(name = "idx_refresh_tokens_session_id", columnList = "session_id")
     ]
 )
 class RefreshTokenEntity(
@@ -22,12 +23,15 @@ class RefreshTokenEntity(
     @Column(name = "user_id", nullable = false, length = 36)
     var userId: String,
 
+    @Column(name = "session_id", nullable = false, length = 64)
+    var sessionId: String,
+
     @Column(name = "expires_at", nullable = false)
     var expiresAt: LocalDateTime,
 
     @Column(name = "created_at", nullable = false)
     var createdAt: LocalDateTime
 ) {
-    constructor() : this("", "", LocalDateTime.now(), LocalDateTime.now())
+    constructor() : this("", "", "", LocalDateTime.now(), LocalDateTime.now())
 }
 

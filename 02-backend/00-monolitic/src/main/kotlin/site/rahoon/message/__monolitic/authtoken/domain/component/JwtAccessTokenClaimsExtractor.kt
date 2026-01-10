@@ -9,11 +9,16 @@ import site.rahoon.message.__monolitic.common.domain.DomainException
 import site.rahoon.message.__monolitic.common.global.config.JwtProperties
 import java.nio.charset.StandardCharsets
 
+data class AccessTokenClaims(
+    val userId: String,
+    val sessionId: String
+)
+
 @Component
-class JwtAccessTokenSubjectExtractor(
+class JwtAccessTokenClaimsExtractor(
     private val jwtProperties: JwtProperties
 ) {
-    fun extractSubject(accessTokenOrAuthorizationHeader: String): String {
+    fun extract(accessTokenOrAuthorizationHeader: String): AccessTokenClaims {
         val rawToken = accessTokenOrAuthorizationHeader
             .trim()
             .removePrefix("Bearer ")
@@ -28,8 +33,13 @@ class JwtAccessTokenSubjectExtractor(
                 .parseSignedClaims(rawToken)
                 .payload
 
-            return claims.subject
-                ?: throw DomainException(error = AuthTokenError.INVALID_TOKEN)
+            val userId = claims.subject ?: throw DomainException(error = AuthTokenError.INVALID_TOKEN)
+            val sessionId = claims["sid"] as? String ?: throw DomainException(error = AuthTokenError.INVALID_TOKEN)
+
+            return AccessTokenClaims(
+                userId = userId,
+                sessionId = sessionId
+            )
         } catch (e: ExpiredJwtException) {
             throw DomainException(error = AuthTokenError.TOKEN_EXPIRED)
         } catch (e: Exception) {

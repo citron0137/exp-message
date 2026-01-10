@@ -10,10 +10,10 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 
-class JwtAccessTokenSubjectExtractorTest {
+class JwtAccessTokenClaimsExtractorTest {
 
     @Test
-    fun `Bearer prefix가 있어도 subject(userId)를 추출한다`() {
+    fun `Bearer prefix가 있어도 userId와 sid를 추출한다`() {
         // given
         val fixedNow = Instant.now()
         val clock = Clock.fixed(fixedNow, ZoneOffset.UTC)
@@ -23,14 +23,15 @@ class JwtAccessTokenSubjectExtractorTest {
             accessTokenTtlSeconds = 3600
         )
         val issuer = JwtAccessTokenIssuer(jwtProps, clock)
-        val extractor = JwtAccessTokenSubjectExtractor(jwtProps)
-        val token = issuer.issue("user-123").token
+        val extractor = JwtAccessTokenClaimsExtractor(jwtProps)
+        val token = issuer.issue(userId = "user-123", sessionId = "sid-abc").token
 
         // when
-        val subject = extractor.extractSubject("Bearer $token")
+        val claims = extractor.extract("Bearer $token")
 
         // then
-        assertEquals("user-123", subject)
+        assertEquals("user-123", claims.userId)
+        assertEquals("sid-abc", claims.sessionId)
     }
 
     @Test
@@ -41,11 +42,11 @@ class JwtAccessTokenSubjectExtractorTest {
             issuer = "site.rahoon.message.test",
             accessTokenTtlSeconds = 3600
         )
-        val extractor = JwtAccessTokenSubjectExtractor(jwtProps)
+        val extractor = JwtAccessTokenClaimsExtractor(jwtProps)
 
         // then
         val ex = assertThrows(DomainException::class.java) {
-            extractor.extractSubject("not-a-jwt")
+            extractor.extract("not-a-jwt")
         }
         assertEquals(AuthTokenError.INVALID_TOKEN, ex.error)
     }
@@ -61,12 +62,12 @@ class JwtAccessTokenSubjectExtractorTest {
             accessTokenTtlSeconds = -1 // 이미 만료된 토큰 생성
         )
         val issuer = JwtAccessTokenIssuer(jwtProps, clock)
-        val extractor = JwtAccessTokenSubjectExtractor(jwtProps)
-        val token = issuer.issue("user-123").token
+        val extractor = JwtAccessTokenClaimsExtractor(jwtProps)
+        val token = issuer.issue(userId = "user-123", sessionId = "sid-abc").token
 
         // then
         val ex = assertThrows(DomainException::class.java) {
-            extractor.extractSubject(token)
+            extractor.extract(token)
         }
         assertEquals(AuthTokenError.TOKEN_EXPIRED, ex.error)
     }

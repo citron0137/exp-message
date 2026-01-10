@@ -29,7 +29,7 @@ class JwtAccessTokenIssuerTest {
         val issuer = JwtAccessTokenIssuer(props, clock)
 
         // when
-        val issued = issuer.issue(userId = "user-123")
+        val issued = issuer.issue(userId = "user-123", sessionId = "sid-abc")
 
         // then (형태/만료)
         assertNotNull(issued.token)
@@ -50,8 +50,10 @@ class JwtAccessTokenIssuerTest {
         assertEquals("user-123", claims.subject)
         assertEquals(fixedNow.epochSecond, claims.issuedAt.toInstant().epochSecond)
         assertEquals(fixedNow.plusSeconds(3600).epochSecond, claims.expiration.toInstant().epochSecond)
+        assertNotNull(claims.id, "jti는 반드시 존재해야 합니다")
         assertEquals("access", claims["typ"])
         assertEquals("user-123", claims["uid"])
+        assertEquals("sid-abc", claims["sid"])
     }
 
     @Test
@@ -67,7 +69,7 @@ class JwtAccessTokenIssuerTest {
 
         // then
         assertThrows(IllegalArgumentException::class.java) {
-            issuer.issue(userId = "user-123")
+            issuer.issue(userId = "user-123", sessionId = "sid-abc")
         }
     }
 }

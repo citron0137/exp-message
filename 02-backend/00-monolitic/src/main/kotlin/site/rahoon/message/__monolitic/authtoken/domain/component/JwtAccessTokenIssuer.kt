@@ -9,6 +9,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.util.UUID
 
 data class IssuedAccessToken(
     val token: String,
@@ -28,7 +29,7 @@ class JwtAccessTokenIssuer(
         Keys.hmacShaKeyFor(secretBytes)
     }
 
-    fun issue(userId: String): IssuedAccessToken {
+    fun issue(userId: String, sessionId: String): IssuedAccessToken {
         val now: Instant = Instant.now(clock)
         val expiresAtInstant = now.plusSeconds(jwtProperties.accessTokenTtlSeconds)
         val expiresAt: LocalDateTime = LocalDateTime.ofInstant(expiresAtInstant, ZoneOffset.UTC)
@@ -36,10 +37,12 @@ class JwtAccessTokenIssuer(
         val token = Jwts.builder()
             .issuer(jwtProperties.issuer)
             .subject(userId)
+            .id(UUID.randomUUID().toString())
             .issuedAt(java.util.Date.from(now))
             .expiration(java.util.Date.from(expiresAtInstant))
             .claim("typ", "access")
             .claim("uid", userId)
+            .claim("sid", sessionId)
             .signWith(key, Jwts.SIG.HS256)
             .compact()
 

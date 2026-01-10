@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenIssuer
-import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenSubjectExtractor
+import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenClaimsExtractor
 import site.rahoon.message.__monolitic.common.global.config.JwtProperties
 import java.nio.charset.StandardCharsets
 import java.time.Clock
@@ -21,29 +21,37 @@ class AuthTokenDomainServiceTest {
     private class InMemoryAuthTokenRepository(
         private val clock: Clock
     ) : AuthTokenRepository {
-        val storage: MutableMap<String, Pair<String, LocalDateTime>> = linkedMapOf() // refreshToken -> (userId, expiresAt)
+        val storage: MutableMap<String, Triple<String, String, LocalDateTime>> =
+            linkedMapOf() // refreshToken -> (userId, sessionId, expiresAt)
 
-        override fun saveRefreshToken(userId: String, refreshToken: String, expiresAt: LocalDateTime) {
-            storage[refreshToken] = userId to expiresAt
+        override fun saveRefreshToken(userId: String, sessionId: String, refreshToken: String, expiresAt: LocalDateTime) {
+            storage[refreshToken] = Triple(userId, sessionId, expiresAt)
         }
 
-        override fun findUserIdByRefreshToken(refreshToken: String): String? {
+        override fun findSessionByRefreshToken(refreshToken: String): RefreshTokenSession? {
             val found = storage[refreshToken] ?: return null
-            val (userId, expiresAt) = found
+            val (userId, sessionId, expiresAt) = found
             if (LocalDateTime.now(clock).isAfter(expiresAt)) {
                 storage.remove(refreshToken)
                 return null
             }
-            return userId
+            return RefreshTokenSession(userId = userId, sessionId = sessionId)
         }
 
         override fun deleteRefreshToken(refreshToken: String) {
             storage.remove(refreshToken)
         }
 
+        override fun deleteAllRefreshTokensBySessionId(sessionId: String) {
+            val keys = storage
+                .filterValues { (_, storedSessionId, _) -> storedSessionId == sessionId }
+                .keys
+            keys.forEach { storage.remove(it) }
+        }
+
         override fun deleteAllRefreshTokensByUserId(userId: String) {
             val keys = storage
-                .filterValues { (storedUserId, _) -> storedUserId == userId }
+                .filterValues { (storedUserId, _, _) -> storedUserId == userId }
                 .keys
             keys.forEach { storage.remove(it) }
         }
@@ -62,10 +70,10 @@ class AuthTokenDomainServiceTest {
         val authTokenProps = AuthTokenProperties(refreshTokenTtlSeconds = 1209600)
         val repo = InMemoryAuthTokenRepository(clock)
         val accessTokenIssuer = JwtAccessTokenIssuer(jwtProps, clock)
-        val subjectExtractor = JwtAccessTokenSubjectExtractor(jwtProps)
+        val claimsExtractor = JwtAccessTokenClaimsExtractor(jwtProps)
         val service = AuthTokenDomainService(
             accessTokenIssuer = accessTokenIssuer,
-            accessTokenSubjectExtractor = subjectExtractor,
+            accessTokenClaimsExtractor = claimsExtractor,
             authTokenRepository = repo,
             authTokenProperties = authTokenProps,
             clock = clock
@@ -99,6 +107,15 @@ class AuthTokenDomainServiceTest {
         assertEquals("user-123", claims.subject)
         assertEquals("access", claims["typ"])
         assertEquals("user-123", claims["uid"])
+        assertNotNull(claims["sid"] as? String, "sid는 반드시 포함되어야 합니다")
+
+        val stored = repo.storage[token.refreshToken!!]
+            ?: error("발급된 refreshToken이 저장소에 존재해야 합니다")
+        val (_, storedSessionId, _) = stored
+
+        val extracted = claimsExtractor.extract(token.accessToken)
+        assertEquals("user-123", extracted.userId)
+        assertEquals(storedSessionId, extracted.sessionId, "JWT sid와 저장된 세션 sid는 일치해야 합니다")
     }
 
     @Test
@@ -114,10 +131,10 @@ class AuthTokenDomainServiceTest {
         val authTokenProps = AuthTokenProperties(refreshTokenTtlSeconds = 1209600)
         val repo = InMemoryAuthTokenRepository(clock)
         val accessTokenIssuer = JwtAccessTokenIssuer(jwtProps, clock)
-        val subjectExtractor = JwtAccessTokenSubjectExtractor(jwtProps)
+        val claimsExtractor = JwtAccessTokenClaimsExtractor(jwtProps)
         val service = AuthTokenDomainService(
             accessTokenIssuer = accessTokenIssuer,
-            accessTokenSubjectExtractor = subjectExtractor,
+            accessTokenClaimsExtractor = claimsExtractor,
             authTokenRepository = repo,
             authTokenProperties = authTokenProps,
             clock = clock

@@ -6,5 +6,8 @@ import org.springframework.transaction.annotation.Transactional
 interface RefreshTokenJpaRepository : JpaRepository<RefreshTokenEntity, String> {
     @Transactional
     fun deleteAllByUserId(userId: String)
+
+    @Transactional
+    fun deleteAllBySessionId(sessionId: String)
 }
 
