@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenIssuer
+import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenSubjectExtractor
 import site.rahoon.message.__monolitic.common.global.config.JwtProperties
 import java.nio.charset.StandardCharsets
 import java.time.Clock
@@ -61,11 +62,12 @@ class AuthTokenDomainServiceTest {
         val authTokenProps = AuthTokenProperties(refreshTokenTtlSeconds = 1209600)
         val repo = InMemoryAuthTokenRepository(clock)
         val accessTokenIssuer = JwtAccessTokenIssuer(jwtProps, clock)
+        val subjectExtractor = JwtAccessTokenSubjectExtractor(jwtProps)
         val service = AuthTokenDomainService(
             accessTokenIssuer = accessTokenIssuer,
+            accessTokenSubjectExtractor = subjectExtractor,
             authTokenRepository = repo,
             authTokenProperties = authTokenProps,
-            jwtProperties = jwtProps,
             clock = clock
         )
 
@@ -112,11 +114,12 @@ class AuthTokenDomainServiceTest {
         val authTokenProps = AuthTokenProperties(refreshTokenTtlSeconds = 1209600)
         val repo = InMemoryAuthTokenRepository(clock)
         val accessTokenIssuer = JwtAccessTokenIssuer(jwtProps, clock)
+        val subjectExtractor = JwtAccessTokenSubjectExtractor(jwtProps)
         val service = AuthTokenDomainService(
             accessTokenIssuer = accessTokenIssuer,
+            accessTokenSubjectExtractor = subjectExtractor,
             authTokenRepository = repo,
             authTokenProperties = authTokenProps,
-            jwtProperties = jwtProps,
             clock = clock
         )
 

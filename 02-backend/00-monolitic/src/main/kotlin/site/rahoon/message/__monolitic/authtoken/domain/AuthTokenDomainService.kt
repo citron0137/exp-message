@@ -1,14 +1,10 @@
 package site.rahoon.message.__monolitic.authtoken.domain
 
-import io.jsonwebtoken.ExpiredJwtException
-import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.security.Keys
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenIssuer
+import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenSubjectExtractor
 import site.rahoon.message.__monolitic.common.domain.DomainException
-import site.rahoon.message.__monolitic.common.global.config.JwtProperties
-import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.util.UUID
 import java.time.LocalDateTime
@@ -21,9 +17,9 @@ import java.time.LocalDateTime
 @Transactional(readOnly = true)
 class AuthTokenDomainService(
     private val accessTokenIssuer: JwtAccessTokenIssuer,
+    private val accessTokenSubjectExtractor: JwtAccessTokenSubjectExtractor,
     private val authTokenRepository: AuthTokenRepository,
     private val authTokenProperties: AuthTokenProperties,
-    private val jwtProperties: JwtProperties,
     private val clock: Clock = Clock.systemUTC()
 ) {
 
@@ -65,31 +61,8 @@ class AuthTokenDomainService(
 
     @Transactional
     fun logout(command: AuthTokenCommand.Logout) {
-        val userId = extractUserIdFromAccessToken(command.accessToken)
+        val userId = accessTokenSubjectExtractor.extractSubject(command.accessToken)
         authTokenRepository.deleteAllRefreshTokensByUserId(userId)
-    }
-
-    private fun extractUserIdFromAccessToken(accessTokenOrAuthorizationHeader: String): String {
-        val rawToken = accessTokenOrAuthorizationHeader
-            .trim()
-            .removePrefix("Bearer ")
-            .trim()
-
-        val key = Keys.hmacShaKeyFor(jwtProperties.secret.toByteArray(StandardCharsets.UTF_8))
-
-        try {
-            val claims = Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(rawToken)
-                .payload
-            return claims.subject
-                ?: throw DomainException(error = AuthTokenError.INVALID_TOKEN)
-        } catch (e: ExpiredJwtException) {
-            throw DomainException(error = AuthTokenError.TOKEN_EXPIRED)
-        } catch (e: Exception) {
-            throw DomainException(error = AuthTokenError.INVALID_TOKEN)
-        }
     }
 }
 
