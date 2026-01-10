@@ -2,9 +2,8 @@ package site.rahoon.message.__monolitic.authtoken.domain
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import site.rahoon.message.__monolitic.common.domain.DomainException
-import site.rahoon.message.__monolitic.user.domain.UserRepository
-import site.rahoon.message.__monolitic.user.domain.component.UserPasswordHasher
+import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * 인증 토큰 도메인 서비스
@@ -15,8 +14,16 @@ import site.rahoon.message.__monolitic.user.domain.component.UserPasswordHasher
 class AuthTokenDomainService {
 
     @Transactional
-    fun login(command: AuthTokenCommand.Login): AuthToken {
-        TODO("로그인 로직 구현")
+    fun issue(command: AuthTokenCommand.Issue): AuthToken {
+        // NOTE: 사용자 검증/패스워드 검증은 application 레이어에서 수행합니다.
+        // 여기서는 "검증된 주체"에 대한 토큰 발급만 책임집니다.
+        val accessToken = "access.${command.userId}.${UUID.randomUUID()}"
+        val refreshToken = "refresh.${command.userId}.${UUID.randomUUID()}"
+        return AuthToken.create(
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+            expiresAt = LocalDateTime.now().plusHours(1)
+        )
     }
 
     @Transactional

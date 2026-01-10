@@ -2,12 +2,12 @@ package site.rahoon.message.__monolitic.authtoken.domain
 
 sealed class AuthTokenCommand {
     /**
-     * 로그인 명령
-     * 이메일과 비밀번호로 로그인하여 토큰을 발급받습니다.
+     * 토큰 발급 명령
+     * (인증/사용자 검증은 application 레이어에서 수행하고)
+     * 검증된 사용자 식별자만을 받아 토큰을 발급합니다.
      */
-    data class Login(
-        val email: String,
-        val password: String // raw password
+    data class Issue(
+        val userId: String
     ) : AuthTokenCommand()
 
     /**
