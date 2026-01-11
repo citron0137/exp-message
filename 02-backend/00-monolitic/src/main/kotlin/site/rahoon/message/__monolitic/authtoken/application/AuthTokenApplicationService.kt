@@ -41,8 +41,7 @@ class AuthTokenApplicationService(
 
     // Logout
     fun logout( sessionId: String ){
-        // authTokenDomainService.expireBySessionId(sessionId)
-        TODO()
+        authTokenDomainService.expireBySessionId(sessionId)
     }
 }
 

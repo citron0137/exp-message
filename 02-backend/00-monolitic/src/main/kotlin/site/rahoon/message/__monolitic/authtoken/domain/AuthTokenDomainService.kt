@@ -22,4 +22,8 @@ class AuthTokenDomainService (
     fun verifyAccessToken(accessToken: String): AccessToken {
         return accessTokenVerifier.verify(accessToken)
     }
+
+    fun expireBySessionId(sessionId: String) {
+        authTokenRepository.deleteRefreshTokenBySessionId(sessionId)
+    }
 }
