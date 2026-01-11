@@ -24,10 +24,10 @@ sealed class AuthTokenCommand {
 
     /**
      * 로그아웃 명령
-     * 토큰을 무효화합니다.
+     * 세션의 모든 리프레시 토큰을 무효화합니다.
      */
     data class Logout(
-        val accessToken: String
+        val sessionId: String
     ) : AuthTokenCommand()
 }
 

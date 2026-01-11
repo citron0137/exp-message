@@ -6,6 +6,7 @@ import site.rahoon.message.__monolitic.authtoken.domain.AuthToken
 import site.rahoon.message.__monolitic.authtoken.domain.AuthTokenCommand
 import site.rahoon.message.__monolitic.authtoken.domain.AuthTokenDomainService
 import site.rahoon.message.__monolitic.authtoken.domain.AuthTokenError
+import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenClaimsExtractor
 import site.rahoon.message.__monolitic.common.domain.DomainException
 import site.rahoon.message.__monolitic.user.domain.UserRepository
 import site.rahoon.message.__monolitic.user.domain.component.UserPasswordHasher
@@ -21,7 +22,8 @@ import site.rahoon.message.__monolitic.user.domain.component.UserPasswordHasher
 class AuthTokenApplicationService(
     private val userRepository: UserRepository,
     private val passwordHasher: UserPasswordHasher,
-    private val authTokenDomainService: AuthTokenDomainService
+    private val authTokenDomainService: AuthTokenDomainService,
+    private val accessTokenClaimsExtractor: JwtAccessTokenClaimsExtractor
 ) {
 
     @Transactional
@@ -51,8 +53,23 @@ class AuthTokenApplicationService(
     }
 
     @Transactional
-    fun logout(criteria: AuthTokenCriteria.Logout) {
-        authTokenDomainService.logout(AuthTokenCommand.Logout(accessToken = criteria.accessToken))
+    fun logout(criteria: AuthTokenCriteria.Logout, authorizationHeader: String) {
+        // Authorization 헤더의 accessToken에서 sessionId 추출 및 검증
+        val claims = accessTokenClaimsExtractor.extract(authorizationHeader)
+        
+        // 요청의 sessionId와 토큰의 sessionId가 일치하는지 확인
+        if (claims.sessionId != criteria.sessionId) {
+            throw DomainException(
+                error = AuthTokenError.INVALID_TOKEN,
+                details = mapOf(
+                    "reason" to "Session ID mismatch",
+                    "requestedSessionId" to criteria.sessionId,
+                    "tokenSessionId" to claims.sessionId
+                )
+            )
+        }
+        
+        authTokenDomainService.logout(AuthTokenCommand.Logout(sessionId = criteria.sessionId))
     }
 }
 

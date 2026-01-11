@@ -63,8 +63,7 @@ class AuthTokenDomainService(
 
     @Transactional
     fun logout(command: AuthTokenCommand.Logout) {
-        val claims = accessTokenClaimsExtractor.extract(command.accessToken)
-        authTokenRepository.deleteAllRefreshTokensBySessionId(claims.sessionId)
+        authTokenRepository.deleteAllRefreshTokensBySessionId(command.sessionId)
     }
 }
 

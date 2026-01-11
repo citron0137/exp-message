@@ -19,9 +19,10 @@ sealed class AuthTokenCriteria {
 
     data class Logout(
         /**
-         * Authorization 헤더 값 또는 순수 토큰 값 둘 다 허용 (예: "Bearer xxx" / "xxx")
+         * 세션 ID
+         * Authorization 헤더의 accessToken에서 추출한 sessionId와 일치해야 합니다.
          */
-        val accessToken: String
+        val sessionId: String
     ) : AuthTokenCriteria()
 }
 
