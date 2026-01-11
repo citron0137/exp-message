@@ -3,6 +3,7 @@ package site.rahoon.message.__monolitic.authtoken.application
 import org.springframework.stereotype.Service
 import site.rahoon.message.__monolitic.authtoken.domain.AccessToken
 import site.rahoon.message.__monolitic.authtoken.domain.AuthToken
+import site.rahoon.message.__monolitic.authtoken.domain.AuthTokenDomainService
 import site.rahoon.message.__monolitic.user.domain.UserDomainService
 
 /**
@@ -12,6 +13,7 @@ import site.rahoon.message.__monolitic.user.domain.UserDomainService
 @Service
 class AuthTokenApplicationService(
     private val userDomainService: UserDomainService,
+    private val authTokenDomainService: AuthTokenDomainService,
 ){
 
     // Check
@@ -24,8 +26,7 @@ class AuthTokenApplicationService(
     fun login( email: String, password: String ): AuthToken {
         // 이메일/비밀번호 검증 -> 토큰 발급 -> 반환
         val user = userDomainService.getUser( email, password )
-        // return authTokenDomainService.issueToken(user.id)
-        TODO()
+        return authTokenDomainService.issueToken(user.id)
     }
 
     // Refresh
