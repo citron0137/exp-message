@@ -2,39 +2,46 @@ package site.rahoon.message.__monolitic.authtoken.domain
 
 import java.time.LocalDateTime
 
-/**
- * 인증 토큰 도메인 엔티티
- * JWT 토큰의 정보를 담는 객체
- */
-data class AuthToken(
-    val accessToken: String,
-    val refreshToken: String?,
+/** JWT 기반 stateless access token */
+data class AccessToken(
+    val token: String,
     val expiresAt: LocalDateTime,
+    val userId: String,
+    val sessionId: String
+) {
+    fun isExpired(now: LocalDateTime = LocalDateTime.now()): Boolean {
+        return now.isAfter(expiresAt)
+    }
+}
+
+/** DB 저장 stateful refresh token */
+data class RefreshToken(
+    val token: String,
+    val expiresAt: LocalDateTime,
+    val userId: String,
+    val sessionId: String,
     val createdAt: LocalDateTime
 ) {
+    fun isExpired(now: LocalDateTime = LocalDateTime.now()): Boolean {
+        return now.isAfter(expiresAt)
+    }
+}
+
+/** AccessToken과 RefreshToken을 조합한 인증 결과 */
+data class AuthToken(
+    val accessToken: AccessToken,
+    val refreshToken: RefreshToken?
+) {
     companion object {
-        /**
-         * 새로운 인증 토큰을 생성합니다.
-         */
         fun create(
-            accessToken: String,
-            refreshToken: String? = null,
-            expiresAt: LocalDateTime
+            accessToken: AccessToken,
+            refreshToken: RefreshToken? = null
         ): AuthToken {
             return AuthToken(
                 accessToken = accessToken,
-                refreshToken = refreshToken,
-                expiresAt = expiresAt,
-                createdAt = LocalDateTime.now()
+                refreshToken = refreshToken
             )
         }
-    }
-
-    /**
-     * 토큰이 만료되었는지 확인합니다.
-     */
-    fun isExpired(): Boolean {
-        return LocalDateTime.now().isAfter(expiresAt)
     }
 }
 

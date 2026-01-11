@@ -1,33 +1,21 @@
 package site.rahoon.message.__monolitic.authtoken.domain
 
 sealed class AuthTokenCommand {
-    /**
-     * 토큰 발급 명령
-     * (인증/사용자 검증은 application 레이어에서 수행하고)
-     * 검증된 사용자 식별자만을 받아 토큰을 발급합니다.
-     */
     data class Issue(
         val userId: String,
-        /**
-         * 세션 ID (없으면 신규 세션으로 발급)
-         */
         val sessionId: String? = null
     ) : AuthTokenCommand()
 
-    /**
-     * 토큰 갱신 명령
-     * 리프레시 토큰으로 새로운 액세스 토큰을 발급받습니다.
-     */
     data class Refresh(
         val refreshToken: String
     ) : AuthTokenCommand()
 
-    /**
-     * 로그아웃 명령
-     * 세션의 모든 리프레시 토큰을 무효화합니다.
-     */
     data class Logout(
         val sessionId: String
+    ) : AuthTokenCommand()
+
+    data class VerifyAccessToken(
+        val accessToken: String
     ) : AuthTokenCommand()
 }
 
