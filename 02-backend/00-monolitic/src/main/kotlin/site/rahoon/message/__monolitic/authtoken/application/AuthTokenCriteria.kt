@@ -12,5 +12,16 @@ sealed class AuthTokenCriteria {
         val email: String,
         val password: String
     ) : AuthTokenCriteria()
+
+    data class Refresh(
+        val refreshToken: String
+    ) : AuthTokenCriteria()
+
+    data class Logout(
+        /**
+         * Authorization 헤더 값 또는 순수 토큰 값 둘 다 허용 (예: "Bearer xxx" / "xxx")
+         */
+        val accessToken: String
+    ) : AuthTokenCriteria()
 }
 

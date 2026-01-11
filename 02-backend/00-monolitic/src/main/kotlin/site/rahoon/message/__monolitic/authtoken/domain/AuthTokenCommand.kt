@@ -7,7 +7,11 @@ sealed class AuthTokenCommand {
      * 검증된 사용자 식별자만을 받아 토큰을 발급합니다.
      */
     data class Issue(
-        val userId: String
+        val userId: String,
+        /**
+         * 세션 ID (없으면 신규 세션으로 발급)
+         */
+        val sessionId: String? = null
     ) : AuthTokenCommand()
 
     /**

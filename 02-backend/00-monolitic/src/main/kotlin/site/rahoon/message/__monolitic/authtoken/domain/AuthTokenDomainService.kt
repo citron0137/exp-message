@@ -2,8 +2,12 @@ package site.rahoon.message.__monolitic.authtoken.domain
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenIssuer
+import site.rahoon.message.__monolitic.authtoken.domain.component.JwtAccessTokenClaimsExtractor
+import site.rahoon.message.__monolitic.common.domain.DomainException
+import java.time.Clock
 import java.util.UUID
+import java.time.LocalDateTime
 
 /**
  * 인증 토큰 도메인 서비스
@@ -11,29 +15,56 @@ import java.util.UUID
  */
 @Service
 @Transactional(readOnly = true)
-class AuthTokenDomainService {
+class AuthTokenDomainService(
+    private val accessTokenIssuer: JwtAccessTokenIssuer,
+    private val accessTokenClaimsExtractor: JwtAccessTokenClaimsExtractor,
+    private val authTokenRepository: AuthTokenRepository,
+    private val authTokenProperties: AuthTokenProperties,
+    private val clock: Clock = Clock.systemUTC()
+) {
 
     @Transactional
     fun issue(command: AuthTokenCommand.Issue): AuthToken {
         // NOTE: 사용자 검증/패스워드 검증은 application 레이어에서 수행합니다.
         // 여기서는 "검증된 주체"에 대한 토큰 발급만 책임집니다.
-        val accessToken = "access.${command.userId}.${UUID.randomUUID()}"
+        val sessionId = command.sessionId ?: UUID.randomUUID().toString()
+        val issuedAccessToken = accessTokenIssuer.issue(command.userId, sessionId)
+
         val refreshToken = "refresh.${command.userId}.${UUID.randomUUID()}"
-        return AuthToken.create(
-            accessToken = accessToken,
+        val token = AuthToken.create(
+            accessToken = issuedAccessToken.token,
             refreshToken = refreshToken,
-            expiresAt = LocalDateTime.now().plusHours(1)
+            expiresAt = issuedAccessToken.expiresAt
         )
+
+        authTokenRepository.saveRefreshToken(
+            userId = command.userId,
+            sessionId = sessionId,
+            refreshToken = refreshToken,
+            expiresAt = LocalDateTime.now(clock).plusSeconds(authTokenProperties.refreshTokenTtlSeconds)
+        )
+
+        return token
     }
 
     @Transactional
     fun refresh(command: AuthTokenCommand.Refresh): AuthToken {
-        TODO("토큰 갱신 로직 구현")
+        val session = authTokenRepository.findSessionByRefreshToken(command.refreshToken)
+            ?: throw DomainException(
+                error = AuthTokenError.TOKEN_NOT_FOUND,
+                details = mapOf("refreshToken" to command.refreshToken)
+            )
+
+        // refresh token rotation: 기존 토큰 제거 후 새 토큰 발급
+        authTokenRepository.deleteRefreshToken(command.refreshToken)
+
+        return issue(AuthTokenCommand.Issue(userId = session.userId, sessionId = session.sessionId))
     }
 
     @Transactional
     fun logout(command: AuthTokenCommand.Logout) {
-        TODO("로그아웃 로직 구현")
+        val claims = accessTokenClaimsExtractor.extract(command.accessToken)
+        authTokenRepository.deleteAllRefreshTokensBySessionId(claims.sessionId)
     }
 }
 

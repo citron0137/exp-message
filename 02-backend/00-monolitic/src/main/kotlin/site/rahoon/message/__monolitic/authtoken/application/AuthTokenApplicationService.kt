@@ -1,6 +1,7 @@
 package site.rahoon.message.__monolitic.authtoken.application
 
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import site.rahoon.message.__monolitic.authtoken.domain.AuthToken
 import site.rahoon.message.__monolitic.authtoken.domain.AuthTokenCommand
 import site.rahoon.message.__monolitic.authtoken.domain.AuthTokenDomainService
@@ -22,6 +23,8 @@ class AuthTokenApplicationService(
     private val passwordHasher: UserPasswordHasher,
     private val authTokenDomainService: AuthTokenDomainService
 ) {
+
+    @Transactional
     fun login(criteria: AuthTokenCriteria.Login): AuthToken {
         val user = userRepository.findByEmail(criteria.email)
             ?: throw DomainException(
@@ -40,6 +43,16 @@ class AuthTokenApplicationService(
         return authTokenDomainService.issue(
             AuthTokenCommand.Issue(userId = user.id)
         )
+    }
+
+    @Transactional
+    fun refresh(criteria: AuthTokenCriteria.Refresh): AuthToken {
+        return authTokenDomainService.refresh(AuthTokenCommand.Refresh(refreshToken = criteria.refreshToken))
+    }
+
+    @Transactional
+    fun logout(criteria: AuthTokenCriteria.Logout) {
+        authTokenDomainService.logout(AuthTokenCommand.Logout(accessToken = criteria.accessToken))
     }
 }
 
