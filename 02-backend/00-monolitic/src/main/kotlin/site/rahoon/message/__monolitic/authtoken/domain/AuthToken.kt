@@ -13,9 +13,9 @@ data class AccessToken(
 /** DB 저장 stateful refresh token */
 data class RefreshToken(
     val token: String,
-    val expiresAt: LocalDateTime,
+    val expiresAt: LocalDateTime, // TTL
     val userId: String,
-    val sessionId: String,
+    val sessionId: String, // Unique
     val createdAt: LocalDateTime
 )
 

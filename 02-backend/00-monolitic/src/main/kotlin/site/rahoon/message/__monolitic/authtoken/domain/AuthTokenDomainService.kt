@@ -1,6 +1,7 @@
 package site.rahoon.message.__monolitic.authtoken.domain
 
 import org.springframework.stereotype.Service
+import site.rahoon.message.__monolitic.common.domain.DomainException
 import java.util.UUID
 
 @Service
@@ -11,8 +12,8 @@ class AuthTokenDomainService (
     private val authTokenRepository: AuthTokenRepository,
 ){
 
-    fun issueToken(userId: String): AuthToken{
-        val sessionId = UUID.randomUUID().toString()
+    fun issueToken(userId: String, prevSessionId: String? = null): AuthToken{
+        val sessionId = prevSessionId ?: UUID.randomUUID().toString()
         val accessToken = accessTokenIssuer.issue(userId, sessionId)
         val refreshToken = refreshTokenIssuer.issue(userId, sessionId)
         authTokenRepository.saveRefreshToken(refreshToken)
@@ -25,5 +26,17 @@ class AuthTokenDomainService (
 
     fun expireBySessionId(sessionId: String) {
         authTokenRepository.deleteRefreshTokenBySessionId(sessionId)
+    }
+
+    fun refresh(refreshTokenString: String): AuthToken {
+        val refreshToken = authTokenRepository.findRefreshToken(refreshTokenString)
+            ?: throw DomainException(
+                error=AuthTokenError.INVALID_TOKEN,
+                details = mapOf("refreshToken" to refreshTokenString)
+            )
+        val newToken = issueToken(refreshToken.userId, refreshToken.sessionId)
+        authTokenRepository.deleteRefreshToken(refreshToken.token)
+        authTokenRepository.saveRefreshToken(refreshToken)
+        return newToken
     }
 }

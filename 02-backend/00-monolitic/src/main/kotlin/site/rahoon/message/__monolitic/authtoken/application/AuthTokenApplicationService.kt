@@ -30,13 +30,7 @@ class AuthTokenApplicationService(
 
     // Refresh
     fun refresh( refreshToken: String ): AuthToken {
-        // val refreshTokenClaim = authTokenDomainService.verifyRefreshToken(refreshToken)
-        // val newToken = authTokenDomainService.issueToken(
-        //      refreshTokenClaim.userId,
-        //      refreshTokenClaim.sessionId
-        // )
-        // authTokenDomainService.expireRefreshToken(refreshToken)
-        TODO()
+        return authTokenDomainService.refresh(refreshToken)
     }
 
     // Logout
