@@ -18,8 +18,7 @@ class AuthTokenApplicationService(
 
     // Check
     fun checkAccessToken( accessToken: String ): AccessToken {
-        // return authTokenDomainService.verifyAccessToken(accessToken)
-        TODO()
+        return authTokenDomainService.verifyAccessToken(accessToken)
     }
 
     // Login

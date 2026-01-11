@@ -6,6 +6,7 @@ import java.util.UUID
 @Service
 class AuthTokenDomainService (
     private val accessTokenIssuer: AccessTokenIssuer,
+    private val accessTokenVerifier: AccessTokenVerifier,
     private val refreshTokenIssuer: RefreshTokenIssuer,
     private val authTokenRepository: AuthTokenRepository,
 ){
@@ -16,5 +17,9 @@ class AuthTokenDomainService (
         val refreshToken = refreshTokenIssuer.issue(userId, sessionId)
         authTokenRepository.saveRefreshToken(refreshToken)
         return AuthToken(accessToken, refreshToken)
+    }
+
+    fun verifyAccessToken(accessToken: String): AccessToken {
+        return accessTokenVerifier.verify(accessToken)
     }
 }
