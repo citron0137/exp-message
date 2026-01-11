@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 /**
@@ -24,7 +25,8 @@ class RefreshTokenIssuer(
     fun issue(userId: String, sessionId: String): RefreshToken {
         val now = Instant.now()
         val expiresAt = now.plusSeconds(properties.refreshTokenTtlSeconds)
-        
+            .truncatedTo(ChronoUnit.SECONDS) // 밀리초 제거
+
         // 랜덤 토큰 생성 (UUID 기반)
         val token = UUID.randomUUID().toString()
 
@@ -33,7 +35,7 @@ class RefreshTokenIssuer(
             expiresAt = LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()),
             userId = userId,
             sessionId = sessionId,
-            createdAt = LocalDateTime.ofInstant(now, ZoneId.systemDefault())
+            createdAt = LocalDateTime.ofInstant(now, ZoneId.systemDefault()),
         )
     }
 }

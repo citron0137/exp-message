@@ -1,6 +1,7 @@
 package site.rahoon.message.__monolitic.authtoken.domain
 
 import io.jsonwebtoken.ExpiredJwtException
+import io.jsonwebtoken.IncorrectClaimException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.MalformedJwtException
 import io.jsonwebtoken.security.Keys
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component
 import site.rahoon.message.__monolitic.common.domain.DomainException
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 /**
  * Access Token 검증 컴포넌트
@@ -49,7 +51,8 @@ class AccessTokenVerifier(
 
             return AccessToken(
                 token = cleanToken,
-                expiresAt = LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()),
+                expiresAt = LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault())
+                    .truncatedTo(ChronoUnit.SECONDS), // 밀리초 제거
                 userId = userId,
                 sessionId = sessionId
             )
@@ -57,6 +60,11 @@ class AccessTokenVerifier(
             throw DomainException(AuthTokenError.TOKEN_EXPIRED)
         } catch (e: MalformedJwtException) {
             throw DomainException(AuthTokenError.INVALID_TOKEN)
+        } catch (e: IncorrectClaimException) {
+            throw DomainException(
+                error = AuthTokenError.INVALID_TOKEN,
+                details = mapOf("message" to (e.message ?: "Invalid claim"))
+            )
         } catch (e: SecurityException) {
             throw DomainException(AuthTokenError.INVALID_TOKEN)
         } catch (e: IllegalArgumentException) {

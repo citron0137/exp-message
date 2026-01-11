@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 /**
@@ -28,6 +29,7 @@ class AccessTokenIssuer(
     fun issue(userId: String, sessionId: String): AccessToken {
         val now = Instant.now()
         val expiresAt = now.plusSeconds(properties.accessTokenTtlSeconds)
+            .truncatedTo(ChronoUnit.SECONDS) // 밀리초 제거
         val jti = UUID.randomUUID().toString() // JWT ID (토큰 인스턴스 추적용)
 
         val token = Jwts.builder()
