@@ -86,5 +86,17 @@ class UserDomainService(
         userRepository.delete(command.id)
         return UserInfo.Detail.from(user)
     }
+
+    /**
+     * ID로 사용자 정보를 조회합니다.
+     */
+    fun getById(userId: String): UserInfo.Detail {
+        val user = userRepository.findById(userId)
+            ?: throw DomainException(
+                error = UserError.USER_NOT_FOUND,
+                details = mapOf("userId" to userId)
+            )
+        return UserInfo.Detail.from(user)
+    }
 }
 

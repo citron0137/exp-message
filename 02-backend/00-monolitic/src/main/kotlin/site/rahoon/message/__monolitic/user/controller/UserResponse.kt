@@ -30,5 +30,31 @@ object UserResponse {
             }
         }
     }
+
+    /**
+     * 현재 로그인한 사용자 정보 응답
+     */
+    data class Me(
+        val id: String,
+        val email: String,
+        val nickname: String,
+        val createdAt: LocalDateTime,
+        val updatedAt: LocalDateTime
+    ) {
+        companion object {
+            /**
+             * UserInfo.Detail로부터 UserResponse.Me를 생성합니다.
+             */
+            fun from(userInfo: UserInfo.Detail): Me {
+                return Me(
+                    id = userInfo.id,
+                    email = userInfo.email,
+                    nickname = userInfo.nickname,
+                    createdAt = userInfo.createdAt,
+                    updatedAt = userInfo.updatedAt
+                )
+            }
+        }
+    }
 }
 
