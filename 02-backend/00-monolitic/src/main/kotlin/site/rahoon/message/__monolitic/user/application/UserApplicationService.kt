@@ -21,4 +21,11 @@ class UserApplicationService(
         val command = criteria.toCommand()
         return userDomainService.create(command)
     }
+
+    /**
+     * 현재 로그인한 사용자 정보를 조회합니다.
+     */
+    fun getCurrentUser(userId: String): UserInfo.Detail {
+        return userDomainService.getById(userId)
+    }
 }

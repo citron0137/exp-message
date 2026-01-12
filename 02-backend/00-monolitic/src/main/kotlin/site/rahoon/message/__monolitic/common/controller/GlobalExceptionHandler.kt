@@ -37,6 +37,8 @@ class GlobalExceptionHandler {
             ErrorType.CONFLICT -> HttpStatus.CONFLICT
             ErrorType.SERVER_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR
             ErrorType.CLIENT_ERROR -> HttpStatus.BAD_REQUEST
+            ErrorType.UNAUTHORIZED -> HttpStatus.UNAUTHORIZED
+            ErrorType.FORBIDDEN -> HttpStatus.FORBIDDEN
         }
 
         val response = ApiResponse.error<Nothing>(

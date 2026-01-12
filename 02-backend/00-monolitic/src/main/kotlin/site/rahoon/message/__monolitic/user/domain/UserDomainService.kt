@@ -1,10 +1,8 @@
 package site.rahoon.message.__monolitic.user.domain
 
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Isolation
 import org.springframework.transaction.annotation.Transactional
 import site.rahoon.message.__monolitic.common.domain.DomainException
-import site.rahoon.message.__monolitic.common.global.utils.Tx
 import site.rahoon.message.__monolitic.user.domain.component.UserCreateValidator
 import site.rahoon.message.__monolitic.user.domain.component.UserPasswordHasher
 import site.rahoon.message.__monolitic.user.domain.component.UserUpdateValidator
@@ -17,6 +15,21 @@ class UserDomainService(
     private val userCreateValidator: UserCreateValidator,
     private val userUpdateValidator: UserUpdateValidator
 ) {
+    fun getUser(email: String, password: String): UserInfo.Detail {
+        val user = userRepository.findByEmail(email)
+            ?: throw DomainException(
+                error = UserError.USER_NOT_FOUND,
+                details = mapOf("email" to email)
+            )
+        val match = passwordHasher.verify(password, user.passwordHash)
+        if(!match){
+            throw DomainException(
+                error = UserError.USER_NOT_FOUND,
+                details = mapOf("email" to email)
+            )
+        }
+        return UserInfo.Detail.from(user)
+    }
 
     @Transactional
     fun create(command: UserCommand.Create): UserInfo.Detail {
@@ -71,6 +84,18 @@ class UserDomainService(
                 details = mapOf("userId" to command.id)
             )
         userRepository.delete(command.id)
+        return UserInfo.Detail.from(user)
+    }
+
+    /**
+     * ID로 사용자 정보를 조회합니다.
+     */
+    fun getById(userId: String): UserInfo.Detail {
+        val user = userRepository.findById(userId)
+            ?: throw DomainException(
+                error = UserError.USER_NOT_FOUND,
+                details = mapOf("userId" to userId)
+            )
         return UserInfo.Detail.from(user)
     }
 }

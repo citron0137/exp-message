@@ -65,10 +65,17 @@ cp values.yaml.example values.yaml
 `values.yaml`의 `app-monolitic.image.registry`에 설정된 레지스트리에 `00-monolitic:latest` 이미지를 빌드하고 푸시합니다.
 
 ```bash
-cd ../../02-backend/00-monolitic
-docker build -t 00-monolitic:latest .
-docker tag 00-monolitic:latest <레지스트리>/00-monolitic:latest
-docker push <레지스트리>/00-monolitic:latest
+DOCKER_REGISTRY="localhost:5000"
+docker build -t 00-monolitic:latest ../../02-backend/00-monolitic
+docker tag 00-monolitic:latest $DOCKER_REGISTRY/00-monolitic:latest
+docker push $DOCKER_REGISTRY/00-monolitic:latest
+```
+
+```powershell
+$env:DOCKER_REGISTRY="localhost:5000"
+docker build -t 00-monolitic:latest ..\..\02-backend\00-monolitic
+docker tag 00-monolitic:latest "$env:DOCKER_REGISTRY/00-monolitic:latest"
+docker push "$env:DOCKER_REGISTRY/00-monolitic:latest"
 ```
 
 ### Helm 차트 배포
@@ -107,6 +114,7 @@ docker tag 00-monolitic:latest $DOCKER_REGISTRY/00-monolitic:latest
 docker push $DOCKER_REGISTRY/00-monolitic:latest
 
 # 2. Helm upgrade로 새 이미지 배포
+helm dependency update --kubeconfig=kubeconfig.yaml
 helm upgrade message-stack . --kubeconfig=./kubeconfig.yaml --values ./values.yaml
 
 # 3. Pod 강제 재시작 (latest 태그 사용 시 필요)
@@ -127,6 +135,7 @@ docker tag 00-monolitic:latest "$env:DOCKER_REGISTRY/00-monolitic:latest"
 docker push "$env:DOCKER_REGISTRY/00-monolitic:latest"
 
 # 2. Helm upgrade로 새 이미지 배포
+helm dependency update --kubeconfig=kubeconfig.yaml
 helm upgrade message-stack . --kubeconfig=./kubeconfig.yaml --values ./values.yaml
 
 # 3. Pod 강제 재시작 (latest 태그 사용 시 필요)

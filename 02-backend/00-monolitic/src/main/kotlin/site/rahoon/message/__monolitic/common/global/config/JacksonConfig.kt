@@ -1,6 +1,9 @@
 package site.rahoon.message.__monolitic.common.global.config
 
 import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
@@ -25,7 +28,9 @@ class JacksonConfig {
     fun objectMapper(builder: Jackson2ObjectMapperBuilder): ObjectMapper {
         val module = SimpleModule()
         module.addSerializer(ZonedDateTime::class.java, ZonedDateTimeSerializer())
+        module.addDeserializer(ZonedDateTime::class.java, ZonedDateTimeDeserializer())
         module.addSerializer(LocalDateTime::class.java, LocalDateTimeSerializer())
+        module.addDeserializer(LocalDateTime::class.java, LocalDateTimeDeserializer())
         
         return builder
             .modules(module, KotlinModule.Builder().build())
@@ -63,6 +68,40 @@ private class LocalDateTimeSerializer : JsonSerializer<LocalDateTime>() {
             gen.writeNull()
         } else {
             gen.writeString(value.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+        }
+    }
+}
+
+/**
+ * ZonedDateTime을 ISO-8601 형식으로 역직렬화하는 Deserializer
+ */
+private class ZonedDateTimeDeserializer : JsonDeserializer<ZonedDateTime>() {
+    override fun deserialize(
+        p: JsonParser,
+        ctxt: DeserializationContext?
+    ): ZonedDateTime {
+        val text = p.text
+        return if (text.isBlank()) {
+            throw IllegalArgumentException("ZonedDateTime 문자열이 비어있습니다")
+        } else {
+            ZonedDateTime.parse(text, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+        }
+    }
+}
+
+/**
+ * LocalDateTime을 ISO-8601 형식으로 역직렬화하는 Deserializer
+ */
+private class LocalDateTimeDeserializer : JsonDeserializer<LocalDateTime>() {
+    override fun deserialize(
+        p: JsonParser,
+        ctxt: DeserializationContext?
+    ): LocalDateTime {
+        val text = p.text
+        return if (text.isBlank()) {
+            throw IllegalArgumentException("LocalDateTime 문자열이 비어있습니다")
+        } else {
+            LocalDateTime.parse(text, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         }
     }
 }

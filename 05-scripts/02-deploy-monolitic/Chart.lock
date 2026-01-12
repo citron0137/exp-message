@@ -2,8 +2,11 @@ dependencies:
 - name: mysql
   repository: file://../../01-infrastructure/01-mysql-mono
   version: 0.1.0
+- name: redis
+  repository: file://../../01-infrastructure/03-redis-mono
+  version: 0.1.0
 - name: app-monolitic
   repository: file://../../01-infrastructure/02-app-monolitic
   version: 0.1.0
-digest: sha256:6de173b93abd3ca847f9e4a2562d4699bfb4207cedaac4f14c55b43fa8d9cc8b
-generated: "2026-01-09T15:07:04.1146482+09:00"
+digest: sha256:1f9fd2b3feb8bfe32138121a41b32516656c9ff1097ca47668b6a75127e66fb0
+generated: "2026-01-12T14:55:36.0962195+09:00"
