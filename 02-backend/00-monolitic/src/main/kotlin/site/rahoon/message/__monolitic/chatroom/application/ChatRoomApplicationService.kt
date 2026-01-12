@@ -5,6 +5,8 @@ import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomCommand
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomDomainService
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomError
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomInfo
+import site.rahoon.message.__monolitic.chatroommember.application.ChatRoomMemberApplicationService
+import site.rahoon.message.__monolitic.chatroommember.application.ChatRoomMemberCriteria
 import site.rahoon.message.__monolitic.common.domain.DomainException
 
 /**
@@ -13,7 +15,8 @@ import site.rahoon.message.__monolitic.common.domain.DomainException
  */
 @Service
 class ChatRoomApplicationService(
-    private val chatRoomDomainService: ChatRoomDomainService
+    private val chatRoomDomainService: ChatRoomDomainService,
+    private val chatRoomMemberApplicationService: ChatRoomMemberApplicationService
 ) {
 
     /**
@@ -21,8 +24,16 @@ class ChatRoomApplicationService(
      */
     fun create(criteria: ChatRoomCriteria.Create): ChatRoomInfo.Detail {
         val command = criteria.toCommand()
-        // TODO ChatRoomUser에 본인 추가 필요.
-        return chatRoomDomainService.create(command)
+        val chatRoomInfo = chatRoomDomainService.create(command)
+        
+        // 생성자를 자동으로 멤버로 추가
+        val joinCriteria = ChatRoomMemberCriteria.Join(
+            chatRoomId = chatRoomInfo.id,
+            userId = criteria.createdByUserId
+        )
+        chatRoomMemberApplicationService.join(joinCriteria)
+        
+        return chatRoomInfo
     }
 
     /**
