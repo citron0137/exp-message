@@ -1,4 +1,4 @@
-package site.rahoon.message.__monolitic.authtoken.infrastructure
+package site.rahoon.message.__monolitic.authtoken.adapter
 
 import org.springframework.stereotype.Component
 import site.rahoon.message.__monolitic.authtoken.domain.AccessTokenVerifier
