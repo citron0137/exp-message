@@ -61,6 +61,12 @@ spec:
           value: {{ .Values.database.formatSql | quote }}
         - name: DB_USE_SQL_COMMENTS
           value: {{ .Values.database.useSqlComments | quote }}
+        - name: REDIS_HOST
+          value: {{ if .Values.redis.host }}{{ .Values.redis.host | quote }}{{ else }}{{ printf "%s-%s" .Release.Name "redis" | quote }}{{ end }}
+        - name: REDIS_PORT
+          value: {{ .Values.redis.port | quote }}
+        - name: REDIS_PASSWORD
+          value: {{ .Values.redis.password | quote }}
         {{- if .Values.javaOpts }}
         - name: JAVA_OPTS
           value: {{ .Values.javaOpts | quote }}

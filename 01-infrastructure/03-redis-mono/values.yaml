@@ -1,0 +1,75 @@
+# Redis Image Configuration
+image:
+  repository: redis
+  tag: "7.2"
+  pullPolicy: IfNotPresent
+
+# Redis Configuration
+redis:
+  port: 6379
+  password: redispassword
+  maxmemory: 256mb
+  maxmemoryPolicy: allkeys-lru
+
+# Persistence Configuration
+persistence:
+  enabled: true
+  type: "storageClass"
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 5Gi
+
+# Redis Configuration Options
+config:
+  # Append Only File (AOF) persistence
+  appendonly: "yes"
+  appendfsync: "everysec"
+  
+  # RDB persistence
+  save: "900 1 300 10 60 10000"
+  
+  # Memory management
+  maxmemoryPolicy: "allkeys-lru"
+  
+  # Network
+  timeout: 300
+  tcpKeepalive: 60
+  
+  # Logging
+  loglevel: "notice"
+
+# Resource Configuration
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+# Service Configuration
+service:
+  type: ClusterIP  # Options: ClusterIP, NodePort, LoadBalancer
+  port: 6379
+  # NodePort configuration (when type is NodePort)
+  nodePort: null  # If null, Kubernetes will assign a random port (30000-32767)
+  # Example: nodePort: 30637
+
+# Health Check Configuration
+healthCheck:
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Deployment Configuration
+replicas: 1
+
+# Namespace
+namespace: default

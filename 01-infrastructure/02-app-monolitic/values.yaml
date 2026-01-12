@@ -37,6 +37,12 @@ database:
   formatSql: true
   useSqlComments: true
 
+# Redis Configuration
+redis:
+  host: ""  # Empty to use auto-generated name: Release.Name-redis
+  port: 6379
+  password: ""  # Will be overridden by parent chart values
+
 # Resource Configuration
 resources:
   requests:

@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "redis.fullname" . }}-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "redis.labels" . | nindent 4 }}
+data:
+  redis.conf: |
+    # Network
+    port {{ .Values.redis.port }}
+    bind 0.0.0.0
+    timeout {{ .Values.config.timeout }}
+    tcp-keepalive {{ .Values.config.tcpKeepalive }}
+    
+    # Memory Management
+    maxmemory {{ .Values.redis.maxmemory }}
+    maxmemory-policy {{ .Values.config.maxmemoryPolicy }}
+    
+    # Persistence - AOF
+    {{- if eq .Values.config.appendonly "yes" }}
+    appendonly {{ .Values.config.appendonly }}
+    appendfsync {{ .Values.config.appendfsync }}
+    {{- end }}
+    
+    # Persistence - RDB
+    {{- if .Values.config.save }}
+    save {{ .Values.config.save }}
+    {{- end }}
+    
+    # Logging
+    loglevel {{ .Values.config.loglevel }}
+    
+    # Security
+    # Password is set via command line argument
+    
+    # Performance
+    tcp-backlog 511
+    databases 16
