@@ -24,14 +24,7 @@ class OpenApiConfig {
     @Value("\${SWAGGER_UI_HOST:}")
     private var swaggerHost: String = ""
 
-    companion object {
-        init {
-            // AuthInfo 타입의 파라미터를 모든 문서에서 무시하도록 설정
-            SpringDocUtils
-                .getConfig()
-                .addRequestWrapperToIgnore(AuthInfo::class.java)
-        }
-    }
+    // 전역 무시 설정 제거 - @AuthInfoAffect가 있는 경우에만 OperationCustomizer에서 처리
 
     @Bean
     fun openAPI(): OpenAPI {
@@ -73,23 +66,78 @@ class OpenApiConfig {
     }
 
     /**
-     * @AuthInfoAffect 어노테이션이 있는 메소드에 Security를 자동으로 추가하는 Customizer
+     * @AuthInfoAffect 어노테이션이 있는 메소드에 Security를 자동으로 추가하고,
+     * AuthInfo 파라미터를 문서에서 제거하는 Customizer
      */
     @Bean
     fun authInfoAffectOperationCustomizer(): OperationCustomizer {
         return OperationCustomizer { operation, handlerMethod ->
-            val method = (handlerMethod as? HandlerMethod)?.method
-            if (method != null) {
+            val handlerMethodObj = handlerMethod as? HandlerMethod
+            if (handlerMethodObj != null) {
+                val method = handlerMethodObj.method
+                
                 // 메소드 레벨 어노테이션 확인
                 val methodAnnotation = method.getAnnotation(AuthInfoAffect::class.java)
                 // 클래스 레벨 어노테이션 확인
                 val classAnnotation = method.declaringClass.getAnnotation(AuthInfoAffect::class.java)
                 
-                // 메소드 또는 클래스에 @AuthInfoAffect 어노테이션이 있는 경우 Security 추가
+                // 메소드 또는 클래스에 @AuthInfoAffect 어노테이션이 있는 경우
                 if (methodAnnotation != null || classAnnotation != null) {
+                    // Security 추가
                     operation.addSecurityItem(
                         SecurityRequirement().addList("bearerAuth")
                     )
+                    
+                    // AuthInfo 타입의 파라미터 제거
+                    val parameters = operation.parameters
+                    if (parameters != null && parameters.isNotEmpty()) {
+                        // HandlerMethod의 파라미터 정보를 사용하여 AuthInfo 타입 파라미터 이름 찾기
+                        val methodParameters = handlerMethodObj.methodParameters
+                        val authInfoParameterNames = methodParameters
+                            .filter { param ->
+                                param.parameterType == AuthInfo::class.java || 
+                                param.parameterType == AuthInfo::class.javaObjectType
+                            }
+                            .mapNotNull { param ->
+                                // 파라미터 이름 가져오기
+                                param.parameterName
+                            }
+                            .toSet()
+                        
+                        // 파라미터 이름으로 매칭하여 제거
+                        if (authInfoParameterNames.isNotEmpty()) {
+                            val filteredParameters = parameters
+                                .filterNot { param ->
+                                    // 파라미터 이름으로 매칭
+                                    authInfoParameterNames.contains(param.name)
+                                }
+                            operation.parameters = filteredParameters
+                        } else {
+                            // 파라미터 이름을 가져올 수 없는 경우, 인덱스 기반으로 fallback
+                            val authInfoParameterIndices = methodParameters
+                                .mapIndexedNotNull { index, param ->
+                                    if (param.parameterType == AuthInfo::class.java || 
+                                        param.parameterType == AuthInfo::class.javaObjectType) {
+                                        index
+                                    } else {
+                                        null
+                                    }
+                                }
+                                .toSet()
+                            
+                            if (authInfoParameterIndices.isNotEmpty()) {
+                                val filteredParameters = parameters
+                                    .mapIndexedNotNull { index, param ->
+                                        if (authInfoParameterIndices.contains(index)) {
+                                            null // AuthInfo 파라미터는 제거
+                                        } else {
+                                            param
+                                        }
+                                    }
+                                operation.parameters = filteredParameters
+                            }
+                        }
+                    }
                 }
             }
             operation
