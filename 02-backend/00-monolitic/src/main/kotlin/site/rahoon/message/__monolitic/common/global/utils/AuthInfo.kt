@@ -17,7 +17,7 @@ data class AuthInfo(
  * 
  * @example
  * ```kotlin
- * @AuthUserAffect(required = true)
+ * @AuthInfoAffect(required = true)
  * fun getProfile(): UserProfile {
  *     // 인증된 사용자만 접근 가능
  * }
