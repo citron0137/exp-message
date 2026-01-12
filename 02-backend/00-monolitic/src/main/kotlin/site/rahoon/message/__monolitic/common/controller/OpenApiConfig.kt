@@ -1,11 +1,17 @@
-package site.rahoon.message.__monolitic.common.global.config
+package site.rahoon.message.__monolitic.common.controller
 
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Info
+import io.swagger.v3.oas.models.parameters.Parameter
 import io.swagger.v3.oas.models.servers.Server
+import org.springdoc.core.customizers.DelegatingMethodParameterCustomizer
+import org.springdoc.core.customizers.ParameterCustomizer
+import org.springdoc.core.utils.SpringDocUtils
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.MethodParameter
+import site.rahoon.message.__monolitic.common.global.utils.AuthInfo
 
 /**
  * OpenAPI (Swagger) 설정
@@ -15,6 +21,15 @@ class OpenApiConfig {
 
     @Value("\${SWAGGER_UI_HOST:}")
     private var swaggerHost: String = ""
+
+    companion object {
+        init {
+            // AuthInfo 타입의 파라미터를 모든 문서에서 무시하도록 설정
+            SpringDocUtils
+                .getConfig()
+                .addRequestWrapperToIgnore(AuthInfo::class.java)
+        }
+    }
 
     @Bean
     fun openAPI(): OpenAPI {
