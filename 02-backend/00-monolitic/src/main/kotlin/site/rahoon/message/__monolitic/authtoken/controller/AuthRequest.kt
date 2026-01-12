@@ -18,5 +18,13 @@ object AuthRequest {
         @field:NotBlank(message = "비밀번호는 필수입니다")
         val password: String
     )
+
+    /**
+     * 토큰 갱신 요청
+     */
+    data class Refresh(
+        @field:NotBlank(message = "리프레시 토큰은 필수입니다")
+        val refreshToken: String
+    )
 }
 

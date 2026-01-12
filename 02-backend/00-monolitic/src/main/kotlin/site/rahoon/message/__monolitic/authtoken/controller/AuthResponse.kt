@@ -34,5 +34,12 @@ object AuthResponse {
             }
         }
     }
+
+    /**
+     * 로그아웃 응답
+     */
+    data class Logout(
+        val message: String = "로그아웃되었습니다"
+    )
 }
 

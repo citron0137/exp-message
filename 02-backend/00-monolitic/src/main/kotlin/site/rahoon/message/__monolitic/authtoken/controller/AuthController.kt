@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import site.rahoon.message.__monolitic.authtoken.application.AuthTokenApplicationService
 import site.rahoon.message.__monolitic.common.controller.ApiResponse
+import site.rahoon.message.__monolitic.common.global.utils.AuthInfo
+import site.rahoon.message.__monolitic.common.global.utils.AuthInfoAffect
 
 /**
  * 인증 관련 Controller
@@ -33,6 +35,45 @@ class AuthController(
             password = request.password
         )
         val response = AuthResponse.Login.from(authToken)
+        
+        return ResponseEntity.status(HttpStatus.OK).body(
+            ApiResponse.success(response)
+        )
+    }
+
+    /**
+     * 토큰 갱신
+     * POST /auth/refresh
+     */
+    @PostMapping("/refresh")
+    fun refresh(
+        @Valid @RequestBody request: AuthRequest.Refresh
+    ): ResponseEntity<ApiResponse<AuthResponse.Login>> {
+        val authToken = authTokenApplicationService.refresh(
+            refreshToken = request.refreshToken
+        )
+        val response = AuthResponse.Login.from(authToken)
+        
+        return ResponseEntity.status(HttpStatus.OK).body(
+            ApiResponse.success(response)
+        )
+    }
+
+    /**
+     * 로그아웃
+     * POST /auth/logout
+     */
+    @PostMapping("/logout")
+    @AuthInfoAffect(required = true)
+    fun logout(
+        authInfo: AuthInfo
+    ): ResponseEntity<ApiResponse<AuthResponse.Logout>> {
+        val sessionId = authInfo.sessionId
+            ?: throw IllegalStateException("세션 ID가 없습니다")
+        
+        authTokenApplicationService.logout(sessionId)
+        
+        val response = AuthResponse.Logout()
         
         return ResponseEntity.status(HttpStatus.OK).body(
             ApiResponse.success(response)
