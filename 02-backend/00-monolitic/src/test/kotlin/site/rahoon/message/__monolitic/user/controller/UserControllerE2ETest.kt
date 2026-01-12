@@ -121,9 +121,9 @@ class UserControllerE2ETest {
         val dataMap = responseMap["data"] as? Map<*, *>
         assertNotNull(dataMap, "로그인 응답의 data가 null입니다")
         
-        val accessToken = dataMap?.get("accessToken") as? String
+        val accessToken = dataMap.get("accessToken") as? String
         assertNotNull(accessToken, "액세스 토큰이 null입니다")
-        return accessToken!!
+        return accessToken
     }
 
     @Test
