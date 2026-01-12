@@ -91,4 +91,18 @@ class ChatRoomApplicationService(
     fun getByCreatedByUserId(userId: String): List<ChatRoomInfo.Detail> {
         return chatRoomDomainService.getByCreatedByUserId(userId)
     }
+
+    /**
+     * 내가 참여한 채팅방 목록 조회
+     */
+    fun getByMemberUserId(userId: String): List<ChatRoomInfo.Detail> {
+        // 사용자가 참여한 채팅방 멤버 정보 조회
+        val memberInfoList = chatRoomMemberApplicationService.getByUserId(userId)
+        
+        // 채팅방 ID 목록 추출
+        val chatRoomIds = memberInfoList.map { it.chatRoomId }
+        
+        // 한 번의 쿼리로 모든 채팅방 정보 조회 (N+1 문제 해결)
+        return chatRoomDomainService.getByIds(chatRoomIds)
+    }
 }

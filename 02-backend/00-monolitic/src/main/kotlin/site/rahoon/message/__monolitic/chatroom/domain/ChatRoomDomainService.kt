@@ -77,4 +77,13 @@ class ChatRoomDomainService(
         val chatRooms = chatRoomRepository.findByCreatedByUserId(userId)
         return chatRooms.map { ChatRoomInfo.Detail.from(it) }
     }
+
+    /**
+     * 여러 ID로 채팅방 목록을 조회합니다.
+     */
+    fun getByIds(chatRoomIds: List<String>): List<ChatRoomInfo.Detail> {
+        if (chatRoomIds.isEmpty()) return emptyList()
+        val chatRooms = chatRoomRepository.findByIds(chatRoomIds)
+        return chatRooms.map { ChatRoomInfo.Detail.from(it) }
+    }
 }

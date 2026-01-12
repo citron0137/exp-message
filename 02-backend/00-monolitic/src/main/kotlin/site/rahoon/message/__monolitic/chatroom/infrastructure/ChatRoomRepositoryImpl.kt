@@ -24,6 +24,12 @@ class ChatRoomRepositoryImpl(
             .orElse(null)
     }
 
+    override fun findByIds(ids: List<String>): List<ChatRoom> {
+        if (ids.isEmpty()) return emptyList()
+        return jpaRepository.findAllById(ids)
+            .map { toDomain(it) }
+    }
+
     override fun findByCreatedByUserId(userId: String): List<ChatRoom> {
         return jpaRepository.findByCreatedByUserId(userId)
             .map { toDomain(it) }

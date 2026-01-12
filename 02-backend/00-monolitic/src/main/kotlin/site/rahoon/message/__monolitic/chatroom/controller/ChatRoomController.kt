@@ -65,7 +65,7 @@ class ChatRoomController(
     }
 
     /**
-     * 내가 생성한 채팅방 목록 조회
+     * 내가 참여한 채팅방 목록 조회
      * GET /chat-rooms
      */
     @GetMapping
@@ -73,7 +73,7 @@ class ChatRoomController(
     fun getMyChatRooms(
         authInfo: AuthInfo
     ): ResponseEntity<ApiResponse<List<ChatRoomResponse.ListItem>>> {
-        val chatRoomInfoList = chatRoomApplicationService.getByCreatedByUserId(authInfo.userId)
+        val chatRoomInfoList = chatRoomApplicationService.getByMemberUserId(authInfo.userId)
         val response = chatRoomInfoList.map { ChatRoomResponse.ListItem.from(it) }
         
         return ResponseEntity.status(HttpStatus.OK).body(
