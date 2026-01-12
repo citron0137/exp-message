@@ -24,9 +24,20 @@ class AuthInfoArgumentResolver(
 ) : HandlerMethodArgumentResolver {
 
     override fun supportsParameter(parameter: MethodParameter): Boolean {
-        // AuthUserInfo? 타입의 파라미터만 처리
-        return parameter.parameterType == AuthInfo::class.java ||
-               parameter.parameterType == AuthInfo::class.javaObjectType
+        // AuthInfo 타입의 파라미터인지 확인
+        val isAuthInfoType = parameter.parameterType == AuthInfo::class.java ||
+                             parameter.parameterType == AuthInfo::class.javaObjectType
+        
+        if (!isAuthInfoType) {
+            return false
+        }
+        
+        // @AuthInfoAffect 어노테이션이 있는 경우에만 처리
+        // 메소드 레벨 또는 클래스 레벨 어노테이션 확인
+        val methodAnnotation = parameter.getMethodAnnotation(AuthInfoAffect::class.java)
+        val classAnnotation = parameter.containingClass.getAnnotation(AuthInfoAffect::class.java)
+        
+        return methodAnnotation != null || classAnnotation != null
     }
 
     override fun resolveArgument(
@@ -39,14 +50,15 @@ class AuthInfoArgumentResolver(
             ?: throw IllegalStateException("HttpServletRequest를 가져올 수 없습니다")
 
         // @AuthInfoAffect 어노테이션 확인 (메소드 또는 클래스 레벨)
+        // supportsParameter에서 이미 어노테이션 존재 여부를 확인했으므로, 여기서는 반드시 존재함
         val methodAnnotation = parameter.getMethodAnnotation(AuthInfoAffect::class.java)
         val classAnnotation = parameter.containingClass.getAnnotation(AuthInfoAffect::class.java)
         
         // 메소드 레벨 어노테이션이 있으면 우선, 없으면 클래스 레벨 어노테이션 사용
         val annotation = methodAnnotation ?: classAnnotation
+            ?: throw IllegalStateException("@AuthInfoAffect 어노테이션이 없습니다. supportsParameter에서 체크해야 합니다.")
         
-        // 어노테이션이 없으면 null 반환 (선택적 인증)
-        val required = annotation?.required ?: false
+        val required = annotation.required
 
         // Authorization 헤더에서 토큰 추출
         val authHeader = request.getHeader("Authorization")
