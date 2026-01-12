@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import site.rahoon.message.__monolitic.chatroom.application.ChatRoomApplicationService
+import site.rahoon.message.__monolitic.chatroom.application.ChatRoomCriteria
 import site.rahoon.message.__monolitic.common.controller.ApiResponse
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfo
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfoAffect
@@ -36,8 +37,8 @@ class ChatRoomController(
         @Valid @RequestBody request: ChatRoomRequest.Create,
         authInfo: AuthInfo
     ): ResponseEntity<ApiResponse<ChatRoomResponse.Create>> {
-        val criteria = request.toCriteria()
-        val chatRoomInfo = chatRoomApplicationService.create(criteria, authInfo.userId)
+        val criteria = request.toCriteria(authInfo.userId)
+        val chatRoomInfo = chatRoomApplicationService.create(criteria)
         val response = ChatRoomResponse.Create.from(chatRoomInfo)
         
         return ResponseEntity.status(HttpStatus.CREATED).body(
@@ -91,10 +92,8 @@ class ChatRoomController(
         @Valid @RequestBody request: ChatRoomRequest.Update,
         authInfo: AuthInfo
     ): ResponseEntity<ApiResponse<ChatRoomResponse.Detail>> {
-
-        // TODO ChatRoomUser에 본인이 있는 채팅방을 모두 반환해야함
-        val criteria = request.toCriteria()
-        val chatRoomInfo = chatRoomApplicationService.update(criteria, id)
+        val criteria = request.toCriteria(id, authInfo.userId)
+        val chatRoomInfo = chatRoomApplicationService.update(criteria)
         val response = ChatRoomResponse.Detail.from(chatRoomInfo)
         
         return ResponseEntity.status(HttpStatus.OK).body(
@@ -112,7 +111,11 @@ class ChatRoomController(
         @PathVariable id: String,
         authInfo: AuthInfo
     ): ResponseEntity<ApiResponse<ChatRoomResponse.Detail>> {
-        val chatRoomInfo = chatRoomApplicationService.delete(id)
+        val criteria = ChatRoomCriteria.Delete(
+            chatRoomId = id,
+            userId = authInfo.userId
+        )
+        val chatRoomInfo = chatRoomApplicationService.delete(criteria)
         val response = ChatRoomResponse.Detail.from(chatRoomInfo)
         
         return ResponseEntity.status(HttpStatus.OK).body(

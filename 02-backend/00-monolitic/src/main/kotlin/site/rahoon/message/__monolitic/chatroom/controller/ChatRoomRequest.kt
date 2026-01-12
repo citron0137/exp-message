@@ -19,9 +19,10 @@ object ChatRoomRequest {
         /**
          * ChatRoomCriteria.Create로 변환합니다.
          */
-        fun toCriteria(): ChatRoomCriteria.Create {
+        fun toCriteria(createdByUserId: String): ChatRoomCriteria.Create {
             return ChatRoomCriteria.Create(
-                name = this.name
+                name = this.name,
+                createdByUserId = createdByUserId
             )
         }
     }
@@ -37,9 +38,11 @@ object ChatRoomRequest {
         /**
          * ChatRoomCriteria.Update로 변환합니다.
          */
-        fun toCriteria(): ChatRoomCriteria.Update {
+        fun toCriteria(chatRoomId: String, userId: String): ChatRoomCriteria.Update {
             return ChatRoomCriteria.Update(
-                name = this.name
+                chatRoomId = chatRoomId,
+                name = this.name,
+                userId = userId
             )
         }
     }

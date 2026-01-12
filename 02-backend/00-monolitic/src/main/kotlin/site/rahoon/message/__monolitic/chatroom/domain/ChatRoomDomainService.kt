@@ -53,6 +53,7 @@ class ChatRoomDomainService(
                 error = ChatRoomError.CHAT_ROOM_NOT_FOUND,
                 details = mapOf("chatRoomId" to command.id)
             )
+
         chatRoomRepository.delete(command.id)
         return ChatRoomInfo.Detail.from(chatRoom)
     }

@@ -441,4 +441,119 @@ class ChatRoomControllerE2ETest {
 
         assertEquals(HttpStatus.NOT_FOUND, getResponse.statusCode)
     }
+
+    @Test
+    fun `채팅방 수정 실패 - 권한 없음`() {
+        // given
+        val creatorToken = loginAndGetToken("creator@example.com", "password123")
+        val otherUserToken = loginAndGetToken("other@example.com", "password123")
+        
+        // 생성자가 채팅방 생성
+        val createRequest = ChatRoomRequest.Create(name = "원래 이름")
+
+        val createHeaders = HttpHeaders()
+        createHeaders.set("Authorization", "Bearer $creatorToken")
+        createHeaders.contentType = MediaType.APPLICATION_JSON
+        val createEntity = HttpEntity(objectMapper.writeValueAsString(createRequest), createHeaders)
+
+        val createResponse = restTemplate.exchange(
+            baseUrl(),
+            HttpMethod.POST,
+            createEntity,
+            String::class.java
+        )
+
+        @Suppress("UNCHECKED_CAST")
+        val createResponseMap = objectMapper.readValue(createResponse.body!!, Map::class.java) as Map<String, Any>
+        val createDataMap = createResponseMap["data"] as? Map<*, *>
+        val chatRoomId = createDataMap?.get("id") as? String
+        assertNotNull(chatRoomId)
+
+        // when - 다른 사용자가 수정 시도
+        val updateRequest = ChatRoomRequest.Update(name = "수정 시도")
+
+        val updateHeaders = HttpHeaders()
+        updateHeaders.set("Authorization", "Bearer $otherUserToken")
+        updateHeaders.contentType = MediaType.APPLICATION_JSON
+        val updateEntity = HttpEntity(objectMapper.writeValueAsString(updateRequest), updateHeaders)
+
+        val response = restTemplate.exchange(
+            "${baseUrl()}/$chatRoomId",
+            HttpMethod.PUT,
+            updateEntity,
+            String::class.java
+        )
+
+        // then
+        assertEquals(HttpStatus.FORBIDDEN, response.statusCode, "응답: ${response.body}")
+        assertNotNull(response.body)
+
+        @Suppress("UNCHECKED_CAST")
+        val responseMap = objectMapper.readValue(response.body!!, Map::class.java) as Map<String, Any>
+        assertTrue(!(responseMap["success"] as Boolean))
+        assertNotNull(responseMap["error"])
+    }
+
+    @Test
+    fun `채팅방 삭제 실패 - 권한 없음`() {
+        // given
+        val creatorToken = loginAndGetToken("creator2@example.com", "password123")
+        val otherUserToken = loginAndGetToken("other2@example.com", "password123")
+        
+        // 생성자가 채팅방 생성
+        val createRequest = ChatRoomRequest.Create(name = "삭제될 채팅방")
+
+        val createHeaders = HttpHeaders()
+        createHeaders.set("Authorization", "Bearer $creatorToken")
+        createHeaders.contentType = MediaType.APPLICATION_JSON
+        val createEntity = HttpEntity(objectMapper.writeValueAsString(createRequest), createHeaders)
+
+        val createResponse = restTemplate.exchange(
+            baseUrl(),
+            HttpMethod.POST,
+            createEntity,
+            String::class.java
+        )
+
+        @Suppress("UNCHECKED_CAST")
+        val createResponseMap = objectMapper.readValue(createResponse.body!!, Map::class.java) as Map<String, Any>
+        val createDataMap = createResponseMap["data"] as? Map<*, *>
+        val chatRoomId = createDataMap?.get("id") as? String
+        assertNotNull(chatRoomId)
+
+        // when - 다른 사용자가 삭제 시도
+        val deleteHeaders = HttpHeaders()
+        deleteHeaders.set("Authorization", "Bearer $otherUserToken")
+        val deleteEntity = HttpEntity<Nothing?>(null, deleteHeaders)
+
+        val response = restTemplate.exchange(
+            "${baseUrl()}/$chatRoomId",
+            HttpMethod.DELETE,
+            deleteEntity,
+            String::class.java
+        )
+
+        // then
+        assertEquals(HttpStatus.FORBIDDEN, response.statusCode, "응답: ${response.body}")
+        assertNotNull(response.body)
+
+        @Suppress("UNCHECKED_CAST")
+        val responseMap = objectMapper.readValue(response.body!!, Map::class.java) as Map<String, Any>
+        assertTrue(!(responseMap["success"] as Boolean))
+        assertNotNull(responseMap["error"])
+
+        // 삭제되지 않았는지 확인 (생성자로 조회)
+        val getHeaders = HttpHeaders()
+        getHeaders.set("Authorization", "Bearer $creatorToken")
+        val getEntity = HttpEntity<Nothing?>(null, getHeaders)
+
+        val getResponse = restTemplate.exchange(
+            "${baseUrl()}/$chatRoomId",
+            HttpMethod.GET,
+            getEntity,
+            String::class.java
+        )
+
+        assertEquals(HttpStatus.OK, getResponse.statusCode, "채팅방이 삭제되지 않아야 합니다")
+    }
 }
