@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import site.rahoon.message.__monolitic.common.controller.ApiResponse
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfo
@@ -64,12 +65,12 @@ class MessageController(
 
     /**
      * 채팅방별 메시지 목록 조회
-     * GET /messages/chat-rooms/{chatRoomId}
+     * GET /messages?chatRoomId={chatRoomId}
      */
-    @GetMapping("/chat-rooms/{chatRoomId}")
+    @GetMapping(params = ["chatRoomId"])
     @AuthInfoAffect(required = true)
     fun getByChatRoomId(
-        @PathVariable chatRoomId: String,
+        @RequestParam chatRoomId: String,
         authInfo: AuthInfo
     ): ResponseEntity<ApiResponse<List<MessageResponse.Detail>>> {
         val criteria = MessageCriteria.GetByChatRoomId(
