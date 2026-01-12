@@ -12,6 +12,18 @@ enum class ErrorType {
     CLIENT_ERROR,
 
     /**
+     * 인증되지 않음 (401)
+     * 인증이 필요하거나 인증에 실패한 경우
+     */
+    UNAUTHORIZED,
+
+    /**
+     * 권한 없음 (403)
+     * 인증은 되었지만 해당 리소스에 대한 권한이 없는 경우
+     */
+    FORBIDDEN,
+
+    /**
      * 리소스를 찾을 수 없음 (404)
      */
     NOT_FOUND,
