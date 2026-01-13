@@ -36,14 +36,8 @@ class LoginFailureTracker(
      * @param ipAddress IP 주소
      */
     fun incrementFailureCount(email: String, ipAddress: String) {
-        val emailFailure = loginFailureRepository.findByKey(email)
-        val ipFailure = loginFailureRepository.findByKey(ipAddress)
-
-        val incrementedEmailFailure = emailFailure.increment()
-        val incrementedIpFailure = ipFailure.increment()
-
-        loginFailureRepository.save(incrementedEmailFailure, LOCKOUT_DURATION)
-        loginFailureRepository.save(incrementedIpFailure, LOCKOUT_DURATION)
+        loginFailureRepository.incrementAndGet(email, LOCKOUT_DURATION)
+        loginFailureRepository.incrementAndGet(ipAddress, LOCKOUT_DURATION)
     }
 
     /**

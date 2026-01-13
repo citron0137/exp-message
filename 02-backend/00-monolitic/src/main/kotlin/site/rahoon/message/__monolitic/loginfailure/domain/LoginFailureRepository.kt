@@ -26,4 +26,12 @@ interface LoginFailureRepository {
      * @param key Redis 키 (이메일 또는 IP 주소)
      */
     fun deleteByKey(key: String)
+
+    /**
+     * 실패 횟수를 원자적으로 증가시키고 증가된 값을 반환합니다.
+     * @param key Redis 키 (이메일 또는 IP 주소)
+     * @param ttl TTL (Time To Live)
+     * @return 증가된 실패 횟수
+     */
+    fun incrementAndGet(key: String, ttl: Duration): Int
 }
