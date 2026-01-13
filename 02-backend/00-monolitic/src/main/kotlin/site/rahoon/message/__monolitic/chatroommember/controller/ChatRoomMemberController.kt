@@ -44,9 +44,9 @@ class ChatRoomMemberController(
 
     /**
      * 채팅방 나가기
-     * DELETE /chat-rooms/{chatRoomId}/members
+     * DELETE /chat-rooms/{chatRoomId}/members/me
      */
-    @DeleteMapping
+    @DeleteMapping("/me")
     @AuthInfoAffect(required = true)
     fun leave(
         @PathVariable chatRoomId: String,
