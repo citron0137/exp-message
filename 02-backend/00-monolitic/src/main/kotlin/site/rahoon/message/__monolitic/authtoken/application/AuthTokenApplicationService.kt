@@ -32,10 +32,13 @@ class AuthTokenApplicationService(
         val user = try {
             userDomainService.getUser( email, password )
         } catch (e: DomainException) {
+            // 실패 횟수 증가 (증가 후 잠금 확인 포함)
             loginFailureTracker.incrementFailureCount(email, ipAddress)
             throw e
         }
         
+        // 성공 시에도 잠금 확인 (다른 스레드가 실패하여 잠금되었을 수 있음)
+        loginFailureTracker.checkAndThrowIfLocked(email, ipAddress)
         loginFailureTracker.resetFailureCount(email, ipAddress)
         return authTokenDomainService.issueToken(user.id)
     }

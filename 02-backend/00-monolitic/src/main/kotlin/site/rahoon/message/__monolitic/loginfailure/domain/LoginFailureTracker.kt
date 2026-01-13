@@ -22,22 +22,28 @@ class LoginFailureTracker(
      * @throws DomainException 실패 횟수가 최대치에 도달한 경우
      */
     fun checkAndThrowIfLocked(email: String, ipAddress: String) {
-        val emailFailure = loginFailureRepository.findByKey(email)
-        val ipFailure = loginFailureRepository.findByKey(ipAddress)
-
-        // 이메일 또는 IP 주소 중 하나라도 잠금되어 있으면 예외 발생
-        emailFailure.checkLocked()
-        ipFailure.checkLocked()
+        val failures = loginFailureRepository.findByKeys(listOf(email, ipAddress))
+        failures.forEach { it.checkLocked() }
     }
 
     /**
      * 로그인 실패 횟수를 증가시킵니다.
+     * 증가 후 잠금 여부를 확인하여 즉시 잠금을 적용합니다.
      * @param email 사용자 이메일
      * @param ipAddress IP 주소
+     * @throws DomainException 실패 횟수가 최대치에 도달한 경우
      */
     fun incrementFailureCount(email: String, ipAddress: String) {
-        loginFailureRepository.incrementAndGet(email, LOCKOUT_DURATION)
-        loginFailureRepository.incrementAndGet(ipAddress, LOCKOUT_DURATION)
+
+//        val emailCount = loginFailureRepository.incrementAndGet(email, LOCKOUT_DURATION)
+//        val ipCount = loginFailureRepository.incrementAndGet(ipAddress, LOCKOUT_DURATION)
+        val loginFailures = loginFailureRepository.incrementAndGetMultiple(
+            listOf(
+                email to LOCKOUT_DURATION,
+                ipAddress to LOCKOUT_DURATION
+            )
+        )
+        loginFailures.forEach { it.checkLocked() }
     }
 
     /**
