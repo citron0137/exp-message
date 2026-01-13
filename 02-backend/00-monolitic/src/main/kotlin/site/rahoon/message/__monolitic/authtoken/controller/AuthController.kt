@@ -1,5 +1,6 @@
 package site.rahoon.message.__monolitic.authtoken.controller
 
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -11,6 +12,7 @@ import site.rahoon.message.__monolitic.authtoken.application.AuthTokenApplicatio
 import site.rahoon.message.__monolitic.common.controller.ApiResponse
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfo
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfoAffect
+import site.rahoon.message.__monolitic.common.global.utils.IpAddressUtils
 
 /**
  * 인증 관련 Controller
@@ -28,11 +30,14 @@ class AuthController(
      */
     @PostMapping("/login")
     fun login(
-        @Valid @RequestBody request: AuthRequest.Login
+        @Valid @RequestBody request: AuthRequest.Login,
+        httpRequest: HttpServletRequest
     ): ResponseEntity<ApiResponse<AuthResponse.Login>> {
+        val ipAddress = IpAddressUtils.getClientIpAddress(httpRequest)
         val authToken = authTokenApplicationService.login(
             email = request.email,
-            password = request.password
+            password = request.password,
+            ipAddress = ipAddress
         )
         val response = AuthResponse.Login.from(authToken)
         

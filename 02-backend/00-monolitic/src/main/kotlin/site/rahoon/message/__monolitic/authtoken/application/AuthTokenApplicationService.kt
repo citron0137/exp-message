@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service
 import site.rahoon.message.__monolitic.authtoken.domain.AccessToken
 import site.rahoon.message.__monolitic.authtoken.domain.AuthToken
 import site.rahoon.message.__monolitic.authtoken.domain.AuthTokenDomainService
+import site.rahoon.message.__monolitic.loginfailure.domain.LoginFailureTracker
+import site.rahoon.message.__monolitic.common.domain.DomainException
 import site.rahoon.message.__monolitic.user.domain.UserDomainService
 
 /**
@@ -14,6 +16,7 @@ import site.rahoon.message.__monolitic.user.domain.UserDomainService
 class AuthTokenApplicationService(
     private val userDomainService: UserDomainService,
     private val authTokenDomainService: AuthTokenDomainService,
+    private val loginFailureTracker: LoginFailureTracker
 ){
 
     // Check
@@ -22,9 +25,18 @@ class AuthTokenApplicationService(
     }
 
     // Login
-    fun login( email: String, password: String ): AuthToken {
-        // 이메일/비밀번호 검증 -> 토큰 발급 -> 반환
-        val user = userDomainService.getUser( email, password )
+    fun login( email: String, password: String, ipAddress: String ): AuthToken {
+        // 실패 횟수 확인 및 잠금 여부 검증
+        loginFailureTracker.checkAndThrowIfLocked(email, ipAddress)
+        
+        val user = try {
+            userDomainService.getUser( email, password )
+        } catch (e: DomainException) {
+            loginFailureTracker.incrementFailureCount(email, ipAddress)
+            throw e
+        }
+        
+        loginFailureTracker.resetFailureCount(email, ipAddress)
         return authTokenDomainService.issueToken(user.id)
     }
 
