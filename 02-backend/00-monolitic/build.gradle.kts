@@ -42,7 +42,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-	testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+	testImplementation("io.mockk:mockk:1.13.13")
 	testImplementation("org.testcontainers:testcontainers:1.19.8")
 	testImplementation("org.testcontainers:junit-jupiter:1.19.8")
 	testImplementation("org.testcontainers:mysql:1.19.8")

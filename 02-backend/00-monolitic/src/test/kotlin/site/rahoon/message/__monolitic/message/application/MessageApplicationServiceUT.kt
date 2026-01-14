@@ -1,14 +1,12 @@
 package site.rahoon.message.__monolitic.message.application
 
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomDomainService
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomError
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomInfo
@@ -33,9 +31,9 @@ class MessageApplicationServiceUT {
 
     @BeforeEach
     fun setUp() {
-        messageDomainService = mock()
-        chatRoomDomainService = mock()
-        chatRoomMemberApplicationService = mock()
+        messageDomainService = mockk()
+        chatRoomDomainService = mockk()
+        chatRoomMemberApplicationService = mockk()
         messageApplicationService = MessageApplicationService(
             messageDomainService,
             chatRoomDomainService,
@@ -72,12 +70,9 @@ class MessageApplicationServiceUT {
             content = content
         )
 
-        whenever(chatRoomDomainService.getById(chatRoomId))
-            .thenReturn(chatRoomInfo)
-        whenever(chatRoomMemberApplicationService.isMember(chatRoomId, userId))
-            .thenReturn(true)
-        whenever(messageDomainService.create(any()))
-            .thenReturn(message)
+        every { chatRoomDomainService.getById(chatRoomId) } returns chatRoomInfo
+        every { chatRoomMemberApplicationService.isMember(chatRoomId, userId) } returns true
+        every { messageDomainService.create(any()) } returns message
 
         // when
         val result = messageApplicationService.create(criteria)
@@ -88,9 +83,9 @@ class MessageApplicationServiceUT {
         assertEquals(userId, result.userId)
         assertEquals(content, result.content)
 
-        verify(chatRoomDomainService).getById(chatRoomId)
-        verify(chatRoomMemberApplicationService).isMember(chatRoomId, userId)
-        verify(messageDomainService).create(any())
+        verify { chatRoomDomainService.getById(chatRoomId) }
+        verify { chatRoomMemberApplicationService.isMember(chatRoomId, userId) }
+        verify { messageDomainService.create(any()) }
     }
 
     @Test
@@ -106,13 +101,10 @@ class MessageApplicationServiceUT {
             content = content
         )
 
-        whenever(chatRoomDomainService.getById(chatRoomId))
-            .thenThrow(
-                DomainException(
-                    error = ChatRoomError.CHAT_ROOM_NOT_FOUND,
-                    details = mapOf("chatRoomId" to chatRoomId)
-                )
-            )
+        every { chatRoomDomainService.getById(chatRoomId) } throws DomainException(
+            error = ChatRoomError.CHAT_ROOM_NOT_FOUND,
+            details = mapOf("chatRoomId" to chatRoomId)
+        )
 
         // when & then
         val exception = assertThrows<DomainException> {
@@ -120,9 +112,9 @@ class MessageApplicationServiceUT {
         }
 
         assertEquals(MessageError.CHAT_ROOM_NOT_FOUND, exception.error)
-        verify(chatRoomDomainService).getById(chatRoomId)
-        verify(chatRoomMemberApplicationService, never()).isMember(any(), any())
-        verify(messageDomainService, never()).create(any())
+        verify { chatRoomDomainService.getById(chatRoomId) }
+        verify(exactly = 0) { chatRoomMemberApplicationService.isMember(any(), any()) }
+        verify(exactly = 0) { messageDomainService.create(any()) }
     }
 
     @Test
@@ -146,10 +138,8 @@ class MessageApplicationServiceUT {
             content = content
         )
 
-        whenever(chatRoomDomainService.getById(chatRoomId))
-            .thenReturn(chatRoomInfo)
-        whenever(chatRoomMemberApplicationService.isMember(chatRoomId, userId))
-            .thenReturn(false)
+        every { chatRoomDomainService.getById(chatRoomId) } returns chatRoomInfo
+        every { chatRoomMemberApplicationService.isMember(chatRoomId, userId) } returns false
 
         // when & then
         val exception = assertThrows<DomainException> {
@@ -157,9 +147,9 @@ class MessageApplicationServiceUT {
         }
 
         assertEquals(MessageError.UNAUTHORIZED_ACCESS, exception.error)
-        verify(chatRoomDomainService).getById(chatRoomId)
-        verify(chatRoomMemberApplicationService).isMember(chatRoomId, userId)
-        verify(messageDomainService, never()).create(any())
+        verify { chatRoomDomainService.getById(chatRoomId) }
+        verify { chatRoomMemberApplicationService.isMember(chatRoomId, userId) }
+        verify(exactly = 0) { messageDomainService.create(any()) }
     }
 
     @Test
@@ -174,8 +164,7 @@ class MessageApplicationServiceUT {
             createdAt = LocalDateTime.now()
         )
 
-        whenever(messageDomainService.getById(messageId))
-            .thenReturn(message)
+        every { messageDomainService.getById(messageId) } returns message
 
         // when
         val result = messageApplicationService.getById(messageId)
@@ -184,7 +173,7 @@ class MessageApplicationServiceUT {
         assertNotNull(result)
         assertEquals(messageId, result.id)
         assertEquals("테스트 메시지", result.content)
-        verify(messageDomainService).getById(messageId)
+        verify { messageDomainService.getById(messageId) }
     }
 
     @Test
@@ -219,10 +208,8 @@ class MessageApplicationServiceUT {
             chatRoomId = chatRoomId
         )
 
-        whenever(chatRoomDomainService.getById(chatRoomId))
-            .thenReturn(chatRoomInfo)
-        whenever(messageDomainService.getByChatRoomId(chatRoomId))
-            .thenReturn(listOf(message1, message2))
+        every { chatRoomDomainService.getById(chatRoomId) } returns chatRoomInfo
+        every { messageDomainService.getByChatRoomId(chatRoomId) } returns listOf(message1, message2)
 
         // when
         val result = messageApplicationService.getByChatRoomId(criteria)
@@ -233,8 +220,8 @@ class MessageApplicationServiceUT {
         assertEquals("메시지 1", result[0].content)
         assertEquals("메시지 2", result[1].content)
 
-        verify(chatRoomDomainService).getById(chatRoomId)
-        verify(messageDomainService).getByChatRoomId(chatRoomId)
+        verify { chatRoomDomainService.getById(chatRoomId) }
+        verify { messageDomainService.getByChatRoomId(chatRoomId) }
     }
 
     @Test
@@ -246,13 +233,10 @@ class MessageApplicationServiceUT {
             chatRoomId = chatRoomId
         )
 
-        whenever(chatRoomDomainService.getById(chatRoomId))
-            .thenThrow(
-                DomainException(
-                    error = ChatRoomError.CHAT_ROOM_NOT_FOUND,
-                    details = mapOf("chatRoomId" to chatRoomId)
-                )
-            )
+        every { chatRoomDomainService.getById(chatRoomId) } throws DomainException(
+            error = ChatRoomError.CHAT_ROOM_NOT_FOUND,
+            details = mapOf("chatRoomId" to chatRoomId)
+        )
 
         // when & then
         val exception = assertThrows<DomainException> {
@@ -260,7 +244,7 @@ class MessageApplicationServiceUT {
         }
 
         assertEquals(MessageError.CHAT_ROOM_NOT_FOUND, exception.error)
-        verify(chatRoomDomainService).getById(chatRoomId)
-        verify(messageDomainService, never()).getByChatRoomId(any())
+        verify { chatRoomDomainService.getById(chatRoomId) }
+        verify(exactly = 0) { messageDomainService.getByChatRoomId(any()) }
     }
 }

@@ -1,14 +1,12 @@
 package site.rahoon.message.__monolitic.chatroom.application
 
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomDomainService
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomError
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomInfo
@@ -30,8 +28,8 @@ class ChatRoomApplicationServiceUT {
 
     @BeforeEach
     fun setUp() {
-        chatRoomDomainService = mock()
-        chatRoomMemberApplicationService = mock()
+        chatRoomDomainService = mockk()
+        chatRoomMemberApplicationService = mockk()
         chatRoomApplicationService = ChatRoomApplicationService(
             chatRoomDomainService,
             chatRoomMemberApplicationService
@@ -59,10 +57,8 @@ class ChatRoomApplicationServiceUT {
             updatedAt = LocalDateTime.now()
         )
 
-        whenever(chatRoomMemberApplicationService.getByUserId(userId))
-            .thenReturn(listOf(memberInfo))
-        whenever(chatRoomDomainService.getByIds(listOf(chatRoomId)))
-            .thenReturn(listOf(chatRoomInfo))
+        every { chatRoomMemberApplicationService.getByUserId(userId) } returns listOf(memberInfo)
+        every { chatRoomDomainService.getByIds(listOf(chatRoomId)) } returns listOf(chatRoomInfo)
 
         // when
         val result = chatRoomApplicationService.getByMemberUserId(userId)
@@ -73,8 +69,8 @@ class ChatRoomApplicationServiceUT {
         assertEquals(chatRoomId, result[0].id)
         assertEquals("테스트 채팅방", result[0].name)
         
-        verify(chatRoomMemberApplicationService).getByUserId(userId)
-        verify(chatRoomDomainService).getByIds(listOf(chatRoomId))
+        verify { chatRoomMemberApplicationService.getByUserId(userId) }
+        verify { chatRoomDomainService.getByIds(listOf(chatRoomId)) }
     }
 
     @Test
@@ -126,10 +122,8 @@ class ChatRoomApplicationServiceUT {
             updatedAt = LocalDateTime.now()
         )
 
-        whenever(chatRoomMemberApplicationService.getByUserId(userId))
-            .thenReturn(listOf(memberInfo1, memberInfo2, memberInfo3))
-        whenever(chatRoomDomainService.getByIds(listOf(chatRoomId1, chatRoomId2, chatRoomId3)))
-            .thenReturn(listOf(chatRoomInfo1, chatRoomInfo2, chatRoomInfo3))
+        every { chatRoomMemberApplicationService.getByUserId(userId) } returns listOf(memberInfo1, memberInfo2, memberInfo3)
+        every { chatRoomDomainService.getByIds(listOf(chatRoomId1, chatRoomId2, chatRoomId3)) } returns listOf(chatRoomInfo1, chatRoomInfo2, chatRoomInfo3)
 
         // when
         val result = chatRoomApplicationService.getByMemberUserId(userId)
@@ -144,8 +138,8 @@ class ChatRoomApplicationServiceUT {
         assertEquals("채팅방 2", result[1].name)
         assertEquals("채팅방 3", result[2].name)
         
-        verify(chatRoomMemberApplicationService).getByUserId(userId)
-        verify(chatRoomDomainService).getByIds(listOf(chatRoomId1, chatRoomId2, chatRoomId3))
+        verify { chatRoomMemberApplicationService.getByUserId(userId) }
+        verify { chatRoomDomainService.getByIds(listOf(chatRoomId1, chatRoomId2, chatRoomId3)) }
     }
 
     @Test
@@ -153,8 +147,7 @@ class ChatRoomApplicationServiceUT {
         // given
         val userId = "user123"
 
-        whenever(chatRoomMemberApplicationService.getByUserId(userId))
-            .thenReturn(emptyList())
+        every { chatRoomMemberApplicationService.getByUserId(userId) } returns emptyList()
 
         // when
         val result = chatRoomApplicationService.getByMemberUserId(userId)
@@ -163,9 +156,9 @@ class ChatRoomApplicationServiceUT {
         assertNotNull(result)
         assertTrue(result.isEmpty())
         
-        verify(chatRoomMemberApplicationService).getByUserId(userId)
+        verify { chatRoomMemberApplicationService.getByUserId(userId) }
         // 빈 리스트 조기 반환으로 getByIds는 호출되지 않아야 함
-        verify(chatRoomDomainService, org.mockito.kotlin.never()).getByIds(any())
+        verify(exactly = 0) { chatRoomDomainService.getByIds(any()) }
     }
 
     @Test
@@ -204,11 +197,9 @@ class ChatRoomApplicationServiceUT {
         )
 
         // memberInfo 순서대로 chatRoomId가 추출되어야 함
-        whenever(chatRoomMemberApplicationService.getByUserId(userId))
-            .thenReturn(listOf(memberInfo1, memberInfo2))
+        every { chatRoomMemberApplicationService.getByUserId(userId) } returns listOf(memberInfo1, memberInfo2)
         // getByIds는 추출된 ID 순서대로 호출되어야 함
-        whenever(chatRoomDomainService.getByIds(listOf(chatRoomId1, chatRoomId2)))
-            .thenReturn(listOf(chatRoomInfo1, chatRoomInfo2))
+        every { chatRoomDomainService.getByIds(listOf(chatRoomId1, chatRoomId2)) } returns listOf(chatRoomInfo1, chatRoomInfo2)
 
         // when
         val result = chatRoomApplicationService.getByMemberUserId(userId)
@@ -216,6 +207,6 @@ class ChatRoomApplicationServiceUT {
         // then
         assertEquals(2, result.size)
         // getByIds가 올바른 순서로 호출되었는지 확인
-        verify(chatRoomDomainService).getByIds(listOf(chatRoomId1, chatRoomId2))
+        verify { chatRoomDomainService.getByIds(listOf(chatRoomId1, chatRoomId2)) }
     }
 }

@@ -1,15 +1,13 @@
 package site.rahoon.message.__monolitic.authtoken.domain
 
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import io.mockk.confirmVerified
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoMoreInteractions
-import org.mockito.kotlin.whenever
 import site.rahoon.message.__monolitic.common.domain.DomainException
 import java.time.LocalDateTime
 import java.util.UUID
@@ -28,10 +26,10 @@ class AuthTokenDomainServiceUT {
 
     @BeforeEach
     fun setUp() {
-        accessTokenIssuer = mock()
-        accessTokenVerifier = mock()
-        refreshTokenIssuer = mock()
-        authTokenRepository = mock()
+        accessTokenIssuer = mockk()
+        accessTokenVerifier = mockk()
+        refreshTokenIssuer = mockk()
+        authTokenRepository = mockk()
         authTokenDomainService = AuthTokenDomainService(
             accessTokenIssuer,
             accessTokenVerifier,
@@ -59,9 +57,9 @@ class AuthTokenDomainServiceUT {
             createdAt = LocalDateTime.now()
         )
 
-        whenever(accessTokenIssuer.issue(any(), any())).thenReturn(accessToken)
-        whenever(refreshTokenIssuer.issue(any(), any())).thenReturn(refreshToken)
-        whenever(authTokenRepository.saveRefreshToken(any<RefreshToken>())).thenReturn(refreshToken)
+        every { accessTokenIssuer.issue(any(), any()) } returns accessToken
+        every { refreshTokenIssuer.issue(any(), any()) } returns refreshToken
+        every { authTokenRepository.saveRefreshToken(any<RefreshToken>()) } returns refreshToken
 
         // when
         val result = authTokenDomainService.issueToken(userId)
@@ -73,9 +71,9 @@ class AuthTokenDomainServiceUT {
         assertEquals(userId, result.accessToken.userId)
         assertEquals(userId, result.refreshToken?.userId)
         
-        verify(accessTokenIssuer).issue(any(), any())
-        verify(refreshTokenIssuer).issue(any(), any())
-        verify(authTokenRepository).saveRefreshToken(any<RefreshToken>())
+        verify { accessTokenIssuer.issue(any(), any()) }
+        verify { refreshTokenIssuer.issue(any(), any()) }
+        verify { authTokenRepository.saveRefreshToken(any<RefreshToken>()) }
     }
 
     @Test
@@ -97,9 +95,9 @@ class AuthTokenDomainServiceUT {
             createdAt = LocalDateTime.now()
         )
 
-        whenever(accessTokenIssuer.issue(userId, prevSessionId)).thenReturn(accessToken)
-        whenever(refreshTokenIssuer.issue(userId, prevSessionId)).thenReturn(refreshToken)
-        whenever(authTokenRepository.saveRefreshToken(refreshToken)).thenReturn(refreshToken)
+        every { accessTokenIssuer.issue(userId, prevSessionId) } returns accessToken
+        every { refreshTokenIssuer.issue(userId, prevSessionId) } returns refreshToken
+        every { authTokenRepository.saveRefreshToken(refreshToken) } returns refreshToken
 
         // when
         val result = authTokenDomainService.issueToken(userId, prevSessionId)
@@ -111,9 +109,9 @@ class AuthTokenDomainServiceUT {
         assertEquals(prevSessionId, result.accessToken.sessionId)
         assertEquals(prevSessionId, result.refreshToken?.sessionId)
         
-        verify(accessTokenIssuer).issue(userId, prevSessionId)
-        verify(refreshTokenIssuer).issue(userId, prevSessionId)
-        verify(authTokenRepository).saveRefreshToken(refreshToken)
+        verify { accessTokenIssuer.issue(userId, prevSessionId) }
+        verify { refreshTokenIssuer.issue(userId, prevSessionId) }
+        verify { authTokenRepository.saveRefreshToken(refreshToken) }
     }
 
     @Test
@@ -127,7 +125,7 @@ class AuthTokenDomainServiceUT {
             sessionId = "session123"
         )
 
-        whenever(accessTokenVerifier.verify(tokenString)).thenReturn(accessToken)
+        every { accessTokenVerifier.verify(tokenString) } returns accessToken
 
         // when
         val result = authTokenDomainService.verifyAccessToken(tokenString)
@@ -135,7 +133,7 @@ class AuthTokenDomainServiceUT {
         // then
         assertNotNull(result)
         assertEquals(accessToken, result)
-        verify(accessTokenVerifier).verify(tokenString)
+        verify { accessTokenVerifier.verify(tokenString) }
     }
 
     @Test
@@ -143,12 +141,14 @@ class AuthTokenDomainServiceUT {
         // given
         val sessionId = "session123"
 
+        every { authTokenRepository.deleteRefreshTokenBySessionId(sessionId) } returns Unit
+
         // when
         authTokenDomainService.expireBySessionId(sessionId)
 
         // then
-        verify(authTokenRepository).deleteRefreshTokenBySessionId(sessionId)
-        verifyNoMoreInteractions(authTokenRepository)
+        verify { authTokenRepository.deleteRefreshTokenBySessionId(sessionId) }
+        confirmVerified(authTokenRepository)
     }
 
     @Test
@@ -178,10 +178,11 @@ class AuthTokenDomainServiceUT {
             createdAt = LocalDateTime.now()
         )
 
-        whenever(authTokenRepository.findRefreshToken(refreshTokenString)).thenReturn(oldRefreshToken)
-        whenever(accessTokenIssuer.issue(userId, sessionId)).thenReturn(newAccessToken)
-        whenever(refreshTokenIssuer.issue(userId, sessionId)).thenReturn(newRefreshToken)
-        whenever(authTokenRepository.saveRefreshToken(newRefreshToken)).thenReturn(newRefreshToken)
+        every { authTokenRepository.findRefreshToken(refreshTokenString) } returns oldRefreshToken
+        every { authTokenRepository.deleteRefreshToken(refreshTokenString) } returns Unit
+        every { accessTokenIssuer.issue(userId, sessionId) } returns newAccessToken
+        every { refreshTokenIssuer.issue(userId, sessionId) } returns newRefreshToken
+        every { authTokenRepository.saveRefreshToken(newRefreshToken) } returns newRefreshToken
 
         // when
         val result = authTokenDomainService.refresh(refreshTokenString)
@@ -193,18 +194,18 @@ class AuthTokenDomainServiceUT {
         assertEquals(userId, result.accessToken.userId)
         assertEquals(sessionId, result.accessToken.sessionId)
         
-        verify(authTokenRepository).findRefreshToken(refreshTokenString)
-        verify(authTokenRepository).deleteRefreshToken(refreshTokenString)
-        verify(authTokenRepository).saveRefreshToken(newRefreshToken)
-        verify(accessTokenIssuer).issue(userId, sessionId)
-        verify(refreshTokenIssuer).issue(userId, sessionId)
+        verify { authTokenRepository.findRefreshToken(refreshTokenString) }
+        verify { authTokenRepository.deleteRefreshToken(refreshTokenString) }
+        verify { accessTokenIssuer.issue(userId, sessionId) }
+        verify { refreshTokenIssuer.issue(userId, sessionId) }
+        verify { authTokenRepository.saveRefreshToken(newRefreshToken) }
     }
 
     @Test
     fun `리프레시 토큰이 존재하지 않을 때 예외 발생`() {
         // given
         val invalidRefreshToken = "invalid-refresh-token"
-        whenever(authTokenRepository.findRefreshToken(invalidRefreshToken)).thenReturn(null)
+        every { authTokenRepository.findRefreshToken(invalidRefreshToken) } returns null
 
         // when & then
         val exception = assertThrows<DomainException> {
@@ -215,11 +216,10 @@ class AuthTokenDomainServiceUT {
         assertTrue(exception.details?.containsKey("refreshToken") == true)
         assertEquals(invalidRefreshToken, exception.details?.get("refreshToken"))
         
-        verify(authTokenRepository).findRefreshToken(invalidRefreshToken)
-        verify(authTokenRepository, never()).deleteRefreshToken(any())
-        verify(authTokenRepository, never()).saveRefreshToken(any<RefreshToken>())
-        verify(accessTokenIssuer, never()).issue(any(), any())
-        verify(refreshTokenIssuer, never()).issue(any(), any())
+        verify { authTokenRepository.findRefreshToken(invalidRefreshToken) }
+        verify(exactly = 0) { authTokenRepository.deleteRefreshToken(any()) }
+        verify(exactly = 0) { authTokenRepository.saveRefreshToken(any<RefreshToken>()) }
+        verify(exactly = 0) { accessTokenIssuer.issue(any(), any()) }
+        verify(exactly = 0) { refreshTokenIssuer.issue(any(), any()) }
     }
 }
-
