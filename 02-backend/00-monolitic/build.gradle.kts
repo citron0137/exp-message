@@ -32,6 +32,7 @@ dependencies {
 	implementation("org.springframework:spring-tx")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+	implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
@@ -46,7 +47,8 @@ dependencies {
 	testImplementation("org.testcontainers:junit-jupiter:1.19.8")
 	testImplementation("org.testcontainers:mysql:1.19.8")
 	testImplementation("com.redis:testcontainers-redis:2.2.2")
-	testRuntimeOnly("com.h2database:h2")
+	testImplementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.2")
+	testImplementation("io.kotest:kotest-assertions-core:5.9.1")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -67,17 +69,19 @@ tasks.withType<Test> {
 }
 
 // 단위 테스트만 실행: ./gradlew unitTest
+// @IntegrationTest가 없는 모든 테스트
 tasks.register<Test>("unitTest") {
-	description = "Run unit tests only"
+	description = "Run unit tests only (tests without @IntegrationTest)"
 	group = "verification"
 	useJUnitPlatform {
-		includeTags("unit")
+		excludeTags("integration")
 	}
 }
 
 // 통합 테스트만 실행: ./gradlew integrationTest
+// @IntegrationTest가 붙은 테스트만
 tasks.register<Test>("integrationTest") {
-	description = "Run integration tests only"
+	description = "Run integration tests only (tests with @IntegrationTest)"
 	group = "verification"
 	useJUnitPlatform {
 		includeTags("integration")
