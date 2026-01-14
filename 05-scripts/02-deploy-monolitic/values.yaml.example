@@ -68,7 +68,7 @@ app-monolitic:
     name: message_db             # Common: message_db
     username: message_user      # Common: message_user
     password: message_password  # Common: message_password
-    ddlAuto: update
+    ddlAuto: validate
   redis:
     host: ""                    # Empty to use auto-generated name: Release.Name-redis
     port: 6379                  # Common: 6379
