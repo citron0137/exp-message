@@ -1,61 +1,29 @@
 package site.rahoon.message.__monolitic.user.domain
 
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
 import site.rahoon.message.__monolitic.common.domain.DomainException
-import site.rahoon.message.__monolitic.user.domain.component.BCryptUserPasswordHasher
-import site.rahoon.message.__monolitic.user.domain.component.UserCreateValidatorImpl
-import site.rahoon.message.__monolitic.user.domain.component.UserUpdateValidatorImpl
-import site.rahoon.message.__monolitic.user.infrastructure.UserJpaRepository
-import site.rahoon.message.__monolitic.user.infrastructure.UserRepositoryImpl
+import site.rahoon.message.__monolitic.common.test.IntegrationTestBase
 
-@DataJpaTest
-@Import(
-    UserRepositoryImpl::class,
-    BCryptUserPasswordHasher::class,
-    UserCreateValidatorImpl::class,
-    UserUpdateValidatorImpl::class,
-    UserDomainService::class
-)
-class UserDomainServiceTest {
+/**
+ * UserDomainService 통합 테스트
+ * 실제 MySQL(Testcontainers)을 사용하여 도메인 로직을 검증합니다.
+ */
+class UserDomainServiceIT : IntegrationTestBase() {
 
     @Autowired
-    private lateinit var jpaRepository: UserJpaRepository
-
-    @Autowired
-    private lateinit var userRepository: UserRepositoryImpl
-
-    @Autowired
-    private lateinit var passwordHasher: BCryptUserPasswordHasher
-
-    @Autowired
-    private lateinit var userCreateValidator: UserCreateValidatorImpl
-
-    @Autowired
-    private lateinit var userUpdateValidator: UserUpdateValidatorImpl
-
     private lateinit var userDomainService: UserDomainService
 
-    @BeforeEach
-    fun setUp() {
-        userDomainService = UserDomainService(
-            userRepository,
-            passwordHasher,
-            userCreateValidator,
-            userUpdateValidator
-        )
-    }
+    @Autowired
+    private lateinit var userRepository: UserRepository
 
     @Test
     fun `사용자 생성 성공`() {
         // given
+        val email = uniqueEmail()
         val command = UserCommand.Create(
-            email = "test@example.com",
+            email = email,
             password = "password123",
             nickname = "testuser"
         )
@@ -65,7 +33,7 @@ class UserDomainServiceTest {
 
         // then
         assertNotNull(userInfo.id)
-        assertEquals("test@example.com", userInfo.email)
+        assertEquals(email, userInfo.email)
         assertEquals("testuser", userInfo.nickname)
         assertNotNull(userInfo.createdAt)
         assertNotNull(userInfo.updatedAt)
@@ -75,13 +43,14 @@ class UserDomainServiceTest {
     @Test
     fun `이메일 중복 시 예외 발생`() {
         // given
+        val email = uniqueEmail("duplicate")
         val command1 = UserCommand.Create(
-            email = "duplicate@example.com",
+            email = email,
             password = "password123",
             nickname = "user1"
         )
         val command2 = UserCommand.Create(
-            email = "duplicate@example.com",
+            email = email,
             password = "password456",
             nickname = "user2"
         )
@@ -100,7 +69,7 @@ class UserDomainServiceTest {
     fun `사용자 닉네임 업데이트 성공`() {
         // given
         val createCommand = UserCommand.Create(
-            email = "update@example.com",
+            email = uniqueEmail("update"),
             password = "password123",
             nickname = "oldnickname"
         )
@@ -139,7 +108,7 @@ class UserDomainServiceTest {
     fun `사용자 삭제 성공`() {
         // given
         val createCommand = UserCommand.Create(
-            email = "delete@example.com",
+            email = uniqueEmail("delete"),
             password = "password123",
             nickname = "todelete"
         )
@@ -202,7 +171,7 @@ class UserDomainServiceTest {
     fun `비밀번호가 8자 미만일 때 예외 발생`() {
         // given
         val command = UserCommand.Create(
-            email = "test@example.com",
+            email = uniqueEmail(),
             password = "short",
             nickname = "testuser"
         )
@@ -218,7 +187,7 @@ class UserDomainServiceTest {
     fun `닉네임이 2자 미만일 때 예외 발생`() {
         // given
         val command = UserCommand.Create(
-            email = "test@example.com",
+            email = uniqueEmail(),
             password = "password123",
             nickname = "a"
         )
@@ -234,7 +203,7 @@ class UserDomainServiceTest {
     fun `닉네임이 20자 초과일 때 예외 발생`() {
         // given
         val command = UserCommand.Create(
-            email = "test@example.com",
+            email = uniqueEmail(),
             password = "password123",
             nickname = "a".repeat(21)
         )
@@ -250,7 +219,7 @@ class UserDomainServiceTest {
     fun `업데이트 시 닉네임이 비어있을 때 예외 발생`() {
         // given
         val createCommand = UserCommand.Create(
-            email = "update@example.com",
+            email = uniqueEmail("update"),
             password = "password123",
             nickname = "testuser"
         )
@@ -271,7 +240,7 @@ class UserDomainServiceTest {
     fun `업데이트 시 닉네임이 2자 미만일 때 예외 발생`() {
         // given
         val createCommand = UserCommand.Create(
-            email = "update@example.com",
+            email = uniqueEmail("update"),
             password = "password123",
             nickname = "testuser"
         )
@@ -292,7 +261,7 @@ class UserDomainServiceTest {
     fun `업데이트 시 닉네임이 20자 초과일 때 예외 발생`() {
         // given
         val createCommand = UserCommand.Create(
-            email = "update@example.com",
+            email = uniqueEmail("update"),
             password = "password123",
             nickname = "testuser"
         )
