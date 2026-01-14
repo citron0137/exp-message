@@ -57,7 +57,31 @@ kotlin {
 }
 
 tasks.withType<Test> {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		// 태그 기반 필터링 (gradle -Ptest.tags=unit)
+		val testTags = project.findProperty("test.tags") as String?
+		if (testTags != null) {
+			includeTags(testTags)
+		}
+	}
+}
+
+// 단위 테스트만 실행: ./gradlew unitTest
+tasks.register<Test>("unitTest") {
+	description = "Run unit tests only"
+	group = "verification"
+	useJUnitPlatform {
+		includeTags("unit")
+	}
+}
+
+// 통합 테스트만 실행: ./gradlew integrationTest
+tasks.register<Test>("integrationTest") {
+	description = "Run integration tests only"
+	group = "verification"
+	useJUnitPlatform {
+		includeTags("integration")
+	}
 }
 
 tasks.bootRun {
