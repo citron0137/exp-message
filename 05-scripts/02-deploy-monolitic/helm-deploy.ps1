@@ -7,6 +7,9 @@ param(
     [Parameter(Position=0)]
     [string]$Action,
     
+    [Parameter(Position=1)]
+    [string]$Port,
+    
     [switch]$Help
 )
 
@@ -147,6 +150,150 @@ function Invoke-LogsMigration {
         --tail=100
 }
 
+# MySQL Port Forward (expose 3306)
+function Invoke-MySQLPortForward {
+    param([string]$LocalPort = "13306")
+    
+    Write-Info "=========================================="
+    Write-Info "MySQL Port Forward ($LocalPort -> 3306)"
+    Write-Info "=========================================="
+    
+    # Check kubeconfig.yaml exists
+    if (-not (Test-Path $KubeconfigFile)) {
+        Write-Err "kubeconfig.yaml not found: $KubeconfigFile"
+        exit 1
+    }
+    
+    Write-Info "Kubeconfig: $KubeconfigFile"
+    Write-Info "Forwarding 0.0.0.0:$LocalPort (Current PC) -> ${ReleaseName}-mysql:3306"
+    
+    # Check if mysqlsh or mysql command exists (prefer mysqlsh on Windows)
+    $mysqlshExists = Get-Command mysqlsh -ErrorAction SilentlyContinue
+    $mysqlExists = Get-Command mysql -ErrorAction SilentlyContinue
+    
+    if ($mysqlshExists -or $mysqlExists) {
+        $clientName = if ($mysqlshExists) { "MySQL Shell (mysqlsh)" } else { "MySQL client" }
+        Write-Info "$clientName found. Starting port-forward in background..."
+        Write-Host ""
+        
+        # Start port-forward in background
+        $job = Start-Job -ScriptBlock {
+            param($kubeconfig, $releaseName, $localPort)
+            kubectl port-forward "svc/$releaseName-mysql" "${localPort}:3306" `
+                --address 0.0.0.0 `
+                --kubeconfig="$kubeconfig"
+        } -ArgumentList $KubeconfigFile, $ReleaseName, $LocalPort
+        
+        # Wait for port to be ready
+        Start-Sleep -Seconds 2
+        
+        Write-Info "Connecting to MySQL... (type 'exit' or '\q' to quit)"
+        Write-Host ""
+        
+        # Connect to MySQL (prefer mysqlsh)
+        if ($mysqlshExists) {
+            mysqlsh --sql -h 127.0.0.1 -P $LocalPort -u message_user -pmessage_password -D message_db
+        } else {
+            mysql -h 127.0.0.1 -P $LocalPort -u message_user -pmessage_password message_db
+        }
+        
+        # Cleanup: stop port-forward job
+        Write-Host ""
+        Write-Info "Stopping port-forward..."
+        Stop-Job -Job $job
+        Remove-Job -Job $job
+        Write-Success "Done!"
+    } else {
+        Write-Warn "MySQL client not found. Running port-forward only."
+        Write-Info "Press Ctrl+C to stop port forwarding"
+        Write-Host ""
+        
+        kubectl port-forward "svc/${ReleaseName}-mysql" "${LocalPort}:3306" `
+            --address 0.0.0.0 `
+            --kubeconfig="$KubeconfigFile"
+    }
+}
+
+# MySQL Port Forward Only (no shell)
+function Invoke-MySQLPortForwardOnly {
+    param([string]$LocalPort = "13306")
+    
+    Write-Info "=========================================="
+    Write-Info "MySQL Port Forward ($LocalPort -> 3306)"
+    Write-Info "=========================================="
+    
+    # Check kubeconfig.yaml exists
+    if (-not (Test-Path $KubeconfigFile)) {
+        Write-Err "kubeconfig.yaml not found: $KubeconfigFile"
+        exit 1
+    }
+    
+    Write-Info "Kubeconfig: $KubeconfigFile"
+    Write-Info "Forwarding 0.0.0.0:$LocalPort (Current PC) -> ${ReleaseName}-mysql:3306"
+    Write-Info "Press Ctrl+C to stop port forwarding"
+    Write-Host ""
+    
+    kubectl port-forward "svc/${ReleaseName}-mysql" "${LocalPort}:3306" `
+        --address 0.0.0.0 `
+        --kubeconfig="$KubeconfigFile"
+}
+
+# MySQL Port Forward Background
+function Invoke-MySQLPortForwardBackground {
+    param([string]$LocalPort = "13306")
+    
+    Write-Info "=========================================="
+    Write-Info "MySQL Port Forward Background ($LocalPort -> 3306)"
+    Write-Info "=========================================="
+    
+    # Check kubeconfig.yaml exists
+    if (-not (Test-Path $KubeconfigFile)) {
+        Write-Err "kubeconfig.yaml not found: $KubeconfigFile"
+        exit 1
+    }
+    
+    Write-Info "Kubeconfig: $KubeconfigFile"
+    Write-Info "Forwarding 0.0.0.0:$LocalPort (Current PC) -> ${ReleaseName}-mysql:3306"
+    
+    # Start port-forward in background
+    $job = Start-Job -ScriptBlock {
+        param($kubeconfig, $releaseName, $localPort)
+        kubectl port-forward "svc/$releaseName-mysql" "${localPort}:3306" `
+            --address 0.0.0.0 `
+            --kubeconfig="$kubeconfig"
+    } -ArgumentList $KubeconfigFile, $ReleaseName, $LocalPort
+    
+    Start-Sleep -Seconds 1
+    
+    Write-Success "Port forward started in background (Job ID: $($job.Id))"
+    Write-Info "To stop: Stop-Job -Id $($job.Id); Remove-Job -Id $($job.Id)"
+    Write-Info "To list jobs: Get-Job"
+}
+
+# MySQL Port Forward Background Kill
+function Invoke-MySQLPortForwardBackgroundKill {
+    Write-Info "=========================================="
+    Write-Info "MySQL Port Forward Background Kill"
+    Write-Info "=========================================="
+    
+    $jobs = Get-Job | Where-Object { $_.Command -like "*port-forward*mysql*" -or $_.Name -like "*mysql*" }
+    
+    if ($jobs.Count -eq 0) {
+        Write-Warn "No MySQL port-forward jobs found."
+        Write-Info "Listing all jobs:"
+        Get-Job | Format-Table -AutoSize
+        return
+    }
+    
+    foreach ($job in $jobs) {
+        Write-Info "Stopping Job ID: $($job.Id), State: $($job.State)"
+        Stop-Job -Job $job -ErrorAction SilentlyContinue
+        Remove-Job -Job $job -ErrorAction SilentlyContinue
+    }
+    
+    Write-Success "Stopped $($jobs.Count) port-forward job(s)."
+}
+
 # Uninstall (delete)
 function Invoke-Uninstall {
     Write-Info "=========================================="
@@ -192,6 +339,10 @@ Actions:
   uninstall, d     Delete release
   logs-app, la     View App (00-monolitic) logs
   logs-migration, lm  View Migration (01-db-migrations) logs
+  mysql-mono, mm [port]     Connect to MySQL shell (auto port-forward)
+  mysql-mono-portforward, mmpf [port] Port forward MySQL only (default: 13306)
+  mysql-mono-portforward-background, mmpfbg [port] Port forward in background
+  mysql-mono-portforward-background-kill, mmpfbgkill Stop background port forward
 
 Examples:
   .\helm-deploy.ps1        # Upgrade (default)
@@ -200,6 +351,10 @@ Examples:
   .\helm-deploy.ps1 d      # Uninstall
   .\helm-deploy.ps1 la     # App logs
   .\helm-deploy.ps1 lm     # Migration logs
+  .\helm-deploy.ps1 mm     # MySQL shell (auto port-forward)
+  .\helm-deploy.ps1 mmpf   # MySQL port forward only (13306)
+  .\helm-deploy.ps1 mmpfbg # MySQL port forward in background
+  .\helm-deploy.ps1 mmpfbgkill # Stop background port forward
 "@
 }
 
@@ -220,6 +375,10 @@ switch ($Action) {
     { $_ -in "uninstall", "d" } { Invoke-Uninstall }
     { $_ -in "logs-app", "la" } { Invoke-LogsApp }
     { $_ -in "logs-migration", "lm" } { Invoke-LogsMigration }
+    { $_ -in "mysql-mono", "mm" } { Invoke-MySQLPortForward -LocalPort $(if ($Port) { $Port } else { "13306" }) }
+    { $_ -in "mysql-mono-portforward", "mmpf" } { Invoke-MySQLPortForwardOnly -LocalPort $(if ($Port) { $Port } else { "13306" }) }
+    { $_ -in "mysql-mono-portforward-background", "mmpfbg" } { Invoke-MySQLPortForwardBackground -LocalPort $(if ($Port) { $Port } else { "13306" }) }
+    { $_ -in "mysql-mono-portforward-background-kill", "mmpfbgkill" } { Invoke-MySQLPortForwardBackgroundKill }
     default {
         Write-Err "Unknown action: $Action"
         Show-Help

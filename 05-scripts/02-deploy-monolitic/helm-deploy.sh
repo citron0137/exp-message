@@ -141,6 +141,138 @@ do_logs_migration() {
         --tail=100
 }
 
+# MySQL Port Forward (expose 3306)
+do_mysql_port_forward() {
+    local LOCAL_PORT="${1:-13306}"
+    
+    log_info "=========================================="
+    log_info "MySQL Port Forward ($LOCAL_PORT -> 3306)"
+    log_info "=========================================="
+    
+    # Check kubeconfig.yaml exists
+    if [ ! -f "$KUBECONFIG_FILE" ]; then
+        log_error "kubeconfig.yaml not found: $KUBECONFIG_FILE"
+        exit 1
+    fi
+    
+    log_info "Kubeconfig: $KUBECONFIG_FILE"
+    log_info "Forwarding 0.0.0.0:$LOCAL_PORT (Current PC) -> ${RELEASE_NAME}-mysql:3306"
+    
+    # Check if mysql command exists
+    if command -v mysql &> /dev/null; then
+        log_info "MySQL client found. Starting port-forward in background..."
+        echo ""
+        
+        # Start port-forward in background
+        kubectl port-forward "svc/${RELEASE_NAME}-mysql" "${LOCAL_PORT}:3306" \
+            --address 0.0.0.0 \
+            --kubeconfig="$KUBECONFIG_FILE" &
+        local PF_PID=$!
+        
+        # Wait for port to be ready
+        sleep 2
+        
+        log_info "Connecting to MySQL... (type 'exit' to quit)"
+        echo ""
+        
+        # Connect to MySQL
+        mysql -h 127.0.0.1 -P "$LOCAL_PORT" -u message_user -pmessage_password message_db
+        
+        # Cleanup: stop port-forward
+        echo ""
+        log_info "Stopping port-forward..."
+        kill $PF_PID 2>/dev/null
+        log_success "Done!"
+    else
+        log_warn "MySQL client not found. Running port-forward only."
+        log_info "Press Ctrl+C to stop port forwarding"
+        echo ""
+        
+        kubectl port-forward "svc/${RELEASE_NAME}-mysql" "${LOCAL_PORT}:3306" \
+            --address 0.0.0.0 \
+            --kubeconfig="$KUBECONFIG_FILE"
+    fi
+}
+
+# MySQL Port Forward Only (no shell)
+do_mysql_port_forward_only() {
+    local LOCAL_PORT="${1:-13306}"
+    
+    log_info "=========================================="
+    log_info "MySQL Port Forward ($LOCAL_PORT -> 3306)"
+    log_info "=========================================="
+    
+    # Check kubeconfig.yaml exists
+    if [ ! -f "$KUBECONFIG_FILE" ]; then
+        log_error "kubeconfig.yaml not found: $KUBECONFIG_FILE"
+        exit 1
+    fi
+    
+    log_info "Kubeconfig: $KUBECONFIG_FILE"
+    log_info "Forwarding 0.0.0.0:$LOCAL_PORT (Current PC) -> ${RELEASE_NAME}-mysql:3306"
+    log_info "Press Ctrl+C to stop port forwarding"
+    echo ""
+    
+    kubectl port-forward "svc/${RELEASE_NAME}-mysql" "${LOCAL_PORT}:3306" \
+        --address 0.0.0.0 \
+        --kubeconfig="$KUBECONFIG_FILE"
+}
+
+# MySQL Port Forward Background
+do_mysql_port_forward_background() {
+    local LOCAL_PORT="${1:-13306}"
+    
+    log_info "=========================================="
+    log_info "MySQL Port Forward Background ($LOCAL_PORT -> 3306)"
+    log_info "=========================================="
+    
+    # Check kubeconfig.yaml exists
+    if [ ! -f "$KUBECONFIG_FILE" ]; then
+        log_error "kubeconfig.yaml not found: $KUBECONFIG_FILE"
+        exit 1
+    fi
+    
+    log_info "Kubeconfig: $KUBECONFIG_FILE"
+    log_info "Forwarding 0.0.0.0:$LOCAL_PORT (Current PC) -> ${RELEASE_NAME}-mysql:3306"
+    
+    # Start port-forward in background
+    nohup kubectl port-forward "svc/${RELEASE_NAME}-mysql" "${LOCAL_PORT}:3306" \
+        --address 0.0.0.0 \
+        --kubeconfig="$KUBECONFIG_FILE" > /dev/null 2>&1 &
+    local PF_PID=$!
+    
+    sleep 1
+    
+    log_success "Port forward started in background (PID: $PF_PID)"
+    log_info "To stop: kill $PF_PID"
+    log_info "To find process: ps aux | grep port-forward"
+}
+
+# MySQL Port Forward Background Kill
+do_mysql_port_forward_background_kill() {
+    log_info "=========================================="
+    log_info "MySQL Port Forward Background Kill"
+    log_info "=========================================="
+    
+    # Find kubectl port-forward processes for mysql
+    local pids=$(pgrep -f "kubectl port-forward.*mysql" 2>/dev/null)
+    
+    if [ -z "$pids" ]; then
+        log_warn "No MySQL port-forward processes found."
+        log_info "Running processes:"
+        ps aux | grep -E "port-forward.*mysql" | grep -v grep || echo "  (none)"
+        return
+    fi
+    
+    local count=0
+    for pid in $pids; do
+        log_info "Stopping PID: $pid"
+        kill "$pid" 2>/dev/null && ((count++))
+    done
+    
+    log_success "Stopped $count port-forward process(es)."
+}
+
 # Uninstall (delete)
 do_uninstall() {
     log_info "=========================================="
@@ -184,6 +316,10 @@ show_help() {
     echo "  uninstall, d     Delete release"
     echo "  logs-app, la     View App (00-monolitic) logs"
     echo "  logs-migration, lm  View Migration (01-db-migrations) logs"
+    echo "  mysql-mono, mm [port]     Connect to MySQL shell (auto port-forward)"
+    echo "  mysql-mono-portforward, mmpf [port] Port forward MySQL only (default: 13306)"
+    echo "  mysql-mono-portforward-background, mmpfbg [port] Port forward in background"
+    echo "  mysql-mono-portforward-background-kill, mmpfbgkill Stop background port forward"
     echo ""
     echo "Examples:"
     echo "  $0           # Upgrade (default)"
@@ -192,10 +328,15 @@ show_help() {
     echo "  $0 d         # Uninstall"
     echo "  $0 la        # App logs"
     echo "  $0 lm        # Migration logs"
+    echo "  $0 mm        # MySQL shell (auto port-forward)"
+    echo "  $0 mmpf      # MySQL port forward only (13306)"
+    echo "  $0 mmpfbg    # MySQL port forward in background"
+    echo "  $0 mmpfbgkill # Stop background port forward"
 }
 
 # Main
 ACTION=""
+PORT=""
 
 # Parse arguments
 if [[ $# -gt 0 ]]; then
@@ -206,6 +347,7 @@ if [[ $# -gt 0 ]]; then
             ;;
         *)
             ACTION="$1"
+            PORT="$2"
             ;;
     esac
 fi
@@ -230,6 +372,18 @@ case $ACTION in
         ;;
     logs-migration|lm)
         do_logs_migration
+        ;;
+    mysql-mono|mm)
+        do_mysql_port_forward "$PORT"
+        ;;
+    mysql-mono-portforward|mmpf)
+        do_mysql_port_forward_only "$PORT"
+        ;;
+    mysql-mono-portforward-background|mmpfbg)
+        do_mysql_port_forward_background "$PORT"
+        ;;
+    mysql-mono-portforward-background-kill|mmpfbgkill)
+        do_mysql_port_forward_background_kill
         ;;
     *)
         log_error "Unknown action: $ACTION"
