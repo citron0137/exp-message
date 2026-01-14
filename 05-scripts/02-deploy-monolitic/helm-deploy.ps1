@@ -7,8 +7,8 @@ param(
     [Parameter(Position=0)]
     [string]$Action,
     
-    [Parameter(Position=1)]
-    [string]$Port,
+    [Parameter(Position=1, ValueFromRemainingArguments=$true)]
+    [string[]]$RemainingArgs,
     
     [switch]$Help
 )
@@ -270,6 +270,26 @@ function Invoke-MySQLPortForwardBackground {
     Write-Info "To list jobs: Get-Job"
 }
 
+# Kubectl with kubeconfig
+function Invoke-Kubectl {
+    # Check kubeconfig.yaml exists
+    if (-not (Test-Path $KubeconfigFile)) {
+        Write-Err "kubeconfig.yaml not found: $KubeconfigFile"
+        exit 1
+    }
+    
+    if ($RemainingArgs.Count -eq 0) {
+        Write-Warn "No kubectl arguments provided."
+        Write-Info "Usage: .\helm-deploy.ps1 kubectl [args...]"
+        Write-Info "Example: .\helm-deploy.ps1 kubectl get pods"
+        return
+    }
+    
+    $kubectlArgs = $RemainingArgs + @("--kubeconfig=$KubeconfigFile")
+    Write-Info "Running: kubectl $($RemainingArgs -join ' ') --kubeconfig=..."
+    & kubectl @kubectlArgs
+}
+
 # MySQL Port Forward Background Kill
 function Invoke-MySQLPortForwardBackgroundKill {
     Write-Info "=========================================="
@@ -343,6 +363,7 @@ Actions:
   mysql-mono-portforward, mmpf [port] Port forward MySQL only (default: 13306)
   mysql-mono-portforward-background, mmpfbg [port] Port forward in background
   mysql-mono-portforward-background-kill, mmpfbgkill Stop background port forward
+  kubectl [args...]  Run kubectl with kubeconfig
 
 Examples:
   .\helm-deploy.ps1        # Upgrade (default)
@@ -355,6 +376,8 @@ Examples:
   .\helm-deploy.ps1 mmpf   # MySQL port forward only (13306)
   .\helm-deploy.ps1 mmpfbg # MySQL port forward in background
   .\helm-deploy.ps1 mmpfbgkill # Stop background port forward
+  .\helm-deploy.ps1 kubectl get pods  # Run kubectl with kubeconfig
+  .\helm-deploy.ps1 kubectl exec -it pod-name -- bash
 "@
 }
 
@@ -375,10 +398,11 @@ switch ($Action) {
     { $_ -in "uninstall", "d" } { Invoke-Uninstall }
     { $_ -in "logs-app", "la" } { Invoke-LogsApp }
     { $_ -in "logs-migration", "lm" } { Invoke-LogsMigration }
-    { $_ -in "mysql-mono", "mm" } { Invoke-MySQLPortForward -LocalPort $(if ($Port) { $Port } else { "13306" }) }
-    { $_ -in "mysql-mono-portforward", "mmpf" } { Invoke-MySQLPortForwardOnly -LocalPort $(if ($Port) { $Port } else { "13306" }) }
-    { $_ -in "mysql-mono-portforward-background", "mmpfbg" } { Invoke-MySQLPortForwardBackground -LocalPort $(if ($Port) { $Port } else { "13306" }) }
+    { $_ -in "mysql-mono", "mm" } { Invoke-MySQLPortForward -LocalPort $(if ($RemainingArgs) { $RemainingArgs[0] } else { "13306" }) }
+    { $_ -in "mysql-mono-portforward", "mmpf" } { Invoke-MySQLPortForwardOnly -LocalPort $(if ($RemainingArgs) { $RemainingArgs[0] } else { "13306" }) }
+    { $_ -in "mysql-mono-portforward-background", "mmpfbg" } { Invoke-MySQLPortForwardBackground -LocalPort $(if ($RemainingArgs) { $RemainingArgs[0] } else { "13306" }) }
     { $_ -in "mysql-mono-portforward-background-kill", "mmpfbgkill" } { Invoke-MySQLPortForwardBackgroundKill }
+    "kubectl" { Invoke-Kubectl }
     default {
         Write-Err "Unknown action: $Action"
         Show-Help

@@ -248,6 +248,25 @@ do_mysql_port_forward_background() {
     log_info "To find process: ps aux | grep port-forward"
 }
 
+# Kubectl with kubeconfig
+do_kubectl() {
+    # Check kubeconfig.yaml exists
+    if [ ! -f "$KUBECONFIG_FILE" ]; then
+        log_error "kubeconfig.yaml not found: $KUBECONFIG_FILE"
+        exit 1
+    fi
+    
+    if [ $# -eq 0 ]; then
+        log_warn "No kubectl arguments provided."
+        log_info "Usage: $0 kubectl [args...]"
+        log_info "Example: $0 kubectl get pods"
+        return
+    fi
+    
+    log_info "Running: kubectl $* --kubeconfig=..."
+    kubectl "$@" --kubeconfig="$KUBECONFIG_FILE"
+}
+
 # MySQL Port Forward Background Kill
 do_mysql_port_forward_background_kill() {
     log_info "=========================================="
@@ -320,6 +339,7 @@ show_help() {
     echo "  mysql-mono-portforward, mmpf [port] Port forward MySQL only (default: 13306)"
     echo "  mysql-mono-portforward-background, mmpfbg [port] Port forward in background"
     echo "  mysql-mono-portforward-background-kill, mmpfbgkill Stop background port forward"
+    echo "  kubectl [args...]  Run kubectl with kubeconfig"
     echo ""
     echo "Examples:"
     echo "  $0           # Upgrade (default)"
@@ -332,6 +352,8 @@ show_help() {
     echo "  $0 mmpf      # MySQL port forward only (13306)"
     echo "  $0 mmpfbg    # MySQL port forward in background"
     echo "  $0 mmpfbgkill # Stop background port forward"
+    echo "  $0 kubectl get pods  # Run kubectl with kubeconfig"
+    echo "  $0 kubectl exec -it pod-name -- bash"
 }
 
 # Main
@@ -384,6 +406,11 @@ case $ACTION in
         ;;
     mysql-mono-portforward-background-kill|mmpfbgkill)
         do_mysql_port_forward_background_kill
+        ;;
+    kubectl)
+        shift
+        do_kubectl "$@"
+        exit 0
         ;;
     *)
         log_error "Unknown action: $ACTION"
