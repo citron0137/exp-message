@@ -85,8 +85,15 @@ $BuildScript = {
         [string]$LogFile
     )
     
-    # Helper to write to log file
-    function Write-Log { param($Message) Add-Content -Path $LogFile -Value $Message }
+    # Helper to write to log file (with shared access)
+    function Write-Log {
+        param($Message)
+        $stream = [System.IO.File]::Open($LogFile, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write, [System.IO.FileShare]::ReadWrite)
+        $writer = [System.IO.StreamWriter]::new($stream)
+        $writer.WriteLine($Message)
+        $writer.Close()
+        $stream.Close()
+    }
     
     if (-not $Registry -or -not $Repository) {
         Write-Log "[WARN] [$Name] Registry or repository not configured. Skipping."
@@ -104,10 +111,9 @@ $BuildScript = {
     Write-Log "[INFO] [$Name] Source directory: $SourceDir"
     
     try {
-        # Build
+        # Build (--progress=plain for real-time output)
         Write-Log "[INFO] [$Name] Running docker build..."
-        $buildOutput = docker build -t "${Repository}:${Tag}" $SourceDir 2>&1
-        $buildOutput | ForEach-Object { Write-Log $_ }
+        & docker build --progress=plain -t "${Repository}:${Tag}" $SourceDir 2>&1 | ForEach-Object { Write-Log $_ }
         if ($LASTEXITCODE -ne 0) { throw "Docker build failed" }
         
         # Tag
@@ -116,8 +122,7 @@ $BuildScript = {
         
         # Push
         Write-Log "[INFO] [$Name] Pushing image: $fullImage"
-        $pushOutput = docker push $fullImage 2>&1
-        $pushOutput | ForEach-Object { Write-Log $_ }
+        & docker push $fullImage 2>&1 | ForEach-Object { Write-Log $_ }
         if ($LASTEXITCODE -ne 0) { throw "Docker push failed" }
         
         Write-Log "[SUCCESS] [$Name] Completed: $fullImage"
@@ -208,21 +213,33 @@ function Main {
     Write-Info "[migration] Building... (JobId: $($migJob.Id))"
     Write-Host ""
     
+    # Read log files with shared access to avoid file locking
+    function Read-LastLine {
+        param($Path)
+        try {
+            if (-not (Test-Path $Path)) { return $null }
+            $stream = [System.IO.File]::Open($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+            $reader = [System.IO.StreamReader]::new($stream)
+            $content = $reader.ReadToEnd()
+            $reader.Close()
+            $stream.Close()
+            $lines = $content -split "`r?`n" | Where-Object { $_ -ne "" }
+            if ($lines.Count -gt 0) { return $lines[-1] }
+            return $null
+        } catch { return $null }
+    }
+    
     # Monitor progress while waiting
     Write-Info "Progress (updates every 3 seconds):"
     while (($appJob.State -eq "Running") -or ($migJob.State -eq "Running")) {
         $appStatus = "waiting..."
         $migStatus = "waiting..."
         
-        if (Test-Path $appLogFile) {
-            $appLastLine = Get-Content $appLogFile -Tail 1 -ErrorAction SilentlyContinue
-            if ($appLastLine) { $appStatus = $appLastLine.Substring(0, [Math]::Min(60, $appLastLine.Length)) }
-        }
+        $appLastLine = Read-LastLine $appLogFile
+        if ($appLastLine) { $appStatus = $appLastLine.Substring(0, [Math]::Min(60, $appLastLine.Length)) }
         
-        if (Test-Path $migLogFile) {
-            $migLastLine = Get-Content $migLogFile -Tail 1 -ErrorAction SilentlyContinue
-            if ($migLastLine) { $migStatus = $migLastLine.Substring(0, [Math]::Min(60, $migLastLine.Length)) }
-        }
+        $migLastLine = Read-LastLine $migLogFile
+        if ($migLastLine) { $migStatus = $migLastLine.Substring(0, [Math]::Min(60, $migLastLine.Length)) }
         
         $appState = if ($appJob.State -eq "Running") { "running" } else { "done" }
         $migState = if ($migJob.State -eq "Running") { "running" } else { "done" }
