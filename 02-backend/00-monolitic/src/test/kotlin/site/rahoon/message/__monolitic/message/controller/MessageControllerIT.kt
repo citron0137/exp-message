@@ -173,7 +173,7 @@ class MessageControllerIT(
         )
 
         // then
-        response.assertError(objectMapper, HttpStatus.BAD_REQUEST)
+        response.assertError(objectMapper, HttpStatus.FORBIDDEN)
     }
 
     @Test
