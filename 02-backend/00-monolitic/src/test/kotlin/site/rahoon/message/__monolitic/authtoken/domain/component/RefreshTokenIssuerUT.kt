@@ -12,7 +12,7 @@ import java.time.temporal.ChronoUnit
  * RefreshTokenIssuer 단위 테스트
  * RefreshToken 발급 로직을 검증합니다.
  */
-class RefreshTokenIssuerTest {
+class RefreshTokenIssuerUT {
 
     private lateinit var properties: AuthTokenProperties
     private lateinit var refreshTokenIssuer: RefreshTokenIssuer

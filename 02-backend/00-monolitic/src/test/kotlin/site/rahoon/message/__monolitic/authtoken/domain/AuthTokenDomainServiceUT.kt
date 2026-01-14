@@ -18,7 +18,7 @@ import java.util.UUID
  * AuthTokenDomainService 단위 테스트
  * 의존성을 Mock으로 처리하여 도메인 로직만 검증합니다.
  */
-class AuthTokenDomainServiceTest {
+class AuthTokenDomainServiceUT {
 
     private lateinit var accessTokenIssuer: AccessTokenIssuer
     private lateinit var accessTokenVerifier: AccessTokenVerifier

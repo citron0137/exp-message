@@ -24,7 +24,7 @@ import java.util.UUID
  * MessageApplicationService 단위 테스트
  * 의존성을 Mock으로 처리하여 Application Service 로직만 검증합니다.
  */
-class MessageApplicationServiceTest {
+class MessageApplicationServiceUT {
 
     private lateinit var messageDomainService: MessageDomainService
     private lateinit var chatRoomDomainService: ChatRoomDomainService

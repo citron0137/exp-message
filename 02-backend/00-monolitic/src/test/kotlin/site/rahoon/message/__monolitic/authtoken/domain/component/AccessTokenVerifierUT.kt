@@ -21,7 +21,7 @@ import java.util.*
  * AccessTokenVerifier 단위 테스트
  * JWT 토큰 검증 로직을 검증합니다.
  */
-class AccessTokenVerifierTest {
+class AccessTokenVerifierUT {
 
     private lateinit var properties: AuthTokenProperties
     private lateinit var accessTokenIssuer: AccessTokenIssuer

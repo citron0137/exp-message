@@ -16,7 +16,7 @@ import java.time.temporal.ChronoUnit
  * AccessTokenIssuer 단위 테스트
  * JWT 토큰 발급 로직을 검증합니다.
  */
-class AccessTokenIssuerTest {
+class AccessTokenIssuerUT {
 
     private lateinit var properties: AuthTokenProperties
     private lateinit var accessTokenIssuer: AccessTokenIssuer
