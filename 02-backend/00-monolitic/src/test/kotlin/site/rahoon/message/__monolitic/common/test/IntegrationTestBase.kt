@@ -1,7 +1,6 @@
 package site.rahoon.message.__monolitic.common.test
 
 import com.redis.testcontainers.RedisContainer
-import org.junit.jupiter.api.BeforeAll
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.GenericContainer
@@ -9,38 +8,41 @@ import org.testcontainers.containers.MySQLContainer
 import org.testcontainers.containers.Network
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.images.builder.ImageFromDockerfile
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 import java.nio.file.Paths
 import java.time.Duration
 
 /**
  * MySQL + Redis Testcontainers 기반 통합 테스트 베이스 클래스
  *
+ * - @IntegrationTest 포함 (SpringBootTest + 태그)
+ * - Singleton Container Pattern: 모든 테스트에서 컨테이너 재사용
  * - 컨테이너 시작 후 자동으로 DB 마이그레이션 실행
- * - 모든 통합 테스트에서 동일한 인프라 환경 공유
  *
  * 사용법:
  * ```kotlin
- * @IntegrationTest
- * class MyIntegrationTest : IntegrationTestBase() {
+ * class MyControllerIT : IntegrationTestBase() {
  *     @Test
  *     fun myTest() { ... }
  * }
  * ```
  */
-@Testcontainers
+@IntegrationTest
 abstract class IntegrationTestBase {
 
+    /**
+     * 테스트마다 고유한 이메일을 생성합니다.
+     */
+    protected fun uniqueEmail(prefix: String = "test"): String = TestUtils.uniqueEmail(prefix)
+
+    /**
+     * 테스트용 고유 IP 주소를 생성합니다.
+     */
+    protected fun uniqueIp(): String = TestUtils.uniqueIp()
+
     companion object {
-        @JvmStatic
-        protected val network: Network = Network.newNetwork()
+        private val network: Network = Network.newNetwork()
 
-        @JvmStatic
-        private var migrationCompleted = false
-
-        @Container
-        @JvmStatic
+        // Singleton Container Pattern - 모든 테스트에서 재사용
         val mysql: MySQLContainer<*> = MySQLContainer("mysql:8.0")
             .withNetwork(network)
             .withNetworkAliases("mysql")
@@ -50,19 +52,17 @@ abstract class IntegrationTestBase {
             .withUrlParam("useSSL", "false")
             .withUrlParam("allowPublicKeyRetrieval", "true")
 
-        @Container
-        @JvmStatic
         val redis: RedisContainer = RedisContainer("redis:7-alpine")
             .withNetwork(network)
             .withNetworkAliases("redis")
 
-        @JvmStatic
-        @BeforeAll
-        fun setupMigrations() {
-            if (!migrationCompleted) {
-                runMigrations()
-                migrationCompleted = true
-            }
+        init {
+            // 컨테이너 시작 (한 번만 실행됨)
+            mysql.start()
+            redis.start()
+
+            // 마이그레이션 실행
+            runMigrations()
         }
 
         @JvmStatic
