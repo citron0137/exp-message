@@ -2,7 +2,7 @@ package site.rahoon.message.__monolitic.user.controller
 
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -28,16 +28,15 @@ class UserController(
      * POST /users
      */
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     fun signUp(
         @Valid @RequestBody request: UserRequest.SignUp
-    ): ResponseEntity<CommonApiResponse<UserResponse.SignUp>> {
+    ): CommonApiResponse<UserResponse.SignUp> {
         val criteria = request.toCriteria()
         val userInfo = userApplicationService.register(criteria)
         val response = UserResponse.SignUp.from(userInfo)
         
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-            CommonApiResponse.success(response)
-        )
+        return CommonApiResponse.success(response)
     }
 
     /**
@@ -48,13 +47,11 @@ class UserController(
     @AuthInfoAffect(required = true)
     fun getCurrentUser(
         authInfo: CommonAuthInfo
-    ): ResponseEntity<CommonApiResponse<UserResponse.Me>> {
+    ): CommonApiResponse<UserResponse.Me> {
         val userInfo = userApplicationService.getCurrentUser(authInfo.userId)
         val response = UserResponse.Me.from(userInfo)
         
-        return ResponseEntity.status(HttpStatus.OK).body(
-            CommonApiResponse.success(response)
-        )
+        return CommonApiResponse.success(response)
     }
 }
 

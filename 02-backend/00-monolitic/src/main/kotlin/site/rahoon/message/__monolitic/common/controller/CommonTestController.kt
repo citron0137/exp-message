@@ -1,8 +1,6 @@
 package site.rahoon.message.__monolitic.common.controller
 
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -21,20 +19,18 @@ class CommonTestController {
     private val logger = LoggerFactory.getLogger(CommonTestController::class.java)
 
     @GetMapping
-    fun health(): ResponseEntity<CommonApiResponse<Map<String, String>>> {
+    fun health(): CommonApiResponse<Map<String, String>> {
         val data = mapOf(
             "status" to "ok",
             "message" to "Service is running"
         )
-        return ResponseEntity
-            .status(HttpStatus.OK)
-            .body(CommonApiResponse.success(data))
+        return CommonApiResponse.success(data)
     }
 
     @GetMapping("/error")
     fun error(
         @RequestParam(required = false, defaultValue = "CLIENT_ERROR") errorType: String
-    ): ResponseEntity<CommonApiResponse<Nothing>> {
+    ): CommonApiResponse<Nothing> {
         val error = when (errorType.uppercase()) {
             "NOT_FOUND" -> CommonError.NOT_FOUND
             "CONFLICT" -> CommonError.CONFLICT
