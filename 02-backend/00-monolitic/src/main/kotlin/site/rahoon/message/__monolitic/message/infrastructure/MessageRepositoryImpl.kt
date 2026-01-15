@@ -1,7 +1,6 @@
 package site.rahoon.message.__monolitic.message.infrastructure
 
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Repository
 import site.rahoon.message.__monolitic.message.domain.Message
 import site.rahoon.message.__monolitic.message.domain.MessageRepository
@@ -33,11 +32,9 @@ class MessageRepositoryImpl(
         afterId: String?,
         limit: Int
     ): List<Message> {
-        val pageable = PageRequest.of(
-            0,
-            limit,
-            Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
-        )
+        // 정렬은 Repository 쿼리(메서드명/JPQL)의 order by로만 처리합니다.
+        // Pageable에 Sort를 주면 order by가 중복으로 생성될 수 있습니다.
+        val pageable = PageRequest.of(0, limit)
 
         val entities = if (afterCreatedAt == null || afterId == null) {
             jpaRepository.findByChatRoomIdOrderByCreatedAtDescIdDesc(chatRoomId, pageable)
