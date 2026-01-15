@@ -7,11 +7,10 @@ import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.resource.NoResourceFoundException
 import site.rahoon.message.__monolitic.common.application.ApplicationException
-import site.rahoon.message.__monolitic.common.controller.ApiResponse
+import site.rahoon.message.__monolitic.common.controller.template.ApiResponse
 import site.rahoon.message.__monolitic.common.domain.DomainException
 import site.rahoon.message.__monolitic.common.domain.ErrorType
 import java.time.ZonedDateTime

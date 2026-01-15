@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import site.rahoon.message.__monolitic.chatroommember.application.ChatRoomMemberApplicationService
-import site.rahoon.message.__monolitic.common.controller.ApiResponse
+import site.rahoon.message.__monolitic.common.controller.template.ApiResponse
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfo
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfoAffect
 

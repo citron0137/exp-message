@@ -6,7 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import site.rahoon.message.__monolitic.common.controller.ApiResponse
+import site.rahoon.message.__monolitic.common.controller.template.ApiResponse
 
 /**
  * API 응답 검증을 위한 확장 함수 모음

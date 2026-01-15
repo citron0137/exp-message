@@ -8,11 +8,10 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import site.rahoon.message.__monolitic.common.controller.ApiResponse
+import site.rahoon.message.__monolitic.common.controller.template.ApiResponse
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfo
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfoAffect
 import site.rahoon.message.__monolitic.user.application.UserApplicationService
-import site.rahoon.message.__monolitic.user.application.UserCriteria
 
 /**
  * 사용자 관련 Controller
