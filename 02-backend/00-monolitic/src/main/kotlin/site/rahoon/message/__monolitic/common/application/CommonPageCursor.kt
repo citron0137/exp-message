@@ -1,11 +1,14 @@
 package site.rahoon.message.__monolitic.common.application
 
+import site.rahoon.message.__monolitic.common.application.config.PageCursorProperties
 import site.rahoon.message.__monolitic.common.domain.CommonError
 import site.rahoon.message.__monolitic.common.domain.DomainException
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.Base64
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * cursor 디코딩 결과(공통)
@@ -28,9 +31,19 @@ import java.util.Base64
  * payload: v=1&sk=createdAt,id&createdAt=1736900000123&id=12345
  *          ↓ (value URL 인코딩)
  * payload: v=1&sk=createdAt%2Cid&createdAt=1736900000123&id=12345
+ *          ↓ (서명 활성화 시: HMAC 서명 추가)
+ * payload: v=1&sk=createdAt%2Cid&createdAt=1736900000123&id=12345&s=AbCdEfGhIjKlMnOpQrSt
  *          ↓ (Base64URL 인코딩)
- * cursor:  dj0xJnNrPWNyZWF0ZWRBdCUyQ2lkJmNyZWF0ZWRBdD0xNzM2OTAwMDAwMTIzJmlkPTEyMzQ1
+ * cursor:  dj0xJnNrPWNyZWF0ZWRBdCUyQ2lkJmNyZWF0ZWRBdD0xNzM2OTAwMDAwMTIzJmlkPTEyMzQ1JnM9QWJDZEVmR2hJaktsTW5PcFFyU3Q
  * ```
+ *
+ * ## 서명 (선택적)
+ *
+ * - **활성화**: `page-cursor.signature-enabled=true` 및 `page-cursor.secret` 설정 시
+ * - **서명 방식**: HMAC-SHA256의 처음 16바이트 (128비트 보안)
+ * - **키 이름**: `s` (짧은 키 이름으로 길이 최소화)
+ * - **길이 증가**: 서명 활성화 시 약 30-35자 추가 (URL 인코딩 포함)
+ * - **보안**: cursor 변조 방지 (악의적 요청 차단)
  */
 open class CommonPageCursor(
     val version: String,
@@ -40,6 +53,43 @@ open class CommonPageCursor(
 ){
 
     companion object {
+        /**
+         * Cursor 서명을 위한 설정 (선택적)
+         * null이면 서명을 사용하지 않음
+         */
+        @Volatile
+        private var signatureConfig: PageCursorProperties? = null
+
+        /**
+         * Cursor 서명 설정 초기화
+         * 애플리케이션 시작 시 한 번 호출
+         */
+        fun initializeSignature(config: PageCursorProperties) {
+            signatureConfig = config
+        }
+
+        /**
+         * HMAC 서명 생성 (길이 최소화: SHA-256의 처음 16바이트만 사용)
+         * Base64URL 인코딩 후 약 22자 길이
+         */
+        private fun generateSignature(payload: String, secret: String): String {
+            val mac = Mac.getInstance("HmacSHA256")
+            val secretKey = SecretKeySpec(secret.toByteArray(StandardCharsets.UTF_8), "HmacSHA256")
+            mac.init(secretKey)
+            val hash = mac.doFinal(payload.toByteArray(StandardCharsets.UTF_8))
+            // 길이 최소화: 처음 16바이트만 사용 (128비트 보안)
+            val truncated = hash.sliceArray(0 until 16)
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(truncated)
+        }
+
+        /**
+         * 서명 검증
+         */
+        private fun verifySignature(payload: String, signature: String, secret: String): Boolean {
+            val expected = generateSignature(payload, secret)
+            return expected == signature
+        }
+
         /**
          * cursors 순서에 따라 sk가 생성됩니다.
          */
@@ -166,6 +216,10 @@ open class CommonPageCursor(
                             )
                         }
                     }
+                    "s" -> {
+                        // 서명 키는 pairs에 추가하지 않음 (검증용)
+                        // 서명은 나중에 검증됨
+                    }
                     else -> {
                         // 일반 키 중복 체크
                         if (seenKeys.contains(key)) {
@@ -253,6 +307,54 @@ open class CommonPageCursor(
             
             val cursors = sortedPairs + otherPairs
 
+            // 서명 검증 (활성화된 경우)
+            val config = signatureConfig
+            if (config?.isSignatureActive() == true) {
+                // 서명 추출
+                val signaturePart = payload.split("&").find { it.startsWith("s=") }
+                if (signaturePart == null) {
+                    throw DomainException(
+                        error = CommonError.INVALID_PAGE_CURSOR,
+                        details = mapOf(
+                            "cursor" to cursor,
+                            "payload" to payload,
+                            "reason" to "missing signature"
+                        )
+                    )
+                }
+                
+                val signature = try {
+                    URLDecoder.decode(signaturePart.substring(2), StandardCharsets.UTF_8.name())
+                } catch (e: Exception) {
+                    throw DomainException(
+                        error = CommonError.INVALID_PAGE_CURSOR,
+                        details = mapOf(
+                            "cursor" to cursor,
+                            "payload" to payload,
+                            "reason" to "failed to decode signature"
+                        ),
+                        cause = e
+                    )
+                }
+
+                // 서명 제외한 payload 재구성
+                val payloadWithoutSignature = payload.split("&")
+                    .filterNot { it.startsWith("s=") }
+                    .joinToString("&")
+
+                // 서명 검증
+                if (!verifySignature(payloadWithoutSignature, signature, config.secret)) {
+                    throw DomainException(
+                        error = CommonError.INVALID_PAGE_CURSOR,
+                        details = mapOf(
+                            "cursor" to cursor,
+                            "payload" to payload,
+                            "reason" to "invalid signature"
+                        )
+                    )
+                }
+            }
+
             return CommonPageCursor(version = appliedVersion, cursors = cursors)
         }
     }
@@ -273,9 +375,18 @@ open class CommonPageCursor(
             }
         }
 
+        // 서명 추가 (활성화된 경우)
+        val config = signatureConfig
+        val finalPayload = if (config?.isSignatureActive() == true) {
+            val signature = generateSignature(payload, config.secret)
+            "$payload&s=${URLEncoder.encode(signature, StandardCharsets.UTF_8.name())}"
+        } else {
+            payload
+        }
+
         this.encoded = Base64.getUrlEncoder()
             .withoutPadding()
-            .encodeToString(payload.toByteArray(StandardCharsets.UTF_8))
+            .encodeToString(finalPayload.toByteArray(StandardCharsets.UTF_8))
         return this.encoded!!
     }
 

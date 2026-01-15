@@ -4,8 +4,10 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
+import site.rahoon.message.__monolitic.common.application.config.PageCursorProperties
 import site.rahoon.message.__monolitic.common.domain.CommonError
 import site.rahoon.message.__monolitic.common.domain.DomainException
+import java.nio.charset.StandardCharsets
 
 /**
  * CommonPageCursor 단위 테스트
@@ -476,5 +478,134 @@ class CommonPageCursorUT {
 
         // then
         decoded.version shouldBe version
+    }
+
+    @Test
+    fun `encode decode - 서명 없이 정상 동작`() {
+        // given
+        // 서명이 비활성화된 상태 (기본값)
+        val cursors = listOf("createdAt" to "123", "id" to "456")
+
+        // when
+        val encoded = CommonPageCursor.encode("1", cursors)
+        val decoded = CommonPageCursor.decode(encoded)
+
+        // then
+        decoded.version shouldBe "1"
+        decoded.cursors shouldBe cursors
+    }
+
+    @Test
+    fun `encode decode - 서명 활성화 시 서명 포함`() {
+        // given
+        val secret = "test-secret-key-16bytes"
+        CommonPageCursor.initializeSignature(
+            PageCursorProperties(secret = secret, signatureEnabled = true)
+        )
+        val cursors = listOf("createdAt" to "123", "id" to "456")
+
+        try {
+            // when
+            val encoded = CommonPageCursor.encode("1", cursors)
+            val decoded = CommonPageCursor.decode(encoded)
+
+            // then
+            decoded.version shouldBe "1"
+            decoded.cursors shouldBe cursors
+        } finally {
+            // cleanup
+            CommonPageCursor.initializeSignature(PageCursorProperties())
+        }
+    }
+
+    @Test
+    fun `decode - 서명 활성화 시 잘못된 서명 거부`() {
+        // given
+        val secret = "test-secret-key-16bytes"
+        CommonPageCursor.initializeSignature(
+            PageCursorProperties(secret = secret, signatureEnabled = true)
+        )
+        val cursors = listOf("key" to "value")
+        val validCursor = CommonPageCursor.encode("1", cursors)
+
+        try {
+            // 잘못된 서명으로 cursor 변조
+            val payload = java.util.Base64.getUrlDecoder().decode(validCursor)
+            val payloadStr = String(payload, StandardCharsets.UTF_8)
+            val payloadWithoutSig = payloadStr.split("&").filterNot { it.startsWith("s=") }.joinToString("&")
+            val wrongSignature = "wrong-signature"
+            val tamperedPayload = "$payloadWithoutSig&s=${java.net.URLEncoder.encode(wrongSignature, StandardCharsets.UTF_8.name())}"
+            val tamperedCursor = java.util.Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(tamperedPayload.toByteArray(StandardCharsets.UTF_8))
+
+            // when & then
+            val exception = shouldThrow<DomainException> {
+                CommonPageCursor.decode(tamperedCursor)
+            }
+
+            exception.error shouldBe CommonError.INVALID_PAGE_CURSOR
+            exception.details!!["reason"] shouldBe "invalid signature"
+        } finally {
+            // cleanup
+            CommonPageCursor.initializeSignature(PageCursorProperties())
+        }
+    }
+
+    @Test
+    fun `decode - 서명 활성화 시 서명 누락 거부`() {
+        // given
+        val secret = "test-secret-key-16bytes"
+        CommonPageCursor.initializeSignature(
+            PageCursorProperties(secret = secret, signatureEnabled = true)
+        )
+
+        try {
+            // 서명 없이 payload 생성
+            val payload = "v=1&sk=key&key=value"
+            val cursor = java.util.Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(payload.toByteArray(StandardCharsets.UTF_8))
+
+            // when & then
+            val exception = shouldThrow<DomainException> {
+                CommonPageCursor.decode(cursor)
+            }
+
+            exception.error shouldBe CommonError.INVALID_PAGE_CURSOR
+            exception.details!!["reason"] shouldBe "missing signature"
+        } finally {
+            // cleanup
+            CommonPageCursor.initializeSignature(PageCursorProperties())
+        }
+    }
+
+    @Test
+    fun `encode decode - 서명 길이 확인`() {
+        // given
+        val secret = "test-secret-key-16bytes"
+        CommonPageCursor.initializeSignature(
+            PageCursorProperties(secret = secret, signatureEnabled = true)
+        )
+        val cursors = listOf("createdAt" to "123", "id" to "456")
+
+        try {
+            // when
+            val encoded = CommonPageCursor.encode("1", cursors)
+            val decoded = CommonPageCursor.decode(encoded)
+
+            // then
+            decoded.version shouldBe "1"
+            decoded.cursors shouldBe cursors
+
+            // 서명 길이 확인 (Base64URL 인코딩된 16바이트 = 약 22자)
+            val payload = String(java.util.Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8)
+            val signaturePart = payload.split("&").find { it.startsWith("s=") }
+            signaturePart shouldNotBe null
+            val signature = signaturePart!!.substring(2)
+            // Base64URL 인코딩된 16바이트는 22자 (padding 제거)
+            signature.length shouldBe 22
+        } finally {
+            // cleanup
+            CommonPageCursor.initializeSignature(PageCursorProperties())
+        }
     }
 }
