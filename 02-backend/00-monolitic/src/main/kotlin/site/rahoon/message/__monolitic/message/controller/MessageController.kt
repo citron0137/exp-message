@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController
 import site.rahoon.message.__monolitic.common.controller.CommonApiResponse
 import site.rahoon.message.__monolitic.common.controller.CommonAuthInfo
 import site.rahoon.message.__monolitic.common.controller.AuthInfoAffect
+import site.rahoon.message.__monolitic.common.domain.CommonError
+import site.rahoon.message.__monolitic.common.domain.DomainException
 import site.rahoon.message.__monolitic.message.application.MessageApplicationService
 import site.rahoon.message.__monolitic.message.application.MessageCriteria
 
@@ -68,14 +70,37 @@ class MessageController(
     @AuthInfoAffect(required = true)
     fun getByChatRoomId(
         @RequestParam chatRoomId: String,
+        @RequestParam(required = false) cursor: String?,
+        @RequestParam(required = false) limit: Int?,
         authInfo: CommonAuthInfo
-    ): CommonApiResponse<List<MessageResponse.Detail>> {
-        val criteria = MessageCriteria.GetByChatRoomId(
-            chatRoomId = chatRoomId
-        )
-        val messages = messageApplicationService.getByChatRoomId(criteria)
-        val response = messages.map { MessageResponse.Detail.from(it) }
+    ): CommonApiResponse.Page<MessageResponse.Detail> {
+        val appliedLimit = when {
+            limit == null -> DEFAULT_LIMIT
+            limit <= 0 -> throw DomainException(
+                error = CommonError.INVALID_PAGE_LIMIT,
+                details = mapOf("limit" to limit, "reason" to "limit must be positive")
+            )
+            limit > MAX_LIMIT -> MAX_LIMIT
+            else -> limit
+        }
 
-        return CommonApiResponse.success(response)
+        val criteria = MessageCriteria.GetByChatRoomId(
+            chatRoomId = chatRoomId,
+            cursor = cursor,
+            limit = appliedLimit
+        )
+        val result = messageApplicationService.getByChatRoomId(criteria)
+        val response = result.items.map { MessageResponse.Detail.from(it) }
+
+        return CommonApiResponse.Page.success(
+            data = response,
+            nextCursor = result.nextCursor,
+            limit = result.limit
+        )
+    }
+
+    companion object {
+        private const val DEFAULT_LIMIT = 20
+        private const val MAX_LIMIT = 100
     }
 }

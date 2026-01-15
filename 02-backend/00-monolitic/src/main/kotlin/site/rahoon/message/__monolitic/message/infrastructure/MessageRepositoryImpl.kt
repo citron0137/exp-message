@@ -1,8 +1,11 @@
 package site.rahoon.message.__monolitic.message.infrastructure
 
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Repository
 import site.rahoon.message.__monolitic.message.domain.Message
 import site.rahoon.message.__monolitic.message.domain.MessageRepository
+import java.time.LocalDateTime
 
 /**
  * MessageRepository 인터페이스의 JPA 구현체
@@ -24,9 +27,25 @@ class MessageRepositoryImpl(
             .orElse(null)
     }
 
-    override fun findByChatRoomIdOrderByCreatedAtDesc(chatRoomId: String): List<Message> {
-        return jpaRepository.findByChatRoomIdOrderByCreatedAtDesc(chatRoomId)
-            .map { toDomain(it) }
+    override fun findPageByChatRoomId(
+        chatRoomId: String,
+        afterCreatedAt: LocalDateTime?,
+        afterId: String?,
+        limit: Int
+    ): List<Message> {
+        val pageable = PageRequest.of(
+            0,
+            limit,
+            Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
+        )
+
+        val entities = if (afterCreatedAt == null || afterId == null) {
+            jpaRepository.findByChatRoomIdOrderByCreatedAtDescIdDesc(chatRoomId, pageable)
+        } else {
+            jpaRepository.findNextPageByChatRoomId(chatRoomId, afterCreatedAt, afterId, pageable)
+        }
+
+        return entities.map { toDomain(it) }
     }
 
     private fun toEntity(message: Message): MessageEntity {

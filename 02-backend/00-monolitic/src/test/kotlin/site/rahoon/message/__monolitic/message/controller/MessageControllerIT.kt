@@ -20,6 +20,7 @@ import site.rahoon.message.__monolitic.chatroom.controller.ChatRoomResponse
 import site.rahoon.message.__monolitic.common.test.IntegrationTestBase
 import site.rahoon.message.__monolitic.common.test.assertError
 import site.rahoon.message.__monolitic.common.test.assertSuccess
+import site.rahoon.message.__monolitic.common.test.assertSuccessPage
 
 /**
  * Message Controller 통합 테스트
@@ -283,11 +284,12 @@ class MessageControllerIT(
         )
 
         // then
-        response.assertSuccess<List<MessageResponse.Detail>>(objectMapper, HttpStatus.OK) { dataList ->
+        response.assertSuccessPage<MessageResponse.Detail>(objectMapper, HttpStatus.OK) { dataList, pageInfo ->
             dataList.size shouldBeGreaterThanOrEqual 2
             // 최신순 정렬 확인
             dataList[0].content shouldBe "두 번째 메시지"
             dataList[1].content shouldBe "첫 번째 메시지"
+            pageInfo.limit shouldBe 20
         }
     }
 
@@ -343,8 +345,10 @@ class MessageControllerIT(
         )
 
         // then
-        response.assertSuccess<List<MessageResponse.Detail>>(objectMapper, HttpStatus.OK) { dataList ->
+        response.assertSuccessPage<MessageResponse.Detail>(objectMapper, HttpStatus.OK) { dataList, pageInfo ->
             dataList.shouldBeEmpty()
+            pageInfo.nextCursor shouldBe null
+            pageInfo.limit shouldBe 20
         }
     }
 }
