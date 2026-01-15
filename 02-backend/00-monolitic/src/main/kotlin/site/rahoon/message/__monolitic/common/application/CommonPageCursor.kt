@@ -3,8 +3,6 @@ package site.rahoon.message.__monolitic.common.application
 import site.rahoon.message.__monolitic.common.application.config.PageCursorProperties
 import site.rahoon.message.__monolitic.common.domain.CommonError
 import site.rahoon.message.__monolitic.common.domain.DomainException
-import java.net.URLDecoder
-import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import javax.crypto.Mac
@@ -19,30 +17,27 @@ import javax.crypto.spec.SecretKeySpec
  * ## Payload 인코딩 규칙
  *
  * 1. **Payload 형식**: `key=value&key=value&...` 형태의 query string
- * 2. **Value URL 인코딩**: 모든 value(`v`, `sk`, 일반 키의 value)는 UTF-8 기준 URL 인코딩 적용
- *    - 인코딩 이유: `&`, `=` 같은 특수 문자가 포함된 value가 파싱을 방해하는 것을 방지
- *    - 예: `value&with=special` → `value%26with%3Dspecial`
- * 3. **Key 인코딩**: key는 인코딩하지 않음 (key는 항상 안전한 문자열)
- * 4. **최종 인코딩**: payload 전체를 Base64URL 인코딩하여 cursor 생성
+ * 2. **특수 문자 금지**: 키와 값에 `&`, `=` 문자는 사용할 수 없음 (파싱 방해 방지)
+ *    - 키와 값은 Base62 인코딩 등 URL-safe 문자만 사용해야 함
+ *    - 예: Base62 인코딩된 값은 이미 안전하므로 그대로 사용
+ * 3. **최종 인코딩**: payload 전체를 Base64URL 인코딩하여 cursor 생성
  *
  * ## 예시
  *
  * ```
- * payload: v=1&sk=createdAt,id&createdAt=1736900000123&id=12345
- *          ↓ (value URL 인코딩)
- * payload: v=1&sk=createdAt%2Cid&createdAt=1736900000123&id=12345
+ * payload: v=1&sk=ca,i&ca=Base62값&i=Base62값
  *          ↓ (서명 활성화 시: HMAC 서명 추가)
- * payload: v=1&sk=createdAt%2Cid&createdAt=1736900000123&id=12345&s=AbCdEfGhIjKlMnOpQrSt
+ * payload: v=1&sk=ca,i&ca=Base62값&i=Base62값&s=Base62서명값
  *          ↓ (Base64URL 인코딩)
- * cursor:  dj0xJnNrPWNyZWF0ZWRBdCUyQ2lkJmNyZWF0ZWRBdD0xNzM2OTAwMDAwMTIzJmlkPTEyMzQ1JnM9QWJDZEVmR2hJaktsTW5PcFFyU3Q
+ * cursor:  dj0xJnNrPWNhLGkmY2E9QmFzZTYy값JmlkPUJhc2U2MlZhbHVlJnM9QmFzZTYy서명값
  * ```
  *
  * ## 서명 (선택적)
  *
  * - **활성화**: `page-cursor.signature-enabled=true` 및 `page-cursor.secret` 설정 시
- * - **서명 방식**: HMAC-SHA256의 처음 16바이트 (128비트 보안)
+ * - **서명 방식**: HMAC-SHA256의 처음 16바이트를 Base62로 인코딩
  * - **키 이름**: `s` (짧은 키 이름으로 길이 최소화)
- * - **길이 증가**: 서명 활성화 시 약 30-35자 추가 (URL 인코딩 포함)
+ * - **길이 증가**: 서명 활성화 시 약 22자 추가
  * - **보안**: cursor 변조 방지 (악의적 요청 차단)
  */
 open class CommonPageCursor(
@@ -69,8 +64,25 @@ open class CommonPageCursor(
         }
 
         /**
+         * 특수 문자 검증: 키와 값에 `&`, `=` 문자가 포함되어 있으면 안 됨
+         */
+        private fun validateSafeString(str: String, fieldName: String) {
+            if (str.contains("&") || str.contains("=")) {
+                throw DomainException(
+                    error = CommonError.INVALID_PAGE_CURSOR,
+                    details = mapOf(
+                        "reason" to "invalid character in $fieldName",
+                        "fieldName" to fieldName,
+                        "value" to str,
+                        "message" to "$fieldName contains forbidden characters (& or =)"
+                    )
+                )
+            }
+        }
+
+        /**
          * HMAC 서명 생성 (길이 최소화: SHA-256의 처음 16바이트만 사용)
-         * Base64URL 인코딩 후 약 22자 길이
+         * Base62 인코딩으로 URL-safe하게 변환
          */
         private fun generateSignature(payload: String, secret: String): String {
             val mac = Mac.getInstance("HmacSHA256")
@@ -79,7 +91,8 @@ open class CommonPageCursor(
             val hash = mac.doFinal(payload.toByteArray(StandardCharsets.UTF_8))
             // 길이 최소화: 처음 16바이트만 사용 (128비트 보안)
             val truncated = hash.sliceArray(0 until 16)
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(truncated)
+            // Base62 인코딩으로 변환 (Base64 대신)
+            return site.rahoon.message.__monolitic.common.global.Base62Encoding.encodeBytes(truncated)
         }
 
         /**
@@ -135,6 +148,10 @@ open class CommonPageCursor(
                 val value = part.substring(idx + 1)
                 if (key.isBlank()) return@forEach
 
+                // 특수 문자 검증
+                validateSafeString(key, "key")
+                validateSafeString(value, "value")
+
                 when (key) {
                     "v" -> {
                         versionCount++
@@ -148,20 +165,7 @@ open class CommonPageCursor(
                                 )
                             )
                         }
-                        version = try {
-                            URLDecoder.decode(value, StandardCharsets.UTF_8.name())
-                        } catch (e: Exception) {
-                            throw DomainException(
-                                error = CommonError.INVALID_PAGE_CURSOR,
-                                details = mapOf(
-                                    "cursor" to cursor,
-                                    "payload" to payload,
-                                    "reason" to "failed to decode version value",
-                                    "value" to value
-                                ),
-                                cause = e
-                            )
-                        }
+                        version = value
                     }
                     "sk" -> {
                         sortKeysCount++
@@ -175,21 +179,7 @@ open class CommonPageCursor(
                                 )
                             )
                         }
-                        val decodedSkValue = try {
-                            URLDecoder.decode(value, StandardCharsets.UTF_8.name())
-                        } catch (e: Exception) {
-                            throw DomainException(
-                                error = CommonError.INVALID_PAGE_CURSOR,
-                                details = mapOf(
-                                    "cursor" to cursor,
-                                    "payload" to payload,
-                                    "reason" to "failed to decode sort keys value",
-                                    "value" to value
-                                ),
-                                cause = e
-                            )
-                        }
-                        sortKeys = decodedSkValue
+                        sortKeys = value
                             .split(",")
                             .asSequence()
                             .map { it.trim() }
@@ -234,22 +224,7 @@ open class CommonPageCursor(
                             )
                         }
                         seenKeys.add(key)
-                        val decodedValue = try {
-                            URLDecoder.decode(value, StandardCharsets.UTF_8.name())
-                        } catch (e: Exception) {
-                            throw DomainException(
-                                error = CommonError.INVALID_PAGE_CURSOR,
-                                details = mapOf(
-                                    "cursor" to cursor,
-                                    "payload" to payload,
-                                    "reason" to "failed to decode cursor value",
-                                    "key" to key,
-                                    "value" to value
-                                ),
-                                cause = e
-                            )
-                        }
-                        pairs.add(key to decodedValue)
+                        pairs.add(key to value)
                     }
                 }
             }
@@ -323,19 +298,7 @@ open class CommonPageCursor(
                     )
                 }
                 
-                val signature = try {
-                    URLDecoder.decode(signaturePart.substring(2), StandardCharsets.UTF_8.name())
-                } catch (e: Exception) {
-                    throw DomainException(
-                        error = CommonError.INVALID_PAGE_CURSOR,
-                        details = mapOf(
-                            "cursor" to cursor,
-                            "payload" to payload,
-                            "reason" to "failed to decode signature"
-                        ),
-                        cause = e
-                    )
-                }
+                val signature = signaturePart.substring(2)
 
                 // 서명 제외한 payload 재구성
                 val payloadWithoutSignature = payload.split("&")
@@ -362,16 +325,25 @@ open class CommonPageCursor(
     fun encode(): String {
         if(this.encoded != null) return this.encoded!!
         val sortKeys = cursors.map { it.first }
+        
+        // 특수 문자 검증
+        validateSafeString(version, "version")
+        sortKeys.forEach { validateSafeString(it, "sortKey") }
+        cursors.forEach { (key, value) ->
+            validateSafeString(key, "key")
+            validateSafeString(value, "value")
+        }
+        
         val payload = buildString {
             append("v=")
-            append(URLEncoder.encode(version, StandardCharsets.UTF_8.name()))
+            append(version)
             append("&sk=")
-            append(URLEncoder.encode(sortKeys.joinToString(",") { it }, StandardCharsets.UTF_8.name()))
+            append(sortKeys.joinToString(","))
             cursors.forEach { (key, value) ->
                 append("&")
                 append(key)
                 append("=")
-                append(URLEncoder.encode(value, StandardCharsets.UTF_8.name()))
+                append(value)
             }
         }
 
@@ -379,7 +351,7 @@ open class CommonPageCursor(
         val config = signatureConfig
         val finalPayload = if (config?.isSignatureActive() == true) {
             val signature = generateSignature(payload, config.secret)
-            "$payload&s=${URLEncoder.encode(signature, StandardCharsets.UTF_8.name())}"
+            "$payload&s=$signature"
         } else {
             payload
         }
@@ -388,6 +360,20 @@ open class CommonPageCursor(
             .withoutPadding()
             .encodeToString(finalPayload.toByteArray(StandardCharsets.UTF_8))
         return this.encoded!!
+    }
+    
+    private fun validateSafeString(str: String, fieldName: String) {
+        if (str.contains("&") || str.contains("=")) {
+            throw DomainException(
+                error = CommonError.INVALID_PAGE_CURSOR,
+                details = mapOf(
+                    "reason" to "invalid character in $fieldName",
+                    "fieldName" to fieldName,
+                    "value" to str,
+                    "message" to "$fieldName contains forbidden characters (& or =)"
+                )
+            )
+        }
     }
 
     private fun getCursorMap() : Map<String,String>{

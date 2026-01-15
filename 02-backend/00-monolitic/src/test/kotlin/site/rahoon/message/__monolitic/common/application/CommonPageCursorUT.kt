@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test
 import site.rahoon.message.__monolitic.common.application.config.PageCursorProperties
 import site.rahoon.message.__monolitic.common.domain.CommonError
 import site.rahoon.message.__monolitic.common.domain.DomainException
-import java.nio.charset.StandardCharsets
 
 /**
  * CommonPageCursor 단위 테스트
@@ -82,6 +81,21 @@ class CommonPageCursorUT {
 
         exception.error shouldBe CommonError.INVALID_PAGE_CURSOR
         exception.details!!["reason"] shouldBe "empty payload"
+    }
+
+    @Test
+    fun `decode - 특수 문자 포함 key 거부`() {
+        // given
+        val payload = "v=1&sk=key&key&with=ampersand=value"
+        val cursor = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(payload.toByteArray())
+
+        // when & then
+        val exception = shouldThrow<DomainException> {
+            CommonPageCursor.decode(cursor)
+        }
+
+        exception.error shouldBe CommonError.INVALID_PAGE_CURSOR
+        exception.details!!["reason"]?.toString()?.contains("invalid character") shouldBe true
     }
 
     @Test
@@ -395,53 +409,39 @@ class CommonPageCursorUT {
     }
 
     @Test
-    fun `decode - 특수 문자 포함 value`() {
-        // given
-        // &와 =는 payload 파싱에 문제를 일으킬 수 있으므로, 실제 사용 시나리오에 맞게 테스트
-        // Base64 인코딩 후에는 특수 문자가 안전하게 처리됨
-        val value = "value-with-special-chars"
-        val payload = "v=1&sk=key&key=$value"
-        val cursor = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(payload.toByteArray())
-
-        // when
-        val decoded = CommonPageCursor.decode(cursor)
-
-        // then
-        decoded.getAsString("key") shouldBe value
-    }
-
-    @Test
-    fun `encode decode - URL 인코딩이 필요한 특수 문자 포함 value`() {
+    fun `encode decode - 특수 문자 포함 value 거부`() {
         // given
         val value = "value&with=special"
         val cursors = listOf("key" to value)
 
-        // when
-        val encoded = CommonPageCursor.encode("1", cursors)
-        val decoded = CommonPageCursor.decode(encoded)
+        // when & then
+        val exception = shouldThrow<DomainException> {
+            CommonPageCursor.encode("1", cursors)
+        }
 
-        // then
-        decoded.getAsString("key") shouldBe value
+        exception.error shouldBe CommonError.INVALID_PAGE_CURSOR
+        exception.details!!["reason"]?.toString()?.contains("invalid character") shouldBe true
     }
 
     @Test
-    fun `encode decode - 여러 특수 문자 포함 value`() {
+    fun `encode decode - 특수 문자 포함 key 거부`() {
         // given
-        val value = "value with spaces & special=chars"
-        val cursors = listOf("key" to value)
+        val cursors = listOf("key&with=special" to "value")
 
-        // when
-        val encoded = CommonPageCursor.encode("1", cursors)
-        val decoded = CommonPageCursor.decode(encoded)
+        // when & then
+        val exception = shouldThrow<DomainException> {
+            CommonPageCursor.encode("1", cursors)
+        }
 
-        // then
-        decoded.getAsString("key") shouldBe value
+        exception.error shouldBe CommonError.INVALID_PAGE_CURSOR
+        exception.details!!["reason"]?.toString()?.contains("invalid character") shouldBe true
     }
 
     @Test
-    fun `encode decode - 한글 및 유니코드 문자 포함 value`() {
+    fun `encode decode - Base62 인코딩된 값 정상 처리`() {
         // given
-        val value = "한글&value=테스트"
+        // Base62 인코딩된 값은 특수 문자가 없으므로 정상 처리됨
+        val value = "1k2m3n4p" // Base62 인코딩된 예시
         val cursors = listOf("key" to value)
 
         // when
@@ -530,13 +530,12 @@ class CommonPageCursorUT {
 
         try {
             // 잘못된 서명으로 cursor 변조
-            val payload = java.util.Base64.getUrlDecoder().decode(validCursor)
-            val payloadStr = String(payload, StandardCharsets.UTF_8)
-            val payloadWithoutSig = payloadStr.split("&").filterNot { it.startsWith("s=") }.joinToString("&")
+            val payload = String(java.util.Base64.getUrlDecoder().decode(validCursor), java.nio.charset.StandardCharsets.UTF_8)
+            val payloadWithoutSig = payload.split("&").filterNot { it.startsWith("s=") }.joinToString("&")
             val wrongSignature = "wrong-signature"
-            val tamperedPayload = "$payloadWithoutSig&s=${java.net.URLEncoder.encode(wrongSignature, StandardCharsets.UTF_8.name())}"
+            val tamperedPayload = "$payloadWithoutSig&s=$wrongSignature"
             val tamperedCursor = java.util.Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(tamperedPayload.toByteArray(StandardCharsets.UTF_8))
+                .encodeToString(tamperedPayload.toByteArray(java.nio.charset.StandardCharsets.UTF_8))
 
             // when & then
             val exception = shouldThrow<DomainException> {
@@ -563,7 +562,7 @@ class CommonPageCursorUT {
             // 서명 없이 payload 생성
             val payload = "v=1&sk=key&key=value"
             val cursor = java.util.Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(payload.toByteArray(StandardCharsets.UTF_8))
+                .encodeToString(payload.toByteArray(java.nio.charset.StandardCharsets.UTF_8))
 
             // when & then
             val exception = shouldThrow<DomainException> {
@@ -596,13 +595,13 @@ class CommonPageCursorUT {
             decoded.version shouldBe "1"
             decoded.cursors shouldBe cursors
 
-            // 서명 길이 확인 (Base64URL 인코딩된 16바이트 = 약 22자)
-            val payload = String(java.util.Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8)
+            // 서명 길이 확인 (Base62 인코딩된 16바이트)
+            val payload = String(java.util.Base64.getUrlDecoder().decode(encoded), java.nio.charset.StandardCharsets.UTF_8)
             val signaturePart = payload.split("&").find { it.startsWith("s=") }
             signaturePart shouldNotBe null
             val signature = signaturePart!!.substring(2)
-            // Base64URL 인코딩된 16바이트는 22자 (padding 제거)
-            signature.length shouldBe 22
+            // Base62 인코딩된 16바이트는 21자 또는 22자 (128비트를 62진법으로 표현)
+            (signature.length in 21..22) shouldBe true
         } finally {
             // cleanup
             CommonPageCursor.initializeSignature(PageCursorProperties())

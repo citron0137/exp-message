@@ -6,6 +6,7 @@ import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomDomainService
 import site.rahoon.message.__monolitic.chatroommember.application.ChatRoomMemberApplicationService
 import site.rahoon.message.__monolitic.common.application.CommonPageCursor
 import site.rahoon.message.__monolitic.common.application.CommonResult
+import site.rahoon.message.__monolitic.common.global.Base62Encoding
 import site.rahoon.message.__monolitic.common.global.toEpochMicroLong
 import site.rahoon.message.__monolitic.common.global.toLocalDateTimeFromMicros
 import site.rahoon.message.__monolitic.common.domain.DomainException
@@ -13,6 +14,7 @@ import site.rahoon.message.__monolitic.message.domain.Message
 import site.rahoon.message.__monolitic.message.domain.MessageDomainService
 import site.rahoon.message.__monolitic.message.domain.MessageError
 import java.time.ZoneId
+import java.util.UUID
 
 /**
  * Message Application Service
@@ -92,12 +94,18 @@ class MessageApplicationService(
         val decoded = criteria.cursor
             ?.let { CommonPageCursor.decode(it) }
             ?.requireVersion("1")
-            ?.requireKeysInOrder(listOf("createdAt", "id"))
+            ?.requireKeysInOrder(listOf("ca", "i"))
 
         val afterCreatedAt = decoded?.let {
-            it.getAsLong("createdAt").toLocalDateTimeFromMicros(zoneId)
+            val encodedCreatedAt = it.getAsString("ca")
+            val createdAtMicros = Base62Encoding.decodeLong(encodedCreatedAt)
+            createdAtMicros.toLocalDateTimeFromMicros(zoneId)
         }
-        val afterId = decoded?.getAsString("id")
+        val afterId = decoded?.let {
+            val encodedId = it.getAsString("i")
+            val uuid = Base62Encoding.decodeUuid(encodedId)
+            uuid.toString()
+        }
 
         val fetchSize = criteria.limit + 1
         val fetched = messageDomainService.getByChatRoomId(
@@ -116,8 +124,8 @@ class MessageApplicationService(
                 version = "1",
                 // 순서 주의! createdAt -> id
                 cursors = listOf(
-                    "createdAt" to createdAtMicros.toString(),
-                    "id" to last.id
+                    "ca" to Base62Encoding.encodeLong(createdAtMicros),
+                    "i" to Base62Encoding.encodeUuid(UUID.fromString(last.id))
                 )
             )
         } else {
