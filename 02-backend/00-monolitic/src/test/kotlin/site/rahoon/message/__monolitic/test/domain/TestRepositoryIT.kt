@@ -6,12 +6,10 @@ import org.hibernate.Session
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Transactional
 import site.rahoon.message.__monolitic.common.global.Tx
 import site.rahoon.message.__monolitic.common.test.IntegrationTestBase
-import site.rahoon.message.__monolitic.test.infrastructure.RawTestJpaRepository
 import site.rahoon.message.__monolitic.test.infrastructure.TestEntity
 import site.rahoon.message.__monolitic.test.infrastructure.TestJpaRepository
 import site.rahoon.message.__monolitic.test.infrastructure.TestRepositoryImpl
@@ -31,7 +29,10 @@ class TestRepositoryIT : IntegrationTestBase() {
     private lateinit var testRepositoryImpl: TestRepositoryImpl
 
     @Autowired
-    private lateinit var rawTestJpaRepository: RawTestJpaRepository
+    private lateinit var testJpaRepository: TestJpaRepository
+
+    @PersistenceContext
+    private lateinit var entityManager: EntityManager
 
     @BeforeEach
     fun setUp() {
@@ -39,7 +40,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `엔티티를 저장하면 성공한다`() {
+    fun `엔티티 저장 성공`() {
         // given
         val id = UUID.randomUUID().toString()
         val entity = testRepositoryImpl.create(
@@ -60,7 +61,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `ID로 엔티티를 조회하면 성공한다`() {
+    fun `ID로 엔티티 조회 성공`() {
         // given
         val id = UUID.randomUUID().toString()
         val entity = testRepositoryImpl.create(
@@ -79,7 +80,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `이름으로 엔티티를 조회하면 성공한다`() {
+    fun `이름으로 엔티티 조회 성공`() {
         // given
         val id = UUID.randomUUID().toString()
         val entity = testRepositoryImpl.create(
@@ -98,7 +99,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `전체 엔티티를 조회하면 성공한다`() {
+    fun `전체 엔티티 조회 성공`() {
         // given
         val entity1 = testRepositoryImpl.create(
             id = UUID.randomUUID().toString(),
@@ -121,7 +122,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `Soft Delete된 엔티티는 ID로 조회되지 않는다`() {
+    fun `Soft Delete 후 조회되지 않음 - findById`() {
         // given
         val id = UUID.randomUUID().toString()
         val entity = testRepositoryImpl.create(
@@ -139,7 +140,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `Soft Delete된 엔티티는 이름으로 조회되지 않는다`() {
+    fun `Soft Delete 후 조회되지 않음 - findByName`() {
         // given
         val id = UUID.randomUUID().toString()
         val name = "soft-delete-name-test"
@@ -158,7 +159,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `Soft Delete된 엔티티는 전체 조회에서 제외된다`() {
+    fun `Soft Delete 후 전체 조회에서 제외됨`() {
         // given
         val id1 = UUID.randomUUID().toString()
         val id2 = UUID.randomUUID().toString()
@@ -183,7 +184,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `존재하지 않는 ID로 조회하면 null을 반환한다`() {
+    fun `존재하지 않는 엔티티 조회 시 null 반환`() {
         // when
         val found = testRepository.findById("non-existent-id")
 
@@ -192,7 +193,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `존재하지 않는 이름으로 조회하면 null을 반환한다`() {
+    fun `존재하지 않는 이름으로 조회 시 null 반환`() {
         // when
         val found = testRepository.findByName("non-existent-name")
 
@@ -201,7 +202,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `여러 엔티티를 저장한 후 전체 조회하면 모두 조회된다`() {
+    fun `여러 엔티티 저장 후 전체 조회`() {
         // given
         val entities = (1..5).map { i ->
             testRepositoryImpl.create(
@@ -223,7 +224,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `Soft Delete된 엔티티와 같은 ID로 저장 시도하면 Primary Key 제약 위반 예외가 발생한다`() {
+    fun `Soft Delete 후 다시 저장 가능`() {
         // given
         val id = UUID.randomUUID().toString()
         val entity1 = testRepositoryImpl.create(
@@ -233,19 +234,21 @@ class TestRepositoryIT : IntegrationTestBase() {
         testRepository.save(entity1)
         testRepository.delete(id)
 
-        // when & then - 같은 ID로 다시 저장 시도하면 Primary Key 제약 위반 예외 발생
+        // when - 같은 ID로 다시 저장
         val entity2 = testRepositoryImpl.create(
             id = id,
             name = "recreate-test-2"
         )
-        // Soft Delete된 레코드는 물리적으로 존재하므로 같은 ID로 저장할 수 없음
-        assertThrows<Exception> {
-            testRepository.save(entity2)
-        }
+        val saved = testRepository.save(entity2)
+
+        // then
+        assertNotNull(saved)
+        assertEquals(id, saved.id)
+        assertEquals("recreate-test-2", saved.name)
     }
 
     @Test
-    fun `설명 패턴으로 검색하면 일치하는 엔티티만 조회된다`() {
+    fun `조인 쿼리로 설명 패턴 검색 성공`() {
         // given
         val entity1 = testRepositoryImpl.create(
             id = UUID.randomUUID().toString(),
@@ -277,7 +280,7 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `설명 패턴으로 검색할 때 Soft Delete된 엔티티는 제외된다`() {
+    fun `조인 쿼리로 설명 패턴 검색 - Soft Delete된 엔티티 제외`() {
         // given
         val entity1 = testRepositoryImpl.create(
             id = UUID.randomUUID().toString(),
@@ -302,47 +305,59 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `RawTestEntity로 조회하면 Soft Delete된 엔티티도 ID로 조회할 수 있다`() {
+    fun `Soft Delete Filter 비활성화 후 Soft Delete된 엔티티도 조회 가능`() {
         // given
         val id = UUID.randomUUID().toString()
         val entity = testRepositoryImpl.create(
             id = id,
-            name = "raw-entity-test"
+            name = "filter-disable-test"
         )
         testRepository.save(entity)
         testRepository.delete(id)
 
-        // when - RawTestEntity는 @SQLRestriction이 없으므로 Soft Delete된 엔티티도 조회됨
-        val found = rawTestJpaRepository.findById(id).orElse(null)
+        // when - 필터 비활성화 후 조회
+        // Tx.execute를 사용하여 새로운 트랜잭션에서 필터를 비활성화하고 조회
+        // 새로운 트랜잭션이므로 1차 캐시가 비어있고, DB에서 최신 데이터를 가져옴
+        val found = Tx.execute {
+            val session = entityManager.unwrap(Session::class.java)
+            session.disableFilter("softDeleteFilter")
+            testJpaRepository.findById(id).orElse(null)
+        }
 
         // then
-        assertNotNull(found, "RawTestEntity를 사용하면 Soft Delete된 엔티티도 조회되어야 합니다")
+        assertNotNull(found, "필터가 비활성화된 경우 Soft Delete된 엔티티도 조회되어야 합니다")
         assertEquals(id, found?.id)
         assertNotNull(found?.deletedAt, "Soft Delete된 엔티티는 deletedAt이 설정되어 있어야 합니다")
     }
 
     @Test
-    fun `RawTestEntity로 전체 조회하면 Soft Delete된 엔티티도 포함된다`() {
+    fun `Soft Delete Filter 비활성화 후 전체 조회에서 Soft Delete된 엔티티도 포함`() {
         // given
         val id1 = UUID.randomUUID().toString()
         val id2 = UUID.randomUUID().toString()
         val entity1 = testRepositoryImpl.create(
             id = id1,
-            name = "raw-entity-all-test-1"
+            name = "filter-disable-all-test-1"
         )
         val entity2 = testRepositoryImpl.create(
             id = id2,
-            name = "raw-entity-all-test-2"
+            name = "filter-disable-all-test-2"
         )
         testRepository.save(entity1)
         testRepository.save(entity2)
         testRepository.delete(id1)
 
-        // when - RawTestEntity는 @SQLRestriction이 없으므로 Soft Delete된 엔티티도 조회됨
-        val all = rawTestJpaRepository.findAll()
+        // when - 필터 비활성화 후 전체 조회
+        // Tx.execute를 사용하여 새로운 트랜잭션에서 필터를 비활성화하고 조회
+        // 새로운 트랜잭션이므로 1차 캐시가 비어있고, DB에서 최신 데이터를 가져옴
+        val all = Tx.execute {
+            val session = entityManager.unwrap(Session::class.java)
+            session.disableFilter("softDeleteFilter")
+            testJpaRepository.findAll()
+        }
 
         // then
-        assertTrue(all.any { it.id == id1 }, "RawTestEntity를 사용하면 Soft Delete된 엔티티도 조회되어야 합니다")
+        assertTrue(all.any { it.id == id1 }, "필터가 비활성화된 경우 Soft Delete된 엔티티도 조회되어야 합니다")
         assertTrue(all.any { it.id == id2 }, "삭제되지 않은 엔티티는 조회되어야 합니다")
         
         val deletedEntity = all.find { it.id == id1 }
@@ -350,10 +365,10 @@ class TestRepositoryIT : IntegrationTestBase() {
     }
 
     @Test
-    fun `RawTestEntity로 이름으로 조회하면 Soft Delete된 엔티티도 조회할 수 있다`() {
+    fun `Soft Delete Filter 비활성화 후 이름으로 조회 시 Soft Delete된 엔티티도 조회 가능`() {
         // given
         val id = UUID.randomUUID().toString()
-        val name = "raw-entity-name-test"
+        val name = "filter-disable-name-test"
         val entity = testRepositoryImpl.create(
             id = id,
             name = name
@@ -361,11 +376,17 @@ class TestRepositoryIT : IntegrationTestBase() {
         testRepository.save(entity)
         testRepository.delete(id)
 
-        // when - RawTestEntity는 @SQLRestriction이 없으므로 Soft Delete된 엔티티도 조회됨
-        val found = rawTestJpaRepository.findByName(name)
+        // when - 필터 비활성화 후 이름으로 조회
+        // Tx.execute를 사용하여 새로운 트랜잭션에서 필터를 비활성화하고 조회
+        // 새로운 트랜잭션이므로 1차 캐시가 비어있고, DB에서 최신 데이터를 가져옴
+        val found = Tx.execute {
+            val session = entityManager.unwrap(Session::class.java)
+            session.disableFilter("softDeleteFilter")
+            testJpaRepository.findByName(name)
+        }
 
         // then
-        assertNotNull(found, "RawTestEntity를 사용하면 Soft Delete된 엔티티도 조회되어야 합니다")
+        assertNotNull(found, "필터가 비활성화된 경우 Soft Delete된 엔티티도 조회되어야 합니다")
         assertEquals(id, found?.id)
         assertNotNull(found?.deletedAt, "Soft Delete된 엔티티는 deletedAt이 설정되어 있어야 합니다")
     }

@@ -1,18 +1,13 @@
 package site.rahoon.message.__monolitic.test.infrastructure
 
 import jakarta.persistence.*
-import org.hibernate.annotations.SQLRestriction
-import org.hibernate.annotations.SoftDelete
-import org.hibernate.annotations.SoftDeleteType
 import site.rahoon.message.__monolitic.common.infrastructure.JpaEntityBase
 import java.time.LocalDateTime
 
 /**
  * Soft Delete 기능 테스트를 위한 테스트 Entity
- * Hibernate 6.4+의 @SoftDelete 어노테이션을 사용하여 Soft Delete를 구현합니다.
- * 
- * @SoftDelete 어노테이션은 deleted_at 컬럼을 사용하여 삭제 상태를 관리하며,
- * SoftDeleteType.DELETED는 deleted_at이 null이 아닐 때 삭제된 것으로 간주합니다.
+ * JpaEntityBase를 상속하여 자동으로 Soft Delete 필터가 적용됩니다.
+ * (JpaEntityBase에 @Where 어노테이션이 있어서 자동 적용됨)
  */
 @Entity
 @Table(
@@ -22,7 +17,6 @@ import java.time.LocalDateTime
         Index(name = "idx_test_deleted_at", columnList = "deleted_at")
     ]
 )
-@SQLRestriction("deleted_at IS NULL")
 class TestEntity(
     @Id
     @Column(name = "id", length = 36)
@@ -36,6 +30,6 @@ class TestEntity(
 
     @Column(name = "created_at", nullable = false)
     var createdAt: LocalDateTime
-): JpaEntityBase() {
+) : JpaEntityBase() {
     constructor() : this("", "", null, LocalDateTime.now())
 }

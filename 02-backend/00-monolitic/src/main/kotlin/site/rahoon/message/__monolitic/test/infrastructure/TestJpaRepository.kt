@@ -1,12 +1,9 @@
 package site.rahoon.message.__monolitic.test.infrastructure
 
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 import java.util.Optional
 
 /**
@@ -21,9 +18,4 @@ interface TestJpaRepository : JpaRepository<TestEntity, String> {
     
     @Query("""SELECT t FROM TestEntity t WHERE t.description LIKE %:pattern% """)
     fun findWithDescriptionLike(@Param("pattern") pattern: String): List<TestEntity>
-
-    @Modifying(clearAutomatically = true) // 쿼리 실행 후 영속성 컨텍스트를 비워 정합성 유지
-    @Transactional
-    @Query("UPDATE TestEntity e SET e.deletedAt = :now WHERE e.id = :id")
-    fun softDeleteById(@Param("id") id: String, @Param("now") now: LocalDateTime = LocalDateTime.now()): Int
 }
