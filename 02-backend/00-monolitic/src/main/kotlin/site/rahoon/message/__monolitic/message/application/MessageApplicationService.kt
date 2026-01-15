@@ -6,8 +6,8 @@ import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomDomainService
 import site.rahoon.message.__monolitic.chatroommember.application.ChatRoomMemberApplicationService
 import site.rahoon.message.__monolitic.common.application.CommonPageCursor
 import site.rahoon.message.__monolitic.common.application.CommonResult
-import site.rahoon.message.__monolitic.common.global.toEpochMilliLong
-import site.rahoon.message.__monolitic.common.global.toLocalDateTime
+import site.rahoon.message.__monolitic.common.global.toEpochMicroLong
+import site.rahoon.message.__monolitic.common.global.toLocalDateTimeFromMicros
 import site.rahoon.message.__monolitic.common.domain.DomainException
 import site.rahoon.message.__monolitic.message.domain.Message
 import site.rahoon.message.__monolitic.message.domain.MessageDomainService
@@ -95,7 +95,7 @@ class MessageApplicationService(
             ?.requireKeysInOrder(listOf("createdAt", "id"))
 
         val afterCreatedAt = decoded?.let {
-            it.getAsLong("createdAt").toLocalDateTime(zoneId)
+            it.getAsLong("createdAt").toLocalDateTimeFromMicros(zoneId)
         }
         val afterId = decoded?.getAsString("id")
 
@@ -111,12 +111,12 @@ class MessageApplicationService(
         val hasNext = fetched.size > criteria.limit
         val nextCursor = if (hasNext && pageItems.isNotEmpty()) {
             val last = pageItems.last()
-            val createdAtMillis = last.createdAt.toEpochMilliLong(zoneId)
+            val createdAtMicros = last.createdAt.toEpochMicroLong(zoneId)
             CommonPageCursor.encode(
                 version = "1",
                 // 순서 주의! createdAt -> id
                 cursors = listOf(
-                    "createdAt" to createdAtMillis.toString(),
+                    "createdAt" to createdAtMicros.toString(),
                     "id" to last.id
                 )
             )
