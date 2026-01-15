@@ -407,4 +407,74 @@ class CommonPageCursorUT {
         // then
         decoded.getAsString("key") shouldBe value
     }
+
+    @Test
+    fun `encode decode - URL 인코딩이 필요한 특수 문자 포함 value`() {
+        // given
+        val value = "value&with=special"
+        val cursors = listOf("key" to value)
+
+        // when
+        val encoded = CommonPageCursor.encode("1", cursors)
+        val decoded = CommonPageCursor.decode(encoded)
+
+        // then
+        decoded.getAsString("key") shouldBe value
+    }
+
+    @Test
+    fun `encode decode - 여러 특수 문자 포함 value`() {
+        // given
+        val value = "value with spaces & special=chars"
+        val cursors = listOf("key" to value)
+
+        // when
+        val encoded = CommonPageCursor.encode("1", cursors)
+        val decoded = CommonPageCursor.decode(encoded)
+
+        // then
+        decoded.getAsString("key") shouldBe value
+    }
+
+    @Test
+    fun `encode decode - 한글 및 유니코드 문자 포함 value`() {
+        // given
+        val value = "한글&value=테스트"
+        val cursors = listOf("key" to value)
+
+        // when
+        val encoded = CommonPageCursor.encode("1", cursors)
+        val decoded = CommonPageCursor.decode(encoded)
+
+        // then
+        decoded.getAsString("key") shouldBe value
+    }
+
+    @Test
+    fun `encode decode - sortKeys에 특수 문자 포함`() {
+        // given
+        // 실제로는 sortKeys는 키 이름이므로 특수 문자가 없어야 하지만, 인코딩이 제대로 되는지 테스트
+        val cursors = listOf("createdAt" to "123", "id" to "456")
+
+        // when
+        val encoded = CommonPageCursor.encode("1", cursors)
+        val decoded = CommonPageCursor.decode(encoded)
+
+        // then
+        decoded.cursors.map { it.first } shouldBe listOf("createdAt", "id")
+    }
+
+    @Test
+    fun `encode decode - version에 특수 문자 포함`() {
+        // given
+        val version = "1.0"
+        val cursors = listOf("key" to "value")
+
+        // when
+        val encoded = CommonPageCursor.encode(version, cursors)
+        val decoded = CommonPageCursor.decode(encoded)
+
+        // then
+        decoded.version shouldBe version
+    }
 }

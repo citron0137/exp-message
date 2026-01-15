@@ -2,6 +2,8 @@ package site.rahoon.message.__monolitic.common.application
 
 import site.rahoon.message.__monolitic.common.domain.CommonError
 import site.rahoon.message.__monolitic.common.domain.DomainException
+import java.net.URLDecoder
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
@@ -10,6 +12,25 @@ import java.util.Base64
  *
  * - version: 커서 포맷 버전 (예: "1")
  * - cursors: 실제 커서 payload
+ *
+ * ## Payload 인코딩 규칙
+ *
+ * 1. **Payload 형식**: `key=value&key=value&...` 형태의 query string
+ * 2. **Value URL 인코딩**: 모든 value(`v`, `sk`, 일반 키의 value)는 UTF-8 기준 URL 인코딩 적용
+ *    - 인코딩 이유: `&`, `=` 같은 특수 문자가 포함된 value가 파싱을 방해하는 것을 방지
+ *    - 예: `value&with=special` → `value%26with%3Dspecial`
+ * 3. **Key 인코딩**: key는 인코딩하지 않음 (key는 항상 안전한 문자열)
+ * 4. **최종 인코딩**: payload 전체를 Base64URL 인코딩하여 cursor 생성
+ *
+ * ## 예시
+ *
+ * ```
+ * payload: v=1&sk=createdAt,id&createdAt=1736900000123&id=12345
+ *          ↓ (value URL 인코딩)
+ * payload: v=1&sk=createdAt%2Cid&createdAt=1736900000123&id=12345
+ *          ↓ (Base64URL 인코딩)
+ * cursor:  dj0xJnNrPWNyZWF0ZWRBdCUyQ2lkJmNyZWF0ZWRBdD0xNzM2OTAwMDAwMTIzJmlkPTEyMzQ1
+ * ```
  */
 open class CommonPageCursor(
     val version: String,
@@ -77,7 +98,20 @@ open class CommonPageCursor(
                                 )
                             )
                         }
-                        version = value
+                        version = try {
+                            URLDecoder.decode(value, StandardCharsets.UTF_8.name())
+                        } catch (e: Exception) {
+                            throw DomainException(
+                                error = CommonError.INVALID_PAGE_CURSOR,
+                                details = mapOf(
+                                    "cursor" to cursor,
+                                    "payload" to payload,
+                                    "reason" to "failed to decode version value",
+                                    "value" to value
+                                ),
+                                cause = e
+                            )
+                        }
                     }
                     "sk" -> {
                         sortKeysCount++
@@ -91,7 +125,21 @@ open class CommonPageCursor(
                                 )
                             )
                         }
-                        sortKeys = value
+                        val decodedSkValue = try {
+                            URLDecoder.decode(value, StandardCharsets.UTF_8.name())
+                        } catch (e: Exception) {
+                            throw DomainException(
+                                error = CommonError.INVALID_PAGE_CURSOR,
+                                details = mapOf(
+                                    "cursor" to cursor,
+                                    "payload" to payload,
+                                    "reason" to "failed to decode sort keys value",
+                                    "value" to value
+                                ),
+                                cause = e
+                            )
+                        }
+                        sortKeys = decodedSkValue
                             .split(",")
                             .asSequence()
                             .map { it.trim() }
@@ -132,7 +180,22 @@ open class CommonPageCursor(
                             )
                         }
                         seenKeys.add(key)
-                        pairs.add(key to value)
+                        val decodedValue = try {
+                            URLDecoder.decode(value, StandardCharsets.UTF_8.name())
+                        } catch (e: Exception) {
+                            throw DomainException(
+                                error = CommonError.INVALID_PAGE_CURSOR,
+                                details = mapOf(
+                                    "cursor" to cursor,
+                                    "payload" to payload,
+                                    "reason" to "failed to decode cursor value",
+                                    "key" to key,
+                                    "value" to value
+                                ),
+                                cause = e
+                            )
+                        }
+                        pairs.add(key to decodedValue)
                     }
                 }
             }
@@ -199,14 +262,14 @@ open class CommonPageCursor(
         val sortKeys = cursors.map { it.first }
         val payload = buildString {
             append("v=")
-            append(version)
+            append(URLEncoder.encode(version, StandardCharsets.UTF_8.name()))
             append("&sk=")
-            append(sortKeys.joinToString(",") { it })
+            append(URLEncoder.encode(sortKeys.joinToString(",") { it }, StandardCharsets.UTF_8.name()))
             cursors.forEach { (key, value) ->
                 append("&")
                 append(key)
                 append("=")
-                append(value)
+                append(URLEncoder.encode(value, StandardCharsets.UTF_8.name()))
             }
         }
 
