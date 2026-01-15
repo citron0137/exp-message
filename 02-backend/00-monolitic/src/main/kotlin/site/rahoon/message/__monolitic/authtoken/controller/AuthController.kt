@@ -9,10 +9,10 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import site.rahoon.message.__monolitic.authtoken.application.AuthTokenApplicationService
-import site.rahoon.message.__monolitic.common.controller.types.ApiResponse
-import site.rahoon.message.__monolitic.common.global.utils.AuthInfo
-import site.rahoon.message.__monolitic.common.global.utils.AuthInfoAffect
-import site.rahoon.message.__monolitic.common.global.utils.IpAddressUtils
+import site.rahoon.message.__monolitic.common.controller.CommonApiResponse
+import site.rahoon.message.__monolitic.common.controller.CommonAuthInfo
+import site.rahoon.message.__monolitic.common.controller.AuthInfoAffect
+import site.rahoon.message.__monolitic.common.controller.component.IpAddressUtils
 
 /**
  * 인증 관련 Controller
@@ -51,7 +51,7 @@ class AuthController(
     fun loginWithLock(
         @Valid @RequestBody request: AuthRequest.Login,
         httpRequest: HttpServletRequest
-    ): ResponseEntity<ApiResponse<AuthResponse.Login>> {
+    ): ResponseEntity<CommonApiResponse<AuthResponse.Login>> {
         val ipAddress = IpAddressUtils.getClientIpAddress(httpRequest)
         val authToken = authTokenApplicationService.loginWithLock(
             email = request.email,
@@ -61,7 +61,7 @@ class AuthController(
         val response = AuthResponse.Login.from(authToken)
 
         return ResponseEntity.status(HttpStatus.OK).body(
-            ApiResponse.success(response)
+            CommonApiResponse.success(response)
         )
     }
 
@@ -72,14 +72,14 @@ class AuthController(
     @PostMapping("/refresh")
     fun refresh(
         @Valid @RequestBody request: AuthRequest.Refresh
-    ): ResponseEntity<ApiResponse<AuthResponse.Login>> {
+    ): ResponseEntity<CommonApiResponse<AuthResponse.Login>> {
         val authToken = authTokenApplicationService.refresh(
             refreshToken = request.refreshToken
         )
         val response = AuthResponse.Login.from(authToken)
         
         return ResponseEntity.status(HttpStatus.OK).body(
-            ApiResponse.success(response)
+            CommonApiResponse.success(response)
         )
     }
 
@@ -90,8 +90,8 @@ class AuthController(
     @PostMapping("/logout")
     @AuthInfoAffect(required = true)
     fun logout(
-        authInfo: AuthInfo
-    ): ResponseEntity<ApiResponse<AuthResponse.Logout>> {
+        authInfo: CommonAuthInfo
+    ): ResponseEntity<CommonApiResponse<AuthResponse.Logout>> {
         val sessionId = authInfo.sessionId
             ?: throw IllegalStateException("세션 ID가 없습니다")
         
@@ -100,7 +100,7 @@ class AuthController(
         val response = AuthResponse.Logout()
         
         return ResponseEntity.status(HttpStatus.OK).body(
-            ApiResponse.success(response)
+            CommonApiResponse.success(response)
         )
     }
 }

@@ -6,7 +6,7 @@ import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomError
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomInfo
 import site.rahoon.message.__monolitic.chatroommember.application.ChatRoomMemberApplicationService
 import site.rahoon.message.__monolitic.chatroommember.application.ChatRoomMemberCriteria
-import site.rahoon.message.__monolitic.common.domain.types.DomainException
+import site.rahoon.message.__monolitic.common.domain.DomainException
 
 /**
  * ChatRoom Application Service

@@ -1,6 +1,5 @@
 package site.rahoon.message.__monolitic.common.domain
 
-import site.rahoon.message.__monolitic.common.domain.types.DomainError
 import site.rahoon.message.__monolitic.common.global.ErrorType
 
 /**

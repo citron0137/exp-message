@@ -7,9 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import site.rahoon.message.__monolitic.common.controller.types.ApiResponse
 import site.rahoon.message.__monolitic.common.domain.CommonError
-import site.rahoon.message.__monolitic.common.domain.types.DomainException
+import site.rahoon.message.__monolitic.common.domain.DomainException
 
 /**
  * Health Check Controller
@@ -22,20 +21,20 @@ class CommonTestController {
     private val logger = LoggerFactory.getLogger(CommonTestController::class.java)
 
     @GetMapping
-    fun health(): ResponseEntity<ApiResponse<Map<String, String>>> {
+    fun health(): ResponseEntity<CommonApiResponse<Map<String, String>>> {
         val data = mapOf(
             "status" to "ok",
             "message" to "Service is running"
         )
         return ResponseEntity
             .status(HttpStatus.OK)
-            .body(ApiResponse.success(data))
+            .body(CommonApiResponse.success(data))
     }
 
     @GetMapping("/error")
     fun error(
         @RequestParam(required = false, defaultValue = "CLIENT_ERROR") errorType: String
-    ): ResponseEntity<ApiResponse<Nothing>> {
+    ): ResponseEntity<CommonApiResponse<Nothing>> {
         val error = when (errorType.uppercase()) {
             "NOT_FOUND" -> CommonError.NOT_FOUND
             "CONFLICT" -> CommonError.CONFLICT

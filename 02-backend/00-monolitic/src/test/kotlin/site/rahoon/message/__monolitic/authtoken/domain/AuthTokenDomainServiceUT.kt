@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import site.rahoon.message.__monolitic.common.domain.types.DomainException
+import site.rahoon.message.__monolitic.common.domain.DomainException
 import java.time.LocalDateTime
 import java.util.UUID
 

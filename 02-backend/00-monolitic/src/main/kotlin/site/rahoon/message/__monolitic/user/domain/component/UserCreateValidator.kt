@@ -1,7 +1,7 @@
 package site.rahoon.message.__monolitic.user.domain.component
 
 import org.springframework.stereotype.Component
-import site.rahoon.message.__monolitic.common.domain.types.DomainException
+import site.rahoon.message.__monolitic.common.domain.DomainException
 import site.rahoon.message.__monolitic.user.domain.UserCommand
 import site.rahoon.message.__monolitic.user.domain.UserError
 

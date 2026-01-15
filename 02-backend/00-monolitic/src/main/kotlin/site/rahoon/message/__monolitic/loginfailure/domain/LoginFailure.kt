@@ -1,6 +1,6 @@
 package site.rahoon.message.__monolitic.loginfailure.domain
 
-import site.rahoon.message.__monolitic.common.domain.types.DomainException
+import site.rahoon.message.__monolitic.common.domain.DomainException
 
 /**
  * 로그인 실패 도메인 모델

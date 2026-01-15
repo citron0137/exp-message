@@ -6,7 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import site.rahoon.message.__monolitic.common.controller.types.ApiResponse
+import site.rahoon.message.__monolitic.common.controller.CommonApiResponse
 
 /**
  * API 응답 검증을 위한 확장 함수 모음
@@ -29,7 +29,7 @@ inline fun <reified T> ResponseEntity<String>.assertSuccess(
     statusCode shouldBe expectedStatus
     body shouldNotBe null
 
-    val response = objectMapper.readValue<ApiResponse<T>>(body!!)
+    val response = objectMapper.readValue<CommonApiResponse<T>>(body!!)
     response.success shouldBe true
     response.data shouldNotBe null
 
@@ -50,12 +50,12 @@ inline fun ResponseEntity<String>.assertError(
     objectMapper: ObjectMapper,
     expectedStatus: HttpStatus,
     expectedCode: String? = null,
-    errorAssertions: (ApiResponse.ErrorInfo) -> Unit = {}
-): ApiResponse.ErrorInfo {
+    errorAssertions: (CommonApiResponse.ErrorInfo) -> Unit = {}
+): CommonApiResponse.ErrorInfo {
     statusCode shouldBe expectedStatus
     body shouldNotBe null
 
-    val response = objectMapper.readValue<ApiResponse<Any>>(body!!)
+    val response = objectMapper.readValue<CommonApiResponse<Any>>(body!!)
     response.success shouldBe false
     response.error shouldNotBe null
 
@@ -67,7 +67,7 @@ inline fun ResponseEntity<String>.assertError(
 /**
  * 에러 응답의 details에 특정 필드가 있는지 검증합니다.
  */
-fun ApiResponse.ErrorInfo.shouldHaveDetailField(field: String) {
+fun CommonApiResponse.ErrorInfo.shouldHaveDetailField(field: String) {
     details shouldNotBe null
     details!!.containsKey(field) shouldBe true
 }

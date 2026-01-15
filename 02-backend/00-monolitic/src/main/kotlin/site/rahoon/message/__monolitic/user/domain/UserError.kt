@@ -1,6 +1,6 @@
 package site.rahoon.message.__monolitic.user.domain
 
-import site.rahoon.message.__monolitic.common.domain.types.DomainError
+import site.rahoon.message.__monolitic.common.domain.DomainError
 import site.rahoon.message.__monolitic.common.global.ErrorType
 
 enum class UserError(

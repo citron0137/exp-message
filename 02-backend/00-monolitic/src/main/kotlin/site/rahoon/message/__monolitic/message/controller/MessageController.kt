@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import site.rahoon.message.__monolitic.common.controller.types.ApiResponse
-import site.rahoon.message.__monolitic.common.global.utils.AuthInfo
-import site.rahoon.message.__monolitic.common.global.utils.AuthInfoAffect
+import site.rahoon.message.__monolitic.common.controller.CommonApiResponse
+import site.rahoon.message.__monolitic.common.controller.CommonAuthInfo
+import site.rahoon.message.__monolitic.common.controller.AuthInfoAffect
 import site.rahoon.message.__monolitic.message.application.MessageApplicationService
 import site.rahoon.message.__monolitic.message.application.MessageCriteria
 
@@ -34,14 +34,14 @@ class MessageController(
     @AuthInfoAffect(required = true)
     fun create(
         @Valid @RequestBody request: MessageRequest.Create,
-        authInfo: AuthInfo
-    ): ResponseEntity<ApiResponse<MessageResponse.Create>> {
+        authInfo: CommonAuthInfo
+    ): ResponseEntity<CommonApiResponse<MessageResponse.Create>> {
         val criteria = request.toCriteria(authInfo.userId)
         val message = messageApplicationService.create(criteria)
         val response = MessageResponse.Create.from(message)
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
-            ApiResponse.success(response)
+            CommonApiResponse.success(response)
         )
     }
 
@@ -53,13 +53,13 @@ class MessageController(
     @AuthInfoAffect(required = true)
     fun getById(
         @PathVariable id: String,
-        authInfo: AuthInfo
-    ): ResponseEntity<ApiResponse<MessageResponse.Detail>> {
+        authInfo: CommonAuthInfo
+    ): ResponseEntity<CommonApiResponse<MessageResponse.Detail>> {
         val message = messageApplicationService.getById(id)
         val response = MessageResponse.Detail.from(message)
 
         return ResponseEntity.status(HttpStatus.OK).body(
-            ApiResponse.success(response)
+            CommonApiResponse.success(response)
         )
     }
 
@@ -71,8 +71,8 @@ class MessageController(
     @AuthInfoAffect(required = true)
     fun getByChatRoomId(
         @RequestParam chatRoomId: String,
-        authInfo: AuthInfo
-    ): ResponseEntity<ApiResponse<List<MessageResponse.Detail>>> {
+        authInfo: CommonAuthInfo
+    ): ResponseEntity<CommonApiResponse<List<MessageResponse.Detail>>> {
         val criteria = MessageCriteria.GetByChatRoomId(
             chatRoomId = chatRoomId
         )
@@ -80,7 +80,7 @@ class MessageController(
         val response = messages.map { MessageResponse.Detail.from(it) }
 
         return ResponseEntity.status(HttpStatus.OK).body(
-            ApiResponse.success(response)
+            CommonApiResponse.success(response)
         )
     }
 }

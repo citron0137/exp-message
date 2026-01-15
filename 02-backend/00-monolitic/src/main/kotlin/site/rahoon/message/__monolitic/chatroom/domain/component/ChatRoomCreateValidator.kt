@@ -1,7 +1,7 @@
 package site.rahoon.message.__monolitic.chatroom.domain.component
 
 import org.springframework.stereotype.Component
-import site.rahoon.message.__monolitic.common.domain.types.DomainException
+import site.rahoon.message.__monolitic.common.domain.DomainException
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomCommand
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomError
 

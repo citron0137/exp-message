@@ -2,7 +2,7 @@ package site.rahoon.message.__monolitic.message.domain
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import site.rahoon.message.__monolitic.common.domain.types.DomainException
+import site.rahoon.message.__monolitic.common.domain.DomainException
 import site.rahoon.message.__monolitic.message.domain.component.MessageCreateValidator
 
 @Service

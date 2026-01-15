@@ -1,7 +1,7 @@
 package site.rahoon.message.__monolitic.authtoken.domain
 
 import org.springframework.stereotype.Service
-import site.rahoon.message.__monolitic.common.domain.types.DomainException
+import site.rahoon.message.__monolitic.common.domain.DomainException
 import java.util.UUID
 
 @Service

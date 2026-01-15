@@ -9,7 +9,7 @@ import org.junit.jupiter.api.assertThrows
 import site.rahoon.message.__monolitic.authtoken.domain.AccessTokenIssuer
 import site.rahoon.message.__monolitic.authtoken.domain.AccessTokenVerifier
 import site.rahoon.message.__monolitic.authtoken.domain.AuthTokenProperties
-import site.rahoon.message.__monolitic.common.domain.types.DomainException
+import site.rahoon.message.__monolitic.common.domain.DomainException
 import java.time.Instant
 import java.util.*
 

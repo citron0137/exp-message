@@ -9,8 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.resource.NoResourceFoundException
-import site.rahoon.message.__monolitic.common.controller.types.ApiResponse
-import site.rahoon.message.__monolitic.common.domain.types.DomainException
+import site.rahoon.message.__monolitic.common.domain.DomainException
 import site.rahoon.message.__monolitic.common.global.ErrorType
 import java.time.ZonedDateTime
 
@@ -29,7 +28,7 @@ class CommonExceptionHandler {
     fun handleDomainException(
         e: DomainException,
         request: HttpServletRequest
-    ): ResponseEntity<ApiResponse<Nothing>> {
+    ): ResponseEntity<CommonApiResponse<Nothing>> {
         val status = when (e.error.type) {
             ErrorType.NOT_FOUND -> HttpStatus.NOT_FOUND
             ErrorType.CONFLICT -> HttpStatus.CONFLICT
@@ -39,7 +38,7 @@ class CommonExceptionHandler {
             ErrorType.FORBIDDEN -> HttpStatus.FORBIDDEN
         }
 
-        val response = ApiResponse.error<Nothing>(
+        val response = CommonApiResponse.error<Nothing>(
             code = e.error.code,
             message = e.error.message,
             details = e.details,
@@ -57,12 +56,12 @@ class CommonExceptionHandler {
     fun handleValidationException(
         e: MethodArgumentNotValidException,
         request: HttpServletRequest
-    ): ResponseEntity<ApiResponse<Nothing>> {
+    ): ResponseEntity<CommonApiResponse<Nothing>> {
         val errors = e.bindingResult.fieldErrors.associate { 
             it.field to (it.defaultMessage ?: "")
         } as Map<String, Any>
 
-        val response = ApiResponse.error<Nothing>(
+        val response = CommonApiResponse.error<Nothing>(
             code = "VALIDATION_ERROR",
             message = "입력값 검증에 실패했습니다",
             details = errors,
@@ -80,8 +79,8 @@ class CommonExceptionHandler {
     fun handleNoResourceFoundException(
         e: NoResourceFoundException,
         request: HttpServletRequest
-    ): ResponseEntity<ApiResponse<Nothing>> {
-        val response = ApiResponse.error<Nothing>(
+    ): ResponseEntity<CommonApiResponse<Nothing>> {
+        val response = CommonApiResponse.error<Nothing>(
             code = "NOT_FOUND",
             message = "요청한 리소스를 찾을 수 없습니다",
             details = mapOf("resourcePath" to e.resourcePath),
@@ -100,7 +99,7 @@ class CommonExceptionHandler {
     fun handleHttpMessageNotReadableException(
         e: HttpMessageNotReadableException,
         request: HttpServletRequest
-    ): ResponseEntity<ApiResponse<Nothing>> {
+    ): ResponseEntity<CommonApiResponse<Nothing>> {
         val errorMessage = e.message?.let {
             when {
                 it.contains("missing") || it.contains("NULL") -> "필수 필드가 누락되었습니다"
@@ -118,7 +117,7 @@ class CommonExceptionHandler {
             """.trimMargin()
         )
 
-        val response = ApiResponse.error<Nothing>(
+        val response = CommonApiResponse.error<Nothing>(
             code = "BAD_REQUEST",
             message = errorMessage,
             details = mapOf("originalMessage" to (e.message ?: "")),
@@ -136,7 +135,7 @@ class CommonExceptionHandler {
     fun handleException(
         e: Exception,
         request: HttpServletRequest
-    ): ResponseEntity<ApiResponse<Nothing>> {
+    ): ResponseEntity<CommonApiResponse<Nothing>> {
         val queryString = request.queryString?.let { "?$it" } ?: ""
         logger.error(
             """
@@ -148,7 +147,7 @@ class CommonExceptionHandler {
             e
         )
 
-        val response = ApiResponse.error<Nothing>(
+        val response = CommonApiResponse.error<Nothing>(
             code = "INTERNAL_SERVER_ERROR",
             message = "서버 오류가 발생했습니다",
             details = null,
