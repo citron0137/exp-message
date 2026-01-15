@@ -3,7 +3,7 @@ package site.rahoon.message.__monolitic.user.domain
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import site.rahoon.message.__monolitic.common.domain.DomainException
+import site.rahoon.message.__monolitic.common.domain.types.DomainException
 import site.rahoon.message.__monolitic.common.test.IntegrationTestBase
 
 /**

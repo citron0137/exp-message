@@ -1,4 +1,4 @@
-package site.rahoon.message.__monolitic.common.controller.template
+package site.rahoon.message.__monolitic.common.controller.types
 
 import java.time.ZonedDateTime
 

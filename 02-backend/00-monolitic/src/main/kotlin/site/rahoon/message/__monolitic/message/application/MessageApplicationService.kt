@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomError
 import site.rahoon.message.__monolitic.chatroom.domain.ChatRoomDomainService
 import site.rahoon.message.__monolitic.chatroommember.application.ChatRoomMemberApplicationService
-import site.rahoon.message.__monolitic.common.domain.DomainException
+import site.rahoon.message.__monolitic.common.domain.types.DomainException
 import site.rahoon.message.__monolitic.message.domain.Message
 import site.rahoon.message.__monolitic.message.domain.MessageDomainService
 import site.rahoon.message.__monolitic.message.domain.MessageError

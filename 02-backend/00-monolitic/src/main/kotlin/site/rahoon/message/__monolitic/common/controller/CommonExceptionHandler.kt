@@ -9,19 +9,18 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.resource.NoResourceFoundException
-import site.rahoon.message.__monolitic.common.application.ApplicationException
-import site.rahoon.message.__monolitic.common.controller.template.ApiResponse
-import site.rahoon.message.__monolitic.common.domain.DomainException
-import site.rahoon.message.__monolitic.common.domain.ErrorType
+import site.rahoon.message.__monolitic.common.controller.types.ApiResponse
+import site.rahoon.message.__monolitic.common.domain.types.DomainException
+import site.rahoon.message.__monolitic.common.global.ErrorType
 import java.time.ZonedDateTime
 
 /**
  * 전역 예외 핸들러
  */
 @RestControllerAdvice
-class GlobalExceptionHandler {
+class CommonExceptionHandler {
 
-    private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+    private val logger = LoggerFactory.getLogger(CommonExceptionHandler::class.java)
 
     /**
      * DomainException 처리
@@ -49,27 +48,6 @@ class GlobalExceptionHandler {
         )
 
         return ResponseEntity.status(status).body(response)
-    }
-
-    /**
-     * ApplicationException 처리
-     */
-    @ExceptionHandler(ApplicationException::class)
-    fun handleApplicationException(
-        e: ApplicationException,
-        request: HttpServletRequest
-    ): ResponseEntity<ApiResponse<Nothing>> {
-        val details = e.details?.let { mapOf("detail" to it) }
-
-        val response = ApiResponse.error<Nothing>(
-            code = e.errorCode,
-            message = e.errorMessage,
-            details = details,
-            occurredAt = ZonedDateTime.now(),
-            path = request.requestURI
-        )
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response)
     }
 
     /**

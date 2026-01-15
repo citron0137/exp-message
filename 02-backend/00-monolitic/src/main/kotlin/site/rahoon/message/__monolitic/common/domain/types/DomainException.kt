@@ -1,4 +1,4 @@
-package site.rahoon.message.__monolitic.common.domain
+package site.rahoon.message.__monolitic.common.domain.types
 
 class DomainException(
     val error: DomainError,

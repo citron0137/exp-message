@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import site.rahoon.message.__monolitic.chatroom.domain.component.ChatRoomCreateValidator
 import site.rahoon.message.__monolitic.chatroom.domain.component.ChatRoomUpdateValidator
-import site.rahoon.message.__monolitic.common.domain.DomainException
+import site.rahoon.message.__monolitic.common.domain.types.DomainException
 
 @Service
 @Transactional(readOnly = true)

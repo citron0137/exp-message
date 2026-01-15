@@ -1,4 +1,4 @@
-package site.rahoon.message.__monolitic.common.controller
+package site.rahoon.message.__monolitic.common.controller.config
 
 import io.swagger.v3.oas.models.Components
 import io.swagger.v3.oas.models.OpenAPI

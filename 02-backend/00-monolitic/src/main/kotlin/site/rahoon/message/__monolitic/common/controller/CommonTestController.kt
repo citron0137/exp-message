@@ -7,9 +7,9 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import site.rahoon.message.__monolitic.common.controller.template.ApiResponse
+import site.rahoon.message.__monolitic.common.controller.types.ApiResponse
 import site.rahoon.message.__monolitic.common.domain.CommonError
-import site.rahoon.message.__monolitic.common.domain.DomainException
+import site.rahoon.message.__monolitic.common.domain.types.DomainException
 
 /**
  * Health Check Controller
@@ -17,9 +17,9 @@ import site.rahoon.message.__monolitic.common.domain.DomainException
  */
 @RestController
 @RequestMapping("/test")
-class TestController {
+class CommonTestController {
 
-    private val logger = LoggerFactory.getLogger(TestController::class.java)
+    private val logger = LoggerFactory.getLogger(CommonTestController::class.java)
 
     @GetMapping
     fun health(): ResponseEntity<ApiResponse<Map<String, String>>> {

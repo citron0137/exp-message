@@ -1,4 +1,4 @@
-package site.rahoon.message.__monolitic.common.domain
+package site.rahoon.message.__monolitic.common.global
 
 /**
  * 에러 타입
@@ -39,11 +39,5 @@ enum class ErrorType {
      * 내부 서버 오류, 예상치 못한 오류 등
      */
     SERVER_ERROR
-}
-
-interface DomainError {
-    val code: String
-    val message: String
-    val type: ErrorType
 }
 

@@ -1,5 +1,8 @@
 package site.rahoon.message.__monolitic.common.domain
 
+import site.rahoon.message.__monolitic.common.domain.types.DomainError
+import site.rahoon.message.__monolitic.common.global.ErrorType
+
 /**
  * 공통 도메인 에러
  * 특정 도메인에 종속되지 않는 공통 에러를 정의합니다.

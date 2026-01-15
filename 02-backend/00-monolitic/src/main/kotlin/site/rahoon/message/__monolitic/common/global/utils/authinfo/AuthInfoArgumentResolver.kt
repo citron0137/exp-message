@@ -8,7 +8,7 @@ import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
 import site.rahoon.message.__monolitic.common.domain.CommonError
-import site.rahoon.message.__monolitic.common.domain.DomainException
+import site.rahoon.message.__monolitic.common.domain.types.DomainException
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfo
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfoAffect
 

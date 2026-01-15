@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component
 import site.rahoon.message.__monolitic.authtoken.domain.AccessTokenVerifier
 import site.rahoon.message.__monolitic.authtoken.domain.AuthTokenError
 import site.rahoon.message.__monolitic.common.domain.CommonError
-import site.rahoon.message.__monolitic.common.domain.DomainException
+import site.rahoon.message.__monolitic.common.domain.types.DomainException
 import site.rahoon.message.__monolitic.common.global.utils.AuthInfo
 import site.rahoon.message.__monolitic.common.global.utils.authinfo.AuthTokenResolver
 
