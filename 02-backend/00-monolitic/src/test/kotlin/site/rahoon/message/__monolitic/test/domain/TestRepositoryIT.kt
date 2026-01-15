@@ -1,19 +1,13 @@
 package site.rahoon.message.__monolitic.test.domain
 
-import jakarta.persistence.EntityManager
-import jakarta.persistence.PersistenceContext
-import org.hibernate.Session
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.transaction.annotation.Transactional
+import site.rahoon.message.__monolitic.common.domain.SoftDeleteContext
 import site.rahoon.message.__monolitic.common.global.Tx
 import site.rahoon.message.__monolitic.common.test.IntegrationTestBase
-import site.rahoon.message.__monolitic.test.infrastructure.TestEntity
-import site.rahoon.message.__monolitic.test.infrastructure.TestJpaRepository
 import site.rahoon.message.__monolitic.test.infrastructure.TestRepositoryImpl
-import java.time.LocalDateTime
 import java.util.UUID
 
 /**
@@ -27,12 +21,6 @@ class TestRepositoryIT : IntegrationTestBase() {
 
     @Autowired
     private lateinit var testRepositoryImpl: TestRepositoryImpl
-
-    @Autowired
-    private lateinit var testJpaRepository: TestJpaRepository
-
-    @PersistenceContext
-    private lateinit var entityManager: EntityManager
 
     @BeforeEach
     fun setUp() {
@@ -316,12 +304,10 @@ class TestRepositoryIT : IntegrationTestBase() {
         testRepository.delete(id)
 
         // when - 필터 비활성화 후 조회
-        // Tx.execute를 사용하여 새로운 트랜잭션에서 필터를 비활성화하고 조회
-        // 새로운 트랜잭션이므로 1차 캐시가 비어있고, DB에서 최신 데이터를 가져옴
         val found = Tx.execute {
-            val session = entityManager.unwrap(Session::class.java)
-            session.disableFilter("softDeleteFilter")
-            testJpaRepository.findById(id).orElse(null)
+            SoftDeleteContext.disable {
+                testRepository.findById(id)
+            }
         }
 
         // then
@@ -348,15 +334,15 @@ class TestRepositoryIT : IntegrationTestBase() {
         testRepository.delete(id1)
 
         // when - 필터 비활성화 후 전체 조회
-        // Tx.execute를 사용하여 새로운 트랜잭션에서 필터를 비활성화하고 조회
-        // 새로운 트랜잭션이므로 1차 캐시가 비어있고, DB에서 최신 데이터를 가져옴
+        // JpaSoftDeleteSession.disable을 사용하여 필터를 비활성화하고 조회
         val all = Tx.execute {
-            val session = entityManager.unwrap(Session::class.java)
-            session.disableFilter("softDeleteFilter")
-            testJpaRepository.findAll()
+            SoftDeleteContext.disable {
+                testRepository.findAll()
+            }
         }
 
         // then
+        all!!
         assertTrue(all.any { it.id == id1 }, "필터가 비활성화된 경우 Soft Delete된 엔티티도 조회되어야 합니다")
         assertTrue(all.any { it.id == id2 }, "삭제되지 않은 엔티티는 조회되어야 합니다")
         
@@ -377,12 +363,12 @@ class TestRepositoryIT : IntegrationTestBase() {
         testRepository.delete(id)
 
         // when - 필터 비활성화 후 이름으로 조회
-        // Tx.execute를 사용하여 새로운 트랜잭션에서 필터를 비활성화하고 조회
-        // 새로운 트랜잭션이므로 1차 캐시가 비어있고, DB에서 최신 데이터를 가져옴
-        val found = Tx.execute {
-            val session = entityManager.unwrap(Session::class.java)
-            session.disableFilter("softDeleteFilter")
-            testJpaRepository.findByName(name)
+        // JpaSoftDeleteSession.disable을 사용하여 필터를 비활성화하고 조회
+        val found =
+            Tx.execute {
+            SoftDeleteContext.disable {
+                testRepository.findByName(name)
+            }
         }
 
         // then

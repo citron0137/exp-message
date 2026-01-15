@@ -2,7 +2,7 @@ package site.rahoon.message.__monolitic.test.infrastructure
 
 import org.springframework.transaction.annotation.Transactional
 import site.rahoon.message.__monolitic.common.global.TransactionalRepository
-import site.rahoon.message.__monolitic.common.infrastructure.JpaSoftDeleteRepository
+import site.rahoon.message.__monolitic.common.domain.SoftDeleteContext
 import site.rahoon.message.__monolitic.test.domain.TestRepository
 import java.time.LocalDateTime
 
@@ -14,8 +14,7 @@ import java.time.LocalDateTime
  */
 @TransactionalRepository
 class TestRepositoryImpl(
-    private val jpaRepository: TestJpaRepository,
-    private val softDeleteRepository: JpaSoftDeleteRepository
+    private val jpaRepository: TestJpaRepository
 ) : TestRepository {
     
     /** TestEntity를 저장합니다.*/
@@ -26,10 +25,13 @@ class TestRepositoryImpl(
 
     /**
      * ID로 TestEntity를 조회합니다.
-     * Soft Delete된 엔티티는 조회되지 않습니다
+     * Soft Delete된 엔티티는 조회되지 않습니다.
+     * 필터가 활성화되어 있으면 필터가 자동으로 처리하고,
+     * 필터가 비활성화되어 있으면 수동으로 deletedAt을 체크합니다.
      */
     override fun findById(id: String): TestEntity? {
-        return jpaRepository.findById(id).orElse(null)?.takeIf { it.deletedAt == null }
+        return jpaRepository.findById(id).orElse(null)
+            ?.takeIf { SoftDeleteContext.isDisabled() || it.deletedAt == null }
     }
 
     /**
@@ -51,11 +53,10 @@ class TestRepositoryImpl(
     /**
      * Soft Delete를 수행합니다.
      * 원자적 연산으로 처리됩니다.
-     * 트랜잭션은 JpaSoftDeleteRepositoryImpl의 softDeleteById 메서드에서 자동으로 관리됩니다.
      */
     @Transactional
     override fun delete(id: String) {
-        softDeleteRepository.softDeleteById(TestEntity::class.java, id)
+        jpaRepository.softDeleteById(id, LocalDateTime.now())
     }
 
     /**
