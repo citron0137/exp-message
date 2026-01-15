@@ -41,9 +41,20 @@ open class CommonPageCursor(
                 )
             }
 
+            // 빈 payload 체크
+            if (payload.isBlank()) {
+                throw DomainException(
+                    error = CommonError.INVALID_PAGE_CURSOR,
+                    details = mapOf("cursor" to cursor, "payload" to payload, "reason" to "empty payload")
+                )
+            }
+
             var version: String? = null
+            var versionCount = 0
             var sortKeys: List<String> = emptyList()
+            var sortKeysCount = 0
             val pairs = mutableListOf<Pair<String, String>>()
+            val seenKeys = mutableSetOf<String>()
 
             payload.split("&").forEach { part ->
                 val idx = part.indexOf("=")
@@ -54,14 +65,75 @@ open class CommonPageCursor(
                 if (key.isBlank()) return@forEach
 
                 when (key) {
-                    "v" -> version = value
-                    "sk" -> sortKeys = value
-                        .split(",")
-                        .asSequence()
-                        .map { it.trim() }
-                        .filter { it.isNotBlank() }
-                        .toList()
-                    else -> pairs.add(key to value)
+                    "v" -> {
+                        versionCount++
+                        if (versionCount > 1) {
+                            throw DomainException(
+                                error = CommonError.INVALID_PAGE_CURSOR,
+                                details = mapOf(
+                                    "cursor" to cursor,
+                                    "payload" to payload,
+                                    "reason" to "duplicate version key(v)"
+                                )
+                            )
+                        }
+                        version = value
+                    }
+                    "sk" -> {
+                        sortKeysCount++
+                        if (sortKeysCount > 1) {
+                            throw DomainException(
+                                error = CommonError.INVALID_PAGE_CURSOR,
+                                details = mapOf(
+                                    "cursor" to cursor,
+                                    "payload" to payload,
+                                    "reason" to "duplicate sort keys key(sk)"
+                                )
+                            )
+                        }
+                        sortKeys = value
+                            .split(",")
+                            .asSequence()
+                            .map { it.trim() }
+                            .filter { it.isNotBlank() }
+                            .toList()
+                        
+                        // sk에 중복된 키가 있는지 체크 (Set으로 효율적으로)
+                        val sortKeysSet = mutableSetOf<String>()
+                        val duplicateInSk = mutableListOf<String>()
+                        for (sortKey in sortKeys) {
+                            if (!sortKeysSet.add(sortKey)) {
+                                duplicateInSk.add(sortKey)
+                            }
+                        }
+                        if (duplicateInSk.isNotEmpty()) {
+                            throw DomainException(
+                                error = CommonError.INVALID_PAGE_CURSOR,
+                                details = mapOf(
+                                    "cursor" to cursor,
+                                    "payload" to payload,
+                                    "reason" to "duplicate keys in sort keys(sk)",
+                                    "duplicateKeys" to duplicateInSk
+                                )
+                            )
+                        }
+                    }
+                    else -> {
+                        // 일반 키 중복 체크
+                        if (seenKeys.contains(key)) {
+                            throw DomainException(
+                                error = CommonError.INVALID_PAGE_CURSOR,
+                                details = mapOf(
+                                    "cursor" to cursor,
+                                    "payload" to payload,
+                                    "reason" to "duplicate key in cursor payload",
+                                    "duplicateKey" to key
+                                )
+                            )
+                        }
+                        seenKeys.add(key)
+                        pairs.add(key to value)
+                    }
                 }
             }
 
@@ -71,23 +143,52 @@ open class CommonPageCursor(
                     details = mapOf("cursor" to cursor, "payload" to payload, "reason" to "missing version(v)")
                 )
 
+            // sk가 비어있는지 체크
+            if (sortKeys.isEmpty()) {
+                throw DomainException(
+                    error = CommonError.INVALID_PAGE_CURSOR,
+                    details = mapOf("cursor" to cursor, "payload" to payload, "reason" to "missing or empty sort keys(sk)")
+                )
+            }
+
+            // sk에 정의된 키가 pairs에 모두 있는지 확인 (누락 키 체크)
+            // seenKeys를 재사용하여 불필요한 Set 생성 방지
+            val missingKeys = sortKeys.filter { it !in seenKeys }
+            if (missingKeys.isNotEmpty()) {
+                throw DomainException(
+                    error = CommonError.INVALID_PAGE_CURSOR,
+                    details = mapOf(
+                        "cursor" to cursor,
+                        "payload" to payload,
+                        "reason" to "missing required keys in cursor payload",
+                        "missingKeys" to missingKeys,
+                        "sortKeys" to sortKeys,
+                        "availableKeys" to seenKeys.toList()
+                    )
+                )
+            }
+
             // sk에 정의된 key는 먼저, 그 외 key는 뒤로(원래 순서 유지)
+            // 정렬 대신 두 리스트로 분리 후 합치기 (O(p log p) → O(p))
             val order = sortKeys
                 .withIndex()
                 .associate { (idx, key) -> key to idx }
-
-            val cursors = pairs
-                .asSequence()
-                .mapIndexed { originalIndex, (key, value) ->
-                    Triple(
-                        order[key] ?: Int.MAX_VALUE,
-                        originalIndex,
-                        key to value
-                    )
+            
+            val sortedPairs = mutableListOf<Pair<String, String>>()
+            val otherPairs = mutableListOf<Pair<String, String>>()
+            
+            for (pair in pairs) {
+                if (pair.first in order) {
+                    sortedPairs.add(pair)
+                } else {
+                    otherPairs.add(pair)
                 }
-                .sortedWith(compareBy<Triple<Int, Int, Pair<String, String>>> { it.first }.thenBy { it.second })
-                .map { it.third }
-                .toList()
+            }
+            
+            // sortKeys 순서대로 정렬 (보통 2-3개이므로 O(s log s)는 무시 가능)
+            sortedPairs.sortBy { order[it.first] }
+            
+            val cursors = sortedPairs + otherPairs
 
             return CommonPageCursor(version = appliedVersion, cursors = cursors)
         }
