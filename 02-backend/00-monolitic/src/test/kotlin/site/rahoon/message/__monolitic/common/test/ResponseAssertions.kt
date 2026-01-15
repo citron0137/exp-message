@@ -38,6 +38,27 @@ inline fun <reified T> ResponseEntity<String>.assertSuccess(
 }
 
 /**
+ * 커서 기반 페이징 성공 응답을 검증하고 Page 응답을 반환합니다.
+ *
+ * - body 구조: { success, data: [...], pageInfo: { nextCursor, limit }, error }
+ */
+inline fun <reified T> ResponseEntity<String>.assertSuccessPage(
+    objectMapper: ObjectMapper,
+    expectedStatus: HttpStatus = HttpStatus.OK,
+    assertions: (data: List<T>, pageInfo: CommonApiResponse.Page.PageInfo) -> Unit = { _, _ -> }
+): CommonApiResponse.Page<T> {
+    statusCode shouldBe expectedStatus
+    body shouldNotBe null
+
+    val response = objectMapper.readValue<CommonApiResponse.Page<T>>(body!!)
+    response.success shouldBe true
+    response.data shouldNotBe null
+
+    assertions(response.data!!, response.pageInfo)
+    return response
+}
+
+/**
  * 에러 응답을 검증합니다.
  *
  * @param objectMapper JSON 파싱용 ObjectMapper
