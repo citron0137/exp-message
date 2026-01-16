@@ -160,13 +160,13 @@ class SoftDeleteContext(
      */
     fun isEnabled(): Boolean {
         val filterName = "softDeleteFilter"
-        val entityManager = getCurrentEntityManager()
-            ?: throw IllegalStateException("현재 활성화된 트랜잭션이 없습니다. 트랜잭션 내에서 호출해야 합니다.")
+        val entityManager = getCurrentEntityManager() ?: return false
 
         val session = try {
             entityManager.unwrap(Session::class.java)
         } catch (e: Exception) {
-            throw IllegalStateException("Hibernate Session을 가져올 수 없습니다. Hibernate를 사용하는지 확인하세요.", e)
+            return false
+            // throw IllegalStateException("Hibernate Session을 가져올 수 없습니다. Hibernate를 사용하는지 확인하세요.", e)
         }
 
         return session.getEnabledFilter(filterName) != null
