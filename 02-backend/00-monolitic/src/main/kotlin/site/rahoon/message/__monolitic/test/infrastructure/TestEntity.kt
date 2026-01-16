@@ -2,6 +2,7 @@ package site.rahoon.message.__monolitic.test.infrastructure
 
 import jakarta.persistence.*
 import site.rahoon.message.__monolitic.common.infrastructure.JpaEntityBase
+import site.rahoon.message.__monolitic.test.domain.TestDomain
 import java.time.LocalDateTime
 
 /**
@@ -32,4 +33,5 @@ class TestEntity(
     var createdAt: LocalDateTime
 ) : JpaEntityBase() {
     constructor() : this("", "", null, LocalDateTime.now())
+
 }

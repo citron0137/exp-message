@@ -32,9 +32,9 @@ class TestRepositoryIT : IntegrationTestBase() {
         // given
         val id = UUID.randomUUID().toString()
         val entity = testRepositoryImpl.create(
-            id = id,
-            name = "test-entity",
-            description = "테스트 엔티티"
+                id = id,
+                name = "test-entity",
+                description = "테스트 엔티티"
         )
 
         // when
@@ -120,7 +120,7 @@ class TestRepositoryIT : IntegrationTestBase() {
         testRepository.save(entity)
 
         // when
-        testRepository.delete(id)
+        testRepository.deleteById(id)
 
         // then
         val found = testRepository.findById(id)
@@ -139,7 +139,7 @@ class TestRepositoryIT : IntegrationTestBase() {
         testRepository.save(entity)
 
         // when
-        testRepository.delete(id)
+        testRepository.deleteById(id)
 
         // then
         val found = testRepository.findByName(name)
@@ -163,7 +163,7 @@ class TestRepositoryIT : IntegrationTestBase() {
         testRepository.save(entity2)
 
         // when
-        testRepository.delete(id1)
+        testRepository.deleteById(id1)
         val all = testRepository.findAll()
 
         // then
@@ -220,7 +220,7 @@ class TestRepositoryIT : IntegrationTestBase() {
             name = "recreate-test"
         )
         testRepository.save(entity1)
-        testRepository.delete(id)
+        testRepository.deleteById(id)
 
         // when - 같은 ID로 다시 저장
         val entity2 = testRepositoryImpl.create(
@@ -284,7 +284,7 @@ class TestRepositoryIT : IntegrationTestBase() {
         testRepository.save(entity2)
 
         // when
-        testRepository.delete(entity1.id)
+        testRepository.deleteById(entity1.id)
         val found = testRepository.findWithDescriptionLike("설명")
 
         // then
@@ -301,7 +301,7 @@ class TestRepositoryIT : IntegrationTestBase() {
             name = "filter-disable-test"
         )
         testRepository.save(entity)
-        testRepository.delete(id)
+        testRepository.deleteById(id)
 
         // when - 필터 비활성화 후 조회
         val found = Tx.execute {
@@ -331,7 +331,7 @@ class TestRepositoryIT : IntegrationTestBase() {
         )
         testRepository.save(entity1)
         testRepository.save(entity2)
-        testRepository.delete(id1)
+        testRepository.deleteById(id1)
 
         // when - 필터 비활성화 후 전체 조회
         // JpaSoftDeleteSession.disable을 사용하여 필터를 비활성화하고 조회
@@ -360,7 +360,7 @@ class TestRepositoryIT : IntegrationTestBase() {
             name = name
         )
         testRepository.save(entity)
-        testRepository.delete(id)
+        testRepository.deleteById(id)
 
         // when - 필터 비활성화 후 이름으로 조회
         // JpaSoftDeleteSession.disable을 사용하여 필터를 비활성화하고 조회
@@ -432,7 +432,7 @@ class TestRepositoryIT : IntegrationTestBase() {
         testRepository.save(entity3)
 
         // when: entity1을 Soft Delete하고 Self-join 쿼리 실행
-        testRepository.delete(entity1.id)
+        testRepository.deleteById(entity1.id)
         val found = testRepository.findWithSelfJoin()
 
         // then: 
@@ -470,8 +470,8 @@ class TestRepositoryIT : IntegrationTestBase() {
         testRepository.save(entity3)
 
         // when: entity1과 entity2를 Soft Delete하고 Self-join 쿼리 실행
-        testRepository.delete(entity1.id)
-        testRepository.delete(entity2.id)
+        testRepository.deleteById(entity1.id)
+        testRepository.deleteById(entity2.id)
         val found = testRepository.findWithSelfJoin()
 
         // then: 

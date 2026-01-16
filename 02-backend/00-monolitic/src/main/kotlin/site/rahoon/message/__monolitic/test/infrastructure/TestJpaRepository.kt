@@ -4,10 +4,8 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
-import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.util.Optional
 
 /**
  * TestEntity를 위한 Spring Data JPA Repository
@@ -32,12 +30,12 @@ interface TestJpaRepository : JpaRepository<TestEntity, String> {
         WHERE t1.id != t2.id
     """)
     fun findWithSelfJoin(): List<TestEntity>
-
+    
     /**
      * Soft Delete를 수행합니다.
      * 원자적 연산으로 deleted_at을 업데이트합니다.
      */
-    @Modifying(clearAutomatically = true) // 쿼리 실행 후 영속성 컨텍스트를 비워 정합성 유지
+    @Modifying(clearAutomatically = true)
     @Transactional
     @Query("UPDATE TestEntity e SET e.deletedAt = :deletedAt WHERE e.id = :id AND e.deletedAt IS NULL")
     fun softDeleteById(@Param("id") id: String, @Param("deletedAt") deletedAt: LocalDateTime): Int
