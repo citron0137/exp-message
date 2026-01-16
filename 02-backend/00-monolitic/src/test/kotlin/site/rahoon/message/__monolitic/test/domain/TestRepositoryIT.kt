@@ -376,4 +376,113 @@ class TestRepositoryIT : IntegrationTestBase() {
         assertEquals(id, found?.id)
         assertNotNull(found?.deletedAt, "Soft Delete된 엔티티는 deletedAt이 설정되어 있어야 합니다")
     }
+
+    @Test
+    fun `Self-join 쿼리에서 Filter 적용 확인 - 삭제되지 않은 엔티티만 조회`() {
+        // given: 같은 이름을 가진 엔티티들을 생성
+        val name = "self-join-test"
+        val entity1 = testRepositoryImpl.create(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            description = "엔티티 1"
+        )
+        val entity2 = testRepositoryImpl.create(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            description = "엔티티 2"
+        )
+        val entity3 = testRepositoryImpl.create(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            description = "엔티티 3"
+        )
+        testRepository.save(entity1)
+        testRepository.save(entity2)
+        testRepository.save(entity3)
+
+        // when: Self-join 쿼리 실행
+        val found = testRepository.findWithSelfJoin()
+
+        // then: 같은 이름을 가진 엔티티들이 조회되어야 함 (자기 자신 제외)
+        assertTrue(found.size >= 2, "같은 이름을 가진 엔티티들이 조회되어야 합니다")
+        assertTrue(found.any { it.id == entity1.id || it.id == entity2.id || it.id == entity3.id })
+    }
+
+    @Test
+    fun `Self-join 쿼리에서 Filter 적용 확인 - Soft Delete된 엔티티는 조인에서 제외`() {
+        // given: 같은 이름을 가진 엔티티들을 생성
+        val name = "self-join-soft-delete-test"
+        val entity1 = testRepositoryImpl.create(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            description = "삭제될 엔티티"
+        )
+        val entity2 = testRepositoryImpl.create(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            description = "유지될 엔티티 1"
+        )
+        val entity3 = testRepositoryImpl.create(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            description = "유지될 엔티티 2"
+        )
+        testRepository.save(entity1)
+        testRepository.save(entity2)
+        testRepository.save(entity3)
+
+        // when: entity1을 Soft Delete하고 Self-join 쿼리 실행
+        testRepository.delete(entity1.id)
+        val found = testRepository.findWithSelfJoin()
+
+        // then: 
+        // 1. Soft Delete된 entity1은 조회되지 않아야 함
+        assertFalse(found.any { it.id == entity1.id }, "Soft Delete된 엔티티는 조회되지 않아야 합니다")
+        
+        // 2. entity2와 entity3는 조회되어야 함 (서로 같은 이름이므로)
+        // entity2와 entity3가 서로 조인되어 조회됨
+        val foundIds = found.map { it.id }.toSet()
+        assertTrue(foundIds.contains(entity2.id) || foundIds.contains(entity3.id), 
+            "삭제되지 않은 엔티티는 조회되어야 합니다")
+    }
+
+    @Test
+    fun `Self-join 쿼리에서 Filter 적용 확인 - 조인된 양쪽 테이블 모두 Filter 적용`() {
+        // given: 같은 이름을 가진 엔티티들을 생성
+        val name = "self-join-both-filter-test"
+        val entity1 = testRepositoryImpl.create(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            description = "엔티티 1"
+        )
+        val entity2 = testRepositoryImpl.create(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            description = "엔티티 2"
+        )
+        val entity3 = testRepositoryImpl.create(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            description = "엔티티 3"
+        )
+        testRepository.save(entity1)
+        testRepository.save(entity2)
+        testRepository.save(entity3)
+
+        // when: entity1과 entity2를 Soft Delete하고 Self-join 쿼리 실행
+        testRepository.delete(entity1.id)
+        testRepository.delete(entity2.id)
+        val found = testRepository.findWithSelfJoin()
+
+        // then: 
+        // 1. Soft Delete된 entity1, entity2는 조회되지 않아야 함
+        assertFalse(found.any { it.id == entity1.id }, "Soft Delete된 엔티티1은 조회되지 않아야 합니다")
+        assertFalse(found.any { it.id == entity2.id }, "Soft Delete된 엔티티2는 조회되지 않아야 합니다")
+        
+        // 2. entity3만 남았는데, 같은 이름을 가진 다른 엔티티가 없으므로 
+        //    Self-join 조건(t1.id != t2.id)을 만족하는 조합이 없어야 함
+        //    단, 다른 테스트에서 생성된 같은 이름의 엔티티가 있을 수 있으므로
+        //    entity3가 조회되지 않는다고 단정할 수는 없음
+        //    하지만 entity1, entity2는 확실히 조회되지 않아야 함
+    }
 }

@@ -13,4 +13,5 @@ interface TestRepository {
     fun findAll(): List<TestEntity>
     fun delete(id: String)
     fun findWithDescriptionLike(descriptionPattern: String): List<TestEntity>
+    fun findWithSelfJoin(): List<TestEntity>
 }

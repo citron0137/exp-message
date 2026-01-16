@@ -23,6 +23,17 @@ interface TestJpaRepository : JpaRepository<TestEntity, String> {
     fun findWithDescriptionLike(@Param("pattern") pattern: String): List<TestEntity>
 
     /**
+     * Self-join 쿼리: 같은 이름을 가진 엔티티들을 조인하여 찾습니다.
+     * Filter가 조인된 테이블에도 적용되는지 확인하기 위한 테스트용 쿼리입니다.
+     */
+    @Query("""
+        SELECT t1 FROM TestEntity t1 
+        INNER JOIN TestEntity t2 ON t1.name = t2.name 
+        WHERE t1.id != t2.id
+    """)
+    fun findWithSelfJoin(): List<TestEntity>
+
+    /**
      * Soft Delete를 수행합니다.
      * 원자적 연산으로 deleted_at을 업데이트합니다.
      */

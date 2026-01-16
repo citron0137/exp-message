@@ -68,6 +68,14 @@ class TestRepositoryImpl(
     }
 
     /**
+     * Self-join 쿼리로 같은 이름을 가진 엔티티들을 조회합니다.
+     * 조인된 테이블에도 Filter가 적용되는지 확인하기 위한 테스트용 메서드입니다.
+     */
+    override fun findWithSelfJoin(): List<TestEntity> {
+        return jpaRepository.findWithSelfJoin()
+    }
+
+    /**
      * 새로운 TestEntity를 생성합니다.
      */
     @Transactional
