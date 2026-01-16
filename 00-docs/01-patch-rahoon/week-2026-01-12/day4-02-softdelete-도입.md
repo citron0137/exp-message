@@ -131,8 +131,8 @@
 ## 다음으로 해볼 것
 
 - **DB 마이그레이션 추가**: `deletedAt` 컬럼 추가 마이그레이션 작성
-- **Hibernate Filter 설정**: EntityManagerFactory 설정에서 Filter 프로그래밍 방식으로 등록
 - **Repository 수정**: 각 도메인 Repository에 Soft Delete 로직 적용
+  - 어떻게 효율적으로 중복되는 코드를 제거할지 고민해봐야함
 - **복구 기능 추가**: 삭제된 데이터 복구 API (필요 시)
 - **배치 작업 작성**: 주기적 물리 삭제 배치 작업 구현
 - **인덱스 추가**: `deletedAt` 컬럼 인덱스 추가 (조회 성능 최적화)
