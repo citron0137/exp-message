@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.orm.jpa.JpaTransactionManager
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.support.DefaultTransactionStatus
+import site.rahoon.message.__monolitic.common.infrastructure.JpaSoftDeleteRepositoryImpl
 
 /**
  * JPA 설정
@@ -19,7 +20,7 @@ import org.springframework.transaction.support.DefaultTransactionStatus
 @Configuration
 @EnableJpaRepositories(
     basePackages = ["site.rahoon.message.__monolitic"],
-    // enableDefaultTransactions = false
+    repositoryBaseClass = JpaSoftDeleteRepositoryImpl::class
 )
 class JpaConfig {
 

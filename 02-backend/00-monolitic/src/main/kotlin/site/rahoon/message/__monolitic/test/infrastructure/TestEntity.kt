@@ -21,7 +21,7 @@ import java.time.LocalDateTime
 class TestEntity(
     @Id
     @Column(name = "id", length = 36)
-    var id: String,
+    override var id: String,
 
     @Column(name = "name", nullable = false, length = 100)
     var name: String,

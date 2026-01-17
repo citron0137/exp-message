@@ -1,6 +1,7 @@
 package site.rahoon.message.__monolitic.common.infrastructure
 
 import jakarta.persistence.Column
+import jakarta.persistence.Id
 import jakarta.persistence.MappedSuperclass
 import java.time.LocalDateTime
 
@@ -16,6 +17,10 @@ import java.time.LocalDateTime
  */
 @MappedSuperclass
 abstract class JpaEntityBase {
+
+    @Id
+    @Column(name = "id", length = 36)
+    open lateinit var id: String
     /**
      * 삭제 시각 (Soft Delete)
      * null이면 삭제되지 않은 상태입니다.
