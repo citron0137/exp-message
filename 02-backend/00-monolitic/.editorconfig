@@ -8,33 +8,46 @@ trim_trailing_whitespace = true
 indent_size = 4
 
 [*.{kt,kts}]
-max_line_length = 120
+max_line_length = 140
 
-# --- 줄바꿈 및 공백 최적화 ---
-# 연속된 빈 줄 금지 (가장 중요한 설정)
-ktlint_standard_no-consecutive-blank-lines = enabled
-# 닫는 중괄호(}) 앞의 빈 줄 제거
-ktlint_standard_no-blank-line-before-rbrace = enabled
+# --- [공백 및 줄바꿈 관리] ---
+ktlint_standard_no-consecutive-blank-lines = enabled     # 연속된 빈 줄 금지
+ktlint_standard_no-blank-line-before-rbrace = enabled    # 닫는 중괄호(}) 직전 빈 줄 제거
+ktlint_standard_comment-spacing = enabled                # 주석 앞 공백 강제
+ktlint_standard_curly-spacing = enabled                  # 중괄호 주변 공백 강제
+ktlint_standard_colon-spacing = enabled                  # 콜론(:) 앞뒤 공백 규칙 적용
 
-# --- 가독성을 위한 필수 규칙들 ---
-ktlint_standard_no-wildcard-imports = enabled
-ktlint_standard_import-ordering = ascii
-ktlint_standard_comment-spacing = enabled
-ktlint_standard_curly-spacing = enabled
+# --- [과도한 줄바꿈 및 스타일 완화] ---
+ktlint_standard_multiline-expression-wrapping = disabled # 긴 표현식 강제 줄바꿈 방지
+ktlint_standard_binary-expression-wrapping = disabled    # 이항 연산자(>, + 등) 기준 줄바꿈 방지
+ktlint_standard_argument-list-wrapping = disabled        # 인자 리스트가 짧을 때 한 줄 허용
+ij_kotlin_allow_trailing_comma = true                    # Git Diff 깔끔하게 유지 (후행 쉼표 허용)
 
+# --- [임포트 규칙] ---
+ktlint_standard_no-wildcard-imports = enabled            # 와일드카드(*) 임포트 금지
+ktlint_standard_import-ordering = ascii                  # 임포트 순서 ASCII 정렬
+ktlint_standard_no-unused-imports = enabled              # 사용하지 않는 임포트 자동 제거
 
-# 줄바꿈 규칙 완화
-ktlint_standard_multiline-expression-wrapping = disabled # 1. 표현식이 길어질 때의 줄바꿈 규칙 완화
-ktlint_standard_binary-expression-wrapping = disabled # 2. 이항 연산자(>, <, + 등) 뒤에서 줄바꿈되는 것을 방지
-ktlint_standard_argument-list-wrapping = disabled # 3. 인자 리스트가 짧을 때는 한 줄에 쓰도록 허용
+# --- [코드 최적화 및 어노테이션] ---
+ktlint_standard_no-unnecessary-parentheses = enabled     # 불필요한 괄호 제거
+ktlint_standard_type-argument-list-spacing = enabled     # 타입 추론 시 중복 타입 제거 유도
+ktlint_standard_no-empty-block = enabled                 # 내용 없는 빈 블록 금지
+ktlint_standard_annotation = enabled                     # 어노테이션 배치 규칙 적용
 
-# 불필요한 타입 정의 제거 
-ktlint_standard_no-unnecessary-parentheses = enabled # 불필요한 타입 지정(Explicit Type)을 제거하는 규칙
-ktlint_standard_type-argument-list-spacing = enabled # 타입 추론이 가능한 경우 중복 타입을 제거하도록 유도
+# --- [클래스 및 변수 명명/순서 규칙] ---
+ktlint_standard_property-naming = enabled                # 변수 명명 규칙 준수 (상수 등)
+ktlint_standard_modifier-order = enabled                 # 접근제어자/수식어 순서 강제
+ktlint_standard_class-signature = enabled                # 클래스 선언부 가독성 최적화
 
-# --- 서버 프로젝트 선택 사항 ---
-# ktlint_disabled_rules = parameter-list-wrapping, annotation
+# --- [체이닝 및 문법 스타일] ---
+ktlint_standard_chain-wrapping = enabled                 # 메서드 체이닝 시 도트(.) 위치를 줄 시작으로 통일
+ktlint_standard_string-template = enabled                # 단순 변수는 $name, 복잡한 식은 ${name.id} 강제
+ktlint_standard_no-unit-return = enabled                 # Unit 반환형 명시 생략 (불필요한 코드 제거)
 
-# --- 테스트 코드용 특수 설정 ---
-# [src/test/kotlin/**]
-# ktlint_standard_function-naming = disabled
+# --- [기타 세밀한 조정] ---
+ktlint_standard_enum-entry-name-case = enabled           # Enum 항목은 보통 대문자 권장
+ktlint_standard_filename = enabled                       # 파일명과 클래스명 일치 여부 확인
+
+# --- [테스트 코드 특화 설정] ---
+[src/test/kotlin/**]
+ktlint_standard_function-naming = disabled               # 테스트 코드 한글/백틱 메서드명 허용
