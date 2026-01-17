@@ -18,7 +18,10 @@ class ChatRoomApplicationServiceIT(
     fun `삭제된 채팅방은 리스트 조회시 조회되지 않아야한다`() {
         // given
         val userUuid = UUID.randomUUID().toString()
-        val chatRoom = chatRoomApplicationService.create(ChatRoomCriteria.Create(name = "삭제될 채팅방", createdByUserId = userUuid))
+        val chatRoom =
+            chatRoomApplicationService.create(
+                ChatRoomCriteria.Create(name = "삭제될 채팅방", createdByUserId = userUuid),
+            )
         chatRoomApplicationService.delete(ChatRoomCriteria.Delete(chatRoomId = chatRoom.id, userId = userUuid))
 
         // When

@@ -255,7 +255,12 @@ open class CommonPageCursor(
             if (sortKeys.isEmpty()) {
                 throw DomainException(
                     error = CommonError.INVALID_PAGE_CURSOR,
-                    details = mapOf("cursor" to cursor, "payload" to payload, "reason" to "missing or empty sort keys(sk)"),
+                    details =
+                        mapOf(
+                            "cursor" to cursor,
+                            "payload" to payload,
+                            "reason" to "missing or empty sort keys(sk)",
+                        ),
                 )
             }
 

@@ -85,8 +85,16 @@ class AccessTokenIssuerUT {
         val afterIssue = Instant.now()
 
         // then
-        val expectedExpiresAtMin = beforeIssue.plusSeconds(properties.accessTokenTtlSeconds).truncatedTo(ChronoUnit.SECONDS)
-        val expectedExpiresAtMax = afterIssue.plusSeconds(properties.accessTokenTtlSeconds).truncatedTo(ChronoUnit.SECONDS)
+        val expectedExpiresAtMin =
+            beforeIssue
+                .plusSeconds(
+                    properties.accessTokenTtlSeconds,
+                ).truncatedTo(ChronoUnit.SECONDS)
+        val expectedExpiresAtMax =
+            afterIssue
+                .plusSeconds(
+                    properties.accessTokenTtlSeconds,
+                ).truncatedTo(ChronoUnit.SECONDS)
         val actualExpiresAt = result.expiresAt.atZone(ZoneId.systemDefault()).toInstant()
 
         Assertions.assertTrue(actualExpiresAt.isAfter(expectedExpiresAtMin) || actualExpiresAt == expectedExpiresAtMin)

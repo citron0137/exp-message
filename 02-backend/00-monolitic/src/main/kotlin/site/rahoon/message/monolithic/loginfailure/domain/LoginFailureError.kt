@@ -11,5 +11,9 @@ enum class LoginFailureError(
     override val message: String,
     override val type: ErrorType,
 ) : DomainError {
-    ACCOUNT_LOCKED("LOGIN_FAILURE_001", "Account is temporarily locked due to multiple failed login attempts", ErrorType.CLIENT_ERROR),
+    ACCOUNT_LOCKED(
+        "LOGIN_FAILURE_001",
+        "Account is temporarily locked due to multiple failed login attempts",
+        ErrorType.CLIENT_ERROR,
+    ),
 }

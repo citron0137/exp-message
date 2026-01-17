@@ -129,7 +129,8 @@ class ChatRoomApplicationServiceUT {
                 updatedAt = LocalDateTime.now(),
             )
 
-        every { chatRoomMemberApplicationService.getByUserId(userId) } returns listOf(memberInfo1, memberInfo2, memberInfo3)
+        every { chatRoomMemberApplicationService.getByUserId(userId) } returns
+            listOf(memberInfo1, memberInfo2, memberInfo3)
         every { chatRoomDomainService.getByIds(listOf(chatRoomId1, chatRoomId2, chatRoomId3)) } returns
             listOf(chatRoomInfo1, chatRoomInfo2, chatRoomInfo3)
 
@@ -211,7 +212,8 @@ class ChatRoomApplicationServiceUT {
         // memberInfo 순서대로 chatRoomId가 추출되어야 함
         every { chatRoomMemberApplicationService.getByUserId(userId) } returns listOf(memberInfo1, memberInfo2)
         // getByIds는 추출된 ID 순서대로 호출되어야 함
-        every { chatRoomDomainService.getByIds(listOf(chatRoomId1, chatRoomId2)) } returns listOf(chatRoomInfo1, chatRoomInfo2)
+        every { chatRoomDomainService.getByIds(listOf(chatRoomId1, chatRoomId2)) } returns
+            listOf(chatRoomInfo1, chatRoomInfo2)
 
         // when
         val result = chatRoomApplicationService.getByMemberUserId(userId)

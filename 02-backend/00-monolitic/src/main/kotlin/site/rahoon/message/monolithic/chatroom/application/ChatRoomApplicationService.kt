@@ -87,7 +87,8 @@ class ChatRoomApplicationService(
     /**
      * 내가 생성한 채팅방 목록 조회
      */
-    fun getByCreatedByUserId(userId: String): List<ChatRoomInfo.Detail> = chatRoomDomainService.getByCreatedByUserId(userId)
+    fun getByCreatedByUserId(userId: String): List<ChatRoomInfo.Detail> =
+        chatRoomDomainService.getByCreatedByUserId(userId)
 
     /**
      * 내가 참여한 채팅방 목록 조회

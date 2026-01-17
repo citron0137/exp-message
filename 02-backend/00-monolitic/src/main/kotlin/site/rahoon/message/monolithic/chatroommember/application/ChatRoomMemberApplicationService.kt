@@ -31,7 +31,8 @@ class ChatRoomMemberApplicationService(
     /**
      * 특정 채팅방의 멤버 목록 조회
      */
-    fun getByChatRoomId(chatRoomId: String): List<ChatRoomMemberInfo.Detail> = chatRoomMemberDomainService.getByChatRoomId(chatRoomId)
+    fun getByChatRoomId(chatRoomId: String): List<ChatRoomMemberInfo.Detail> =
+        chatRoomMemberDomainService.getByChatRoomId(chatRoomId)
 
     /**
      * 특정 사용자가 참가한 채팅방 목록 조회

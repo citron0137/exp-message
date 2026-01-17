@@ -69,11 +69,23 @@ class RefreshTokenIssuerUT {
         val afterIssue = LocalDateTime.now()
 
         // then
-        val expectedExpiresAtMin = beforeIssue.plusSeconds(properties.refreshTokenTtlSeconds).truncatedTo(ChronoUnit.SECONDS)
-        val expectedExpiresAtMax = afterIssue.plusSeconds(properties.refreshTokenTtlSeconds).truncatedTo(ChronoUnit.SECONDS)
+        val expectedExpiresAtMin =
+            beforeIssue
+                .plusSeconds(
+                    properties.refreshTokenTtlSeconds,
+                ).truncatedTo(ChronoUnit.SECONDS)
+        val expectedExpiresAtMax =
+            afterIssue
+                .plusSeconds(
+                    properties.refreshTokenTtlSeconds,
+                ).truncatedTo(ChronoUnit.SECONDS)
 
-        Assertions.assertTrue(result.expiresAt.isAfter(expectedExpiresAtMin) || result.expiresAt == expectedExpiresAtMin)
-        Assertions.assertTrue(result.expiresAt.isBefore(expectedExpiresAtMax) || result.expiresAt == expectedExpiresAtMax)
+        Assertions.assertTrue(
+            result.expiresAt.isAfter(expectedExpiresAtMin) || result.expiresAt == expectedExpiresAtMin,
+        )
+        Assertions.assertTrue(
+            result.expiresAt.isBefore(expectedExpiresAtMax) || result.expiresAt == expectedExpiresAtMax,
+        )
     }
 
     @Test

@@ -1,0 +1,40 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_size = 4
+
+[*.{kt,kts}]
+max_line_length = 120
+
+# --- 줄바꿈 및 공백 최적화 ---
+# 연속된 빈 줄 금지 (가장 중요한 설정)
+ktlint_standard_no-consecutive-blank-lines = enabled
+# 닫는 중괄호(}) 앞의 빈 줄 제거
+ktlint_standard_no-blank-line-before-rbrace = enabled
+
+# --- 가독성을 위한 필수 규칙들 ---
+ktlint_standard_no-wildcard-imports = enabled
+ktlint_standard_import-ordering = ascii
+ktlint_standard_comment-spacing = enabled
+ktlint_standard_curly-spacing = enabled
+
+
+# 줄바꿈 규칙 완화
+ktlint_standard_multiline-expression-wrapping = disabled # 1. 표현식이 길어질 때의 줄바꿈 규칙 완화
+ktlint_standard_binary-expression-wrapping = disabled # 2. 이항 연산자(>, <, + 등) 뒤에서 줄바꿈되는 것을 방지
+ktlint_standard_argument-list-wrapping = disabled # 3. 인자 리스트가 짧을 때는 한 줄에 쓰도록 허용
+
+# 불필요한 타입 정의 제거 
+ktlint_standard_no-unnecessary-parentheses = enabled # 불필요한 타입 지정(Explicit Type)을 제거하는 규칙
+ktlint_standard_type-argument-list-spacing = enabled # 타입 추론이 가능한 경우 중복 타입을 제거하도록 유도
+
+# --- 서버 프로젝트 선택 사항 ---
+# ktlint_disabled_rules = parameter-list-wrapping, annotation
+
+# --- 테스트 코드용 특수 설정 ---
+# [src/test/kotlin/**]
+# ktlint_standard_function-naming = disabled

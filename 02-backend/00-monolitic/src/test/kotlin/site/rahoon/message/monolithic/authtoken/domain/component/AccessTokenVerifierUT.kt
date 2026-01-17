@@ -106,7 +106,10 @@ class AccessTokenVerifierUT {
                 accessTokenVerifier.verify(expiredToken)
             }
 
-        Assertions.assertEquals(site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.TOKEN_EXPIRED, exception.error)
+        Assertions.assertEquals(
+            site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.TOKEN_EXPIRED,
+            exception.error,
+        )
     }
 
     @Test
@@ -133,7 +136,10 @@ class AccessTokenVerifierUT {
                 accessTokenVerifier.verify(invalidToken)
             }
 
-        Assertions.assertEquals(site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.INVALID_TOKEN, exception.error)
+        Assertions.assertEquals(
+            site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.INVALID_TOKEN,
+            exception.error,
+        )
     }
 
     @Test
@@ -158,7 +164,10 @@ class AccessTokenVerifierUT {
                 accessTokenVerifier.verify(invalidToken)
             }
 
-        Assertions.assertEquals(site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.INVALID_TOKEN, exception.error)
+        Assertions.assertEquals(
+            site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.INVALID_TOKEN,
+            exception.error,
+        )
     }
 
     @Test
@@ -183,7 +192,10 @@ class AccessTokenVerifierUT {
                 accessTokenVerifier.verify(invalidToken)
             }
 
-        Assertions.assertEquals(site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.INVALID_TOKEN, exception.error)
+        Assertions.assertEquals(
+            site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.INVALID_TOKEN,
+            exception.error,
+        )
     }
 
     @Test
@@ -197,7 +209,10 @@ class AccessTokenVerifierUT {
                 accessTokenVerifier.verify(malformedToken)
             }
 
-        Assertions.assertEquals(site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.INVALID_TOKEN, exception.error)
+        Assertions.assertEquals(
+            site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.INVALID_TOKEN,
+            exception.error,
+        )
     }
 
     @Test
@@ -211,7 +226,10 @@ class AccessTokenVerifierUT {
                 accessTokenVerifier.verify(emptyToken)
             }
 
-        Assertions.assertEquals(site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.INVALID_TOKEN, exception.error)
+        Assertions.assertEquals(
+            site.rahoon.message.monolithic.authtoken.domain.AuthTokenError.INVALID_TOKEN,
+            exception.error,
+        )
     }
 
     private fun createExpiredToken(
