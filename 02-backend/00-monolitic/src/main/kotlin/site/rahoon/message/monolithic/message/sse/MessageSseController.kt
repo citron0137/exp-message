@@ -52,7 +52,10 @@ class MessageSseController(
                     .name("connected")
                     .data(""),
             )
-        } catch (e: Exception) {
+        } catch (
+            @Suppress("TooGenericExceptionCaught")
+            e: Exception,
+        ) {
             log.warn("Failed to send initial heartbeat. chatRoomId={}", chatRoomId, e)
         }
 
