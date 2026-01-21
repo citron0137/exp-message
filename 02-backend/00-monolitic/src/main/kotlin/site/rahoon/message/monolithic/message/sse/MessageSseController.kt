@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import site.rahoon.message.monolithic.common.controller.CommonAuthInfo
-import java.io.IOException
 
 /**
  * SSE 기반 실시간 메시지 스트림 엔드포인트.
@@ -44,7 +43,7 @@ class MessageSseController(
         val timeoutMs = timeout ?: TIMEOUT_MS
         val emitter = SseEmitter(timeoutMs)
         sseEmitterManager.add(chatRoomId, emitter)
-        
+
         // 연결 직후 heartbeat 전송으로 연결 확인
         try {
             emitter.send(
@@ -56,7 +55,7 @@ class MessageSseController(
         } catch (e: Exception) {
             log.warn("Failed to send initial heartbeat. chatRoomId={}", chatRoomId, e)
         }
-        
+
         return emitter
     }
 

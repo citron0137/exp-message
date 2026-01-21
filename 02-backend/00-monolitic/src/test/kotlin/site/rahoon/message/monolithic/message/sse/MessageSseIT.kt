@@ -111,13 +111,13 @@ class MessageSseIT(
 
         // then: SSE 구독자에게 수신
         val received = receives.poll(5, TimeUnit.SECONDS)
-        
+
         // 에러가 있으면 먼저 확인
         if (received == null && errors.isNotEmpty()) {
             val error = errors.poll()
             throw AssertionError("SSE subscription error: ${error?.message}", error)
         }
-        
+
         received.shouldNotBeNull()
         received.content shouldBe content
         received.chatRoomId shouldBe chatRoomId
