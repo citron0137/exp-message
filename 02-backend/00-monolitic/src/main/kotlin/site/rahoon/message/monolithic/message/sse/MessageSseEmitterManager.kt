@@ -56,8 +56,9 @@ class MessageSseEmitterManager(
 
         // JSON 문자열로 직렬화
         val jsonData = objectMapper.writeValueAsString(data)
-
-        targets.forEach { emitter ->
+        val iterator = targets.iterator()
+        while (iterator.hasNext()) {
+            val emitter = iterator.next()
             try {
                 emitter.send(
                     SseEmitter
@@ -65,13 +66,10 @@ class MessageSseEmitterManager(
                         .name("message")
                         .data(jsonData, MediaType.APPLICATION_JSON),
                 )
-            } catch (e: IOException) {
-                // 네트워크 문제 (연결 끊김 등)
-                log.warn("Failed to send SSE event due to network issue. chatRoomId={}, error={}", chatRoomId, e.message)
-                remove(chatRoomId, emitter)
-            } catch (e: IllegalStateException) {
-                // 이미 완료/타임아웃된 emitter
-                log.warn("Failed to send SSE event to completed emitter. chatRoomId={}, error={}", chatRoomId, e.message)
+                log.debug("SSE event sent to chatRoomId={}, subscriber={}", chatRoomId, emitter)
+            } catch (e: Exception) {
+                // IOException 뿐만 아니라 모든 예외 발생 시 해당 Emitter 제거
+                log.debug("SSE 전송 실패로 인한 Emitter 제거. RoomId: {}, Error: {}", chatRoomId, e.message)
                 remove(chatRoomId, emitter)
             }
         }
@@ -89,5 +87,10 @@ class MessageSseEmitterManager(
             emitters.remove(chatRoomId)
         }
         log.debug("SSE emitter removed. chatRoomId={}, remaining={}", chatRoomId, emitters[chatRoomId]?.size ?: 0)
+        runCatching {
+            emitter.complete()
+        }.onFailure { secondaryError ->
+            log.debug("SSE emitter complete after remove error. chatRoomId={}, error={}", chatRoomId, secondaryError.message)
+        }
     }
 }
