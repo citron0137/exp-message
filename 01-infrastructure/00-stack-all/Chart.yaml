@@ -8,18 +8,17 @@ appVersion: "0.0.1-SNAPSHOT"
 dependencies:
   - name: mysql
     version: "0.1.0"
-    repository: "file://../../01-infrastructure/01-mysql-mono"
+    repository: "file://../01-mysql-mono"
     condition: mysql.enabled
   - name: redis
     version: "0.1.0"
-    repository: "file://../../01-infrastructure/03-redis-mono"
+    repository: "file://../03-redis-mono"
     condition: redis.enabled
   - name: batch-db-migration
     version: "0.1.0"
-    repository: "file://../../01-infrastructure/04-batch-db-migration"
+    repository: "file://../04-batch-db-migration"
     condition: batch-db-migration.enabled
   - name: app-monolitic
     version: "0.1.0"
-    repository: "file://../../01-infrastructure/02-app-monolitic"
+    repository: "file://../02-app-monolitic"
     condition: app-monolitic.enabled
-

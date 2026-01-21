@@ -16,6 +16,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ChartDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) "01-infrastructure\00-stack-all"
 $ValuesFile = Join-Path $ScriptDir "values.yaml"
 $KubeconfigFile = Join-Path $ScriptDir "kubeconfig.yaml"
 $ReleaseName = "message-stack"
@@ -55,11 +56,11 @@ function Invoke-Install {
     Test-Prerequisites
     
     Write-Info "Updating dependencies..."
-    helm dependency update --kubeconfig="$KubeconfigFile" $ScriptDir
+    helm dependency update --kubeconfig="$KubeconfigFile" $ChartDir
     if ($LASTEXITCODE -ne 0) { throw "helm dependency update failed" }
     
     Write-Info "Running Helm Install..."
-    helm install $ReleaseName $ScriptDir `
+    helm install $ReleaseName $ChartDir `
         --kubeconfig="$KubeconfigFile" `
         --values $ValuesFile
     if ($LASTEXITCODE -ne 0) { throw "helm install failed" }
@@ -82,11 +83,11 @@ function Invoke-Upgrade {
     Test-Prerequisites
     
     Write-Info "Updating dependencies..."
-    helm dependency update --kubeconfig="$KubeconfigFile" $ScriptDir
+    helm dependency update --kubeconfig="$KubeconfigFile" $ChartDir
     if ($LASTEXITCODE -ne 0) { throw "helm dependency update failed" }
     
     Write-Info "Running Helm Upgrade..."
-    helm upgrade $ReleaseName $ScriptDir `
+    helm upgrade $ReleaseName $ChartDir `
         --kubeconfig="$KubeconfigFile" `
         --values $ValuesFile
     if ($LASTEXITCODE -ne 0) { throw "helm upgrade failed" }

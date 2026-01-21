@@ -47,4 +47,3 @@ Selector labels
 app.kubernetes.io/name: {{ include "stack-monolitic.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
-

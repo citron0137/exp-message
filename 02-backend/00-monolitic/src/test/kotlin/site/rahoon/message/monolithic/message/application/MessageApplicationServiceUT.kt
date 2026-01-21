@@ -8,6 +8,7 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.context.ApplicationEventPublisher
 import site.rahoon.message.monolithic.chatroom.domain.ChatRoomDomainService
 import site.rahoon.message.monolithic.chatroom.domain.ChatRoomError
 import site.rahoon.message.monolithic.chatroom.domain.ChatRoomInfo
@@ -28,7 +29,7 @@ class MessageApplicationServiceUT {
     private lateinit var messageDomainService: MessageDomainService
     private lateinit var chatRoomDomainService: ChatRoomDomainService
     private lateinit var chatRoomMemberApplicationService: ChatRoomMemberApplicationService
-    private lateinit var messageEventPublisher: MessageEventPublisher
+    private lateinit var applicationEventPublisher: ApplicationEventPublisher
     private lateinit var messageApplicationService: MessageApplicationService
 
     @BeforeEach
@@ -36,13 +37,13 @@ class MessageApplicationServiceUT {
         messageDomainService = mockk()
         chatRoomDomainService = mockk()
         chatRoomMemberApplicationService = mockk()
-        messageEventPublisher = mockk<MessageEventPublisher>(relaxed = true)
+        applicationEventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
         messageApplicationService =
             MessageApplicationService(
                 messageDomainService,
                 chatRoomDomainService,
                 chatRoomMemberApplicationService,
-                messageEventPublisher,
+                applicationEventPublisher,
                 ZoneId.systemDefault(),
             )
     }
@@ -97,7 +98,7 @@ class MessageApplicationServiceUT {
         verify { chatRoomMemberApplicationService.isMember(chatRoomId, userId) }
         verify { messageDomainService.create(any()) }
         verify {
-            messageEventPublisher.publishCreated(
+            applicationEventPublisher.publishEvent(
                 match<MessageEvent.Created> {
                     it.id == message.id && it.chatRoomId == chatRoomId
                 },
