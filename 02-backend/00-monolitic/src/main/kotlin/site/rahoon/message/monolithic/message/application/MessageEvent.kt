@@ -1,16 +1,34 @@
 package site.rahoon.message.monolithic.message.application
 
 import site.rahoon.message.monolithic.message.domain.Message
+import java.time.LocalDateTime
 
 /**
- * 메시지 도메인 관련 애플리케이션 이벤트.
+ * 메시지 이벤트 DTO
+ * 
+ * Redis Pub/Sub을 통해 Pod 간 전파되는 이벤트
+ * 도메인 객체를 포함하지 않고 순수 데이터만 전달
  */
 sealed interface MessageEvent {
     /**
-     * 메시지 생성 시 발행.
-     * WebSocket 등에서 구독하여 /topic/chat-rooms/{id}/messages 로 브로드캐스트할 때 사용.
+     * 메시지 생성 이벤트
      */
     data class Created(
-        val message: Message,
-    ) : MessageEvent
+        val id: String,
+        val chatRoomId: String,
+        val userId: String,
+        val content: String,
+        val createdAt: LocalDateTime,
+    ) : MessageEvent {
+        companion object {
+            fun from(message: Message): Created =
+                Created(
+                    id = message.id,
+                    chatRoomId = message.chatRoomId,
+                    userId = message.userId,
+                    content = message.content,
+                    createdAt = message.createdAt,
+                )
+        }
+    }
 }

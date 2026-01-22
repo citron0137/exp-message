@@ -1,6 +1,5 @@
 package site.rahoon.message.monolithic.message.application
 
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import site.rahoon.message.monolithic.chatroom.domain.ChatRoomDomainService
 import site.rahoon.message.monolithic.chatroom.domain.ChatRoomError
@@ -26,7 +25,7 @@ class MessageApplicationService(
     private val messageDomainService: MessageDomainService,
     private val chatRoomDomainService: ChatRoomDomainService,
     private val chatRoomMemberApplicationService: ChatRoomMemberApplicationService,
-    private val applicationEventPublisher: ApplicationEventPublisher,
+    private val messageEventPublisher: MessageEventPublisher,
     private val zoneId: ZoneId,
 ) {
     /**
@@ -69,7 +68,7 @@ class MessageApplicationService(
 
         val command = criteria.toCommand()
         val message = messageDomainService.create(command)
-        applicationEventPublisher.publishEvent(MessageEvent.Created(message))
+        messageEventPublisher.publishCreated(MessageEvent.Created.from(message))
         return message
     }
 
