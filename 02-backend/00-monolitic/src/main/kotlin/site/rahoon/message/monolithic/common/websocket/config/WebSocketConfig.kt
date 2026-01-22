@@ -2,6 +2,7 @@ package site.rahoon.message.monolithic.common.websocket.config
 
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer
@@ -26,7 +27,15 @@ class WebSocketConfig(
     }
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
-        registry.enableSimpleBroker("/topic")
+        val taskScheduler = ThreadPoolTaskScheduler()
+        taskScheduler.poolSize = 1
+        taskScheduler.setThreadNamePrefix("ws-hb-")
+        taskScheduler.initialize()
+
+        registry
+            .enableSimpleBroker("/topic")
+            .setHeartbeatValue(longArrayOf(10000, 10000)) // 서버↔클라이언트 10초마다 heartbeat
+            .setTaskScheduler(taskScheduler)
         registry.setApplicationDestinationPrefixes("/app")
     }
 }
