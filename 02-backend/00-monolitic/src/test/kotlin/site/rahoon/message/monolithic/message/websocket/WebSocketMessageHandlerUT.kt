@@ -6,49 +6,47 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Test
+import org.springframework.messaging.simp.SimpMessagingTemplate
 import site.rahoon.message.monolithic.message.application.MessageEvent
-import site.rahoon.message.monolithic.message.controller.MessageResponse
-import site.rahoon.message.monolithic.message.domain.Message
 import java.time.LocalDateTime
 import java.util.UUID
 
 /**
- * MessageCreatedEventListener 단위 테스트
+ * WebSocketMessageHandler 단위 테스트
  */
-class MessageCreatedEventListenerUT {
+class WebSocketMessageHandlerUT {
     @Test
-    fun `Created 이벤트 수신 시 convertAndSend로 해당 topic에 MessageResponse Detail 전송`() {
+    fun `sendMessage 호출 시 올바른 destination으로 이벤트 전송`() {
         // given
         val chatRoomId = UUID.randomUUID().toString()
-        val message =
-            Message(
+        val event =
+            MessageEvent.Created(
                 id = UUID.randomUUID().toString(),
                 chatRoomId = chatRoomId,
                 userId = UUID.randomUUID().toString(),
                 content = "웹소켓 테스트",
                 createdAt = LocalDateTime.now(),
             )
-        val event = MessageEvent.Created(message)
 
         val destSlot = slot<String>()
         val payloadSlot = slot<Any>()
-        val simpMessagingTemplate = mockk<org.springframework.messaging.simp.SimpMessagingTemplate>(relaxed = true)
+        val simpMessagingTemplate = mockk<SimpMessagingTemplate>(relaxed = true)
         every {
             simpMessagingTemplate.convertAndSend(capture(destSlot), capture(payloadSlot))
         } returns Unit
 
-        val listener = MessageCreatedEventListener(simpMessagingTemplate)
+        val handler = WebSocketMessageHandler(simpMessagingTemplate)
 
         // when
-        listener.onMessageCreated(event)
+        handler.onCreated(event)
 
         // then
         destSlot.captured shouldBe "/topic/chat-rooms/$chatRoomId/messages"
-        val payload = payloadSlot.captured as MessageResponse.Detail
-        payload.id shouldBe message.id
+        val payload = payloadSlot.captured as MessageEvent.Created
+        payload.id shouldBe event.id
         payload.chatRoomId shouldBe chatRoomId
-        payload.userId shouldBe message.userId
-        payload.content shouldBe message.content
+        payload.userId shouldBe event.userId
+        payload.content shouldBe event.content
 
         verify(exactly = 1) {
             simpMessagingTemplate.convertAndSend(any<String>(), any<Any>())

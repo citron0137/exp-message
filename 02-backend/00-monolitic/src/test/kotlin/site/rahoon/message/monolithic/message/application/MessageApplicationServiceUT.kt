@@ -8,13 +8,11 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.context.ApplicationEventPublisher
 import site.rahoon.message.monolithic.chatroom.domain.ChatRoomDomainService
 import site.rahoon.message.monolithic.chatroom.domain.ChatRoomError
 import site.rahoon.message.monolithic.chatroom.domain.ChatRoomInfo
 import site.rahoon.message.monolithic.chatroommember.application.ChatRoomMemberApplicationService
 import site.rahoon.message.monolithic.common.domain.DomainException
-import site.rahoon.message.monolithic.message.application.MessageEvent
 import site.rahoon.message.monolithic.message.domain.Message
 import site.rahoon.message.monolithic.message.domain.MessageDomainService
 import site.rahoon.message.monolithic.message.domain.MessageError
@@ -30,7 +28,7 @@ class MessageApplicationServiceUT {
     private lateinit var messageDomainService: MessageDomainService
     private lateinit var chatRoomDomainService: ChatRoomDomainService
     private lateinit var chatRoomMemberApplicationService: ChatRoomMemberApplicationService
-    private lateinit var applicationEventPublisher: ApplicationEventPublisher
+    private lateinit var messageEventPublisher: MessageEventPublisher
     private lateinit var messageApplicationService: MessageApplicationService
 
     @BeforeEach
@@ -38,13 +36,13 @@ class MessageApplicationServiceUT {
         messageDomainService = mockk()
         chatRoomDomainService = mockk()
         chatRoomMemberApplicationService = mockk()
-        applicationEventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
+        messageEventPublisher = mockk<MessageEventPublisher>(relaxed = true)
         messageApplicationService =
             MessageApplicationService(
                 messageDomainService,
                 chatRoomDomainService,
                 chatRoomMemberApplicationService,
-                applicationEventPublisher,
+                messageEventPublisher,
                 ZoneId.systemDefault(),
             )
     }
@@ -99,9 +97,9 @@ class MessageApplicationServiceUT {
         verify { chatRoomMemberApplicationService.isMember(chatRoomId, userId) }
         verify { messageDomainService.create(any()) }
         verify {
-            applicationEventPublisher.publishEvent(
+            messageEventPublisher.publishCreated(
                 match<MessageEvent.Created> {
-                    it.message.id == message.id && it.message.chatRoomId == chatRoomId
+                    it.id == message.id && it.chatRoomId == chatRoomId
                 },
             )
         }
