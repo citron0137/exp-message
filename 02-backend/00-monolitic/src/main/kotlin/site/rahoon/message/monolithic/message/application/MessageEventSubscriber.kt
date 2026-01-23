@@ -7,7 +7,6 @@ package site.rahoon.message.monolithic.message.application
  * 반환값은 Any?로 선언하여 구현체에서 자유롭게 반환할 수 있습니다.
  */
 interface MessageEventSubscriber {
-
     /** 메시지 생성 이벤트 발생시 실행 */
     fun onCreated(event: MessageEvent.Created): Any?
 }

@@ -20,12 +20,16 @@ class AsyncRunner(
             private set
 
         const val DEFAULT_THREAD_POOL = "taskExecutor"
+
         /**
          * 반환값이 없는 비동기 작업 실행
          *
          * 예외가 발생할 경우 자연 소멸 (AsyncConfig의 에러 처리 로직에 따라 보고됨)
          */
-        fun runAsync(threadPool: String = DEFAULT_THREAD_POOL, action: () -> Unit) {
+        fun runAsync(
+            threadPool: String = DEFAULT_THREAD_POOL,
+            action: () -> Unit,
+        ) {
             inst.runAsync(threadPool, action)
         }
 
@@ -34,11 +38,12 @@ class AsyncRunner(
          *
          * 예외가 발생할 경우 CompletableFuture 에 담김 (직접 처리해야함)
          */
-        fun <T> supplyAsync(threadPool: String = DEFAULT_THREAD_POOL, action: () -> T): CompletableFuture<T> {
-            return inst.supplyAsync(threadPool, action)
-        }
+        fun <T> supplyAsync(
+            threadPool: String = DEFAULT_THREAD_POOL,
+            action: () -> T,
+        ): CompletableFuture<T> = inst.supplyAsync(threadPool, action)
 
-        //TODO 코루틴 메소드 추가
+        // TODO 코루틴 메소드 추가
 //        /** 코루틴을 비동기로 실행 (결과값 필요 없을 때) */
 //        fun launch(threadPool: String = DEFAULT_THREAD_POOL, block: suspend CoroutineScope.() -> Unit): Job {
 //            return inst.launch(threadPool, block)
@@ -47,25 +52,29 @@ class AsyncRunner(
 //        fun <T> async(threadPool: String = DEFAULT_THREAD_POOL, block: suspend CoroutineScope.() -> T): Deferred<T> {
 //            return inst.async(threadPool, block)
 //        }
-
     }
 
     @PostConstruct
-    fun init() { inst = this }
-
-
-    fun getThreadPoolNames(): List<String> {
-        return threadPoolMap.keys.toList()
+    fun init() {
+        inst = this
     }
 
-    fun runAsync(threadPool: String = DEFAULT_THREAD_POOL, action: () -> Unit) {
+    fun getThreadPoolNames(): List<String> = threadPoolMap.keys.toList()
+
+    fun runAsync(
+        threadPool: String = DEFAULT_THREAD_POOL,
+        action: () -> Unit,
+    ) {
         val executor = threadPoolMap[threadPool] ?: throw IllegalArgumentException("ThreadPool not found: $threadPool")
         executor.execute { action() }
     }
 
-    fun <T> supplyAsync(threadPool: String = DEFAULT_THREAD_POOL, action: () -> T): CompletableFuture<T> {
+    fun <T> supplyAsync(
+        threadPool: String = DEFAULT_THREAD_POOL,
+        action: () -> T,
+    ): CompletableFuture<T> {
         val executor = threadPoolMap[threadPool] ?: throw IllegalArgumentException("ThreadPool not found: $threadPool")
-        if(executor !is ThreadPoolTaskExecutor) throw IllegalArgumentException("ThreadPool does not support submit: $threadPool")
+        if (executor !is ThreadPoolTaskExecutor) throw IllegalArgumentException("ThreadPool does not support submit: $threadPool")
         return CompletableFuture<T>.runAsync({ action() }, executor) as CompletableFuture<T>
     }
 

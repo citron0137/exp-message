@@ -19,8 +19,11 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 class WebSocketConfig(
     private val webSocketAuthHandshakeHandler: WebSocketAuthHandshakeHandler,
 ) : WebSocketMessageBrokerConfigurer {
-    override fun registerStompEndpoints(registry: StompEndpointRegistry) {
+    companion object {
+        private const val HEARTBEAT_INTERVAL_MS = 10000L
+    }
 
+    override fun registerStompEndpoints(registry: StompEndpointRegistry) {
         registry
             .addEndpoint("/ws")
             .setHandshakeHandler(webSocketAuthHandshakeHandler)
@@ -32,7 +35,6 @@ class WebSocketConfig(
     }
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
-
         val taskScheduler = ThreadPoolTaskScheduler()
         taskScheduler.poolSize = 1
         taskScheduler.setThreadNamePrefix("ws-hb-")
@@ -40,7 +42,7 @@ class WebSocketConfig(
 
         registry
             .enableSimpleBroker("/topic")
-            .setHeartbeatValue(longArrayOf(10000, 10000))
+            .setHeartbeatValue(longArrayOf(HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS))
             .setTaskScheduler(taskScheduler)
     }
 }

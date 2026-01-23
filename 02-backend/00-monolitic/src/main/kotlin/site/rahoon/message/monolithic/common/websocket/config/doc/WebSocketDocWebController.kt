@@ -18,11 +18,11 @@ import java.nio.charset.StandardCharsets
 @RestController
 @RequestMapping("/websocket-docs")
 class WebSocketDocWebController {
-
     @GetMapping("")
     fun redirectToIndex(): ResponseEntity<Void> {
         // 상대 경로로 리다이렉트 (브라우저가 자동으로 현재 경로 기준으로 해석)
-        return ResponseEntity.status(HttpStatus.FOUND)
+        return ResponseEntity
+            .status(HttpStatus.FOUND)
             .header(HttpHeaders.LOCATION, "./")
             .build()
     }
@@ -31,7 +31,8 @@ class WebSocketDocWebController {
     fun index(): ResponseEntity<String> {
         val resource = ClassPathResource("static/websocket-docs/index.html")
         val content = StreamUtils.copyToString(resource.inputStream, StandardCharsets.UTF_8)
-        return ResponseEntity.ok()
+        return ResponseEntity
+            .ok()
             .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_HTML_VALUE)
             .body(content)
     }
@@ -40,7 +41,8 @@ class WebSocketDocWebController {
     fun styles(): ResponseEntity<String> {
         val resource = ClassPathResource("static/websocket-docs/styles.css")
         val content = StreamUtils.copyToString(resource.inputStream, StandardCharsets.UTF_8)
-        return ResponseEntity.ok()
+        return ResponseEntity
+            .ok()
             .header(HttpHeaders.CONTENT_TYPE, "text/css")
             .body(content)
     }
@@ -49,7 +51,8 @@ class WebSocketDocWebController {
     fun appJs(): ResponseEntity<String> {
         val resource = ClassPathResource("static/websocket-docs/app.js")
         val content = StreamUtils.copyToString(resource.inputStream, StandardCharsets.UTF_8)
-        return ResponseEntity.ok()
+        return ResponseEntity
+            .ok()
             .header(HttpHeaders.CONTENT_TYPE, "application/javascript")
             .body(content)
     }

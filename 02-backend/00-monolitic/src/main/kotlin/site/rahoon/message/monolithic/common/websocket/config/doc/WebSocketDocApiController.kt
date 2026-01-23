@@ -17,10 +17,15 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 @RestController
 @RequestMapping("/websocket-docs")
 class WebSocketDocApiController(
-    private val asyncApiFullGenerator: AsyncApiFullGenerator,
+    private val webSocketDocGenerator: WebSocketDocGenerator,
     private val objectMapper: ObjectMapper,
     @Value("\${websocket.base-package:site.rahoon.message}") private val basePackage: String,
 ) {
+    companion object {
+        private const val HTTP_PORT = 80
+        private const val HTTPS_PORT = 443
+    }
+
     /**
      * 프론트엔드 메타데이터 조회
      * GET /websocket-docs/metadata.json
@@ -29,16 +34,17 @@ class WebSocketDocApiController(
     @GetMapping("/metadata.json", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getMetadata(request: HttpServletRequest): String {
         // 현재 요청을 기반으로 기본 URL 생성 (X-Forwarded-* 헤더 자동 처리)
-        val baseUri = ServletUriComponentsBuilder.fromCurrentRequest()
+        val baseUri = ServletUriComponentsBuilder
+            .fromCurrentRequest()
             .replacePath("")
             .build()
             .toUri()
-        
+
         // Path prefix 추출 (X-Forwarded-Prefix 우선, 없으면 contextPath)
         val forwardedPrefix = request.getHeader("X-Forwarded-Prefix")
         val contextPath = request.contextPath
         val pathPrefix = forwardedPrefix?.takeIf { it.isNotBlank() } ?: contextPath
-        
+
         // API 엔드포인트 경로 구성 (prefix + /websocket-docs/api)
         val apiEndpoint = if (pathPrefix.isNotBlank()) {
             if (pathPrefix.endsWith("/")) {
@@ -49,23 +55,23 @@ class WebSocketDocApiController(
         } else {
             "/websocket-docs/api"
         }
-        
+
         // WebSocket 경로 구성 (prefix + /ws)
         val wsPath = if (pathPrefix.isNotBlank() && !pathPrefix.endsWith("/")) {
             "$pathPrefix/ws"
         } else {
             "${pathPrefix}ws"
         }
-        
+
         // SockJS는 http/https URL을 사용해야 함 (ws/wss가 아님)
         val httpScheme = baseUri.scheme // "http" 또는 "https"
-        val httpPort = if (baseUri.port != -1 && baseUri.port != 80 && baseUri.port != 443) {
+        val httpPort = if (baseUri.port != -1 && baseUri.port != HTTP_PORT && baseUri.port != HTTPS_PORT) {
             ":${baseUri.port}"
         } else {
             ""
         }
         val websocketUrl = "$httpScheme://${baseUri.host}$httpPort$wsPath"
-        
+
         val metadata = mapOf(
             "apiEndpoint" to apiEndpoint, // path prefix 포함 절대 경로
             "websocketUrl" to websocketUrl,
@@ -81,6 +87,6 @@ class WebSocketDocApiController(
     fun getAsyncApiDoc(): String {
         // application.properties의 값에서 따옴표 제거
         val cleanBasePackage = basePackage.trim().removeSurrounding("\"")
-        return asyncApiFullGenerator.generate(cleanBasePackage)
+        return webSocketDocGenerator.generate(cleanBasePackage)
     }
 }

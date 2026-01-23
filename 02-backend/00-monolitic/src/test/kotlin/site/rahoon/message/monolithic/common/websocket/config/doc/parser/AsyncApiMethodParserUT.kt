@@ -2,23 +2,16 @@ package site.rahoon.message.monolithic.common.websocket.config.doc.parser
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
-import org.reflections.Reflections
-import org.reflections.scanners.Scanners
-import org.springframework.messaging.handler.annotation.SendTo
-import org.springframework.stereotype.Component
-import site.rahoon.message.monolithic.common.websocket.config.doc.AsyncApiFullGenerator
-import java.time.LocalDateTime
+import site.rahoon.message.monolithic.common.websocket.config.doc.WebSocketDocGenerator
 
 class AsyncApiMethodParserUT {
-
     private val basePackage: String = "site.rahoon.message.monolithic"
 //    private val asyncApiMethodParser: AsyncApiMethodParser =
 //        AsyncApiMethodParser(basePackage)
 //    private val asyncApiDtoParser: AsyncApiDtoParser = AsyncApiDtoParser()
 //    private val asyncApiDTOMapper: AsyncApiDtoMapper = AsyncApiDtoMapper()
 
-    private val asyncApiFullGenerator = AsyncApiFullGenerator(ObjectMapper())
-
+    private val webSocketDocGenerator = WebSocketDocGenerator(ObjectMapper())
 
 //    @Test
 //    fun findAllStompMethods(){
@@ -46,13 +39,11 @@ class AsyncApiMethodParserUT {
 //    }
 
     @Test
-    fun parse(){
+    fun parse() {
 //        val methods = .findAllStompMethods()
 //        val metadata = asyncApiMethodParser.parseToMetadata(methods)
 //        metadata.forEach { println(it.toString()) }
-        val g = asyncApiFullGenerator.generate(basePackage = basePackage)
+        val g = webSocketDocGenerator.generate(basePackage = basePackage)
         println(g.toString())
     }
-
 }
-

@@ -9,15 +9,16 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class RedissonConfig(
+    // ""가 들어옴
     @Value("\${spring.data.redis.host}") private val host: String,
     @Value("\${spring.data.redis.port}") private val port: Int,
-    @Value("\${spring.data.redis.password:}") private val password: String? // ""가 들어옴
+    @Value("\${spring.data.redis.password:}") private val password: String?,
 ) {
-
     @Bean
     fun redissonClient(): RedissonClient {
         val config = Config()
-        val serverConfig = config.useSingleServer()
+        val serverConfig = config
+            .useSingleServer()
             .setAddress("redis://$host:$port")
 
         // 핵심: 빈 문자열이면 password를 세팅하지 않음 (null 상태 유지)

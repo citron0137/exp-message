@@ -9,13 +9,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 @Configuration
 @EnableAsync
 class AsyncConfig(
-    private val builder: ThreadPoolTaskExecutorBuilder
+    private val builder: ThreadPoolTaskExecutorBuilder,
 ) {
-
     @Bean("taskExecutor")
-    fun taskExecutor(): ThreadPoolTaskExecutor {
-        return builder.build()
-    }
-
+    fun taskExecutor(): ThreadPoolTaskExecutor = builder.build()
 }
-

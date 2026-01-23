@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 
 /**
  * 메시지 이벤트 DTO
- * 
+ *
  * Redis Pub/Sub을 통해 Pod 간 전파되는 이벤트
  * 도메인 객체를 포함하지 않고 순수 데이터만 전달
  */

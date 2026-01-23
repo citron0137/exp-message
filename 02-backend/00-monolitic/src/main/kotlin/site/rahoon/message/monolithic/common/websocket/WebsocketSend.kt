@@ -10,4 +10,6 @@ package site.rahoon.message.monolithic.common.websocket
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class WebsocketSend(val value: String)
+annotation class WebsocketSend(
+    val value: String,
+)

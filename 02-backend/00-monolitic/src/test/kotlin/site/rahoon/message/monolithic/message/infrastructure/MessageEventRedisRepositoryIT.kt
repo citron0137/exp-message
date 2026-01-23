@@ -2,26 +2,24 @@ package site.rahoon.message.monolithic.message.infrastructure
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.BeforeEach
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
-import site.rahoon.message.monolithic.common.test.IntegrationTestBase
-import site.rahoon.message.monolithic.message.application.MessageEventPublisher
-import java.time.Duration
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.stereotype.Component
+import site.rahoon.message.monolithic.common.test.IntegrationTestBase
 import site.rahoon.message.monolithic.message.application.MessageEvent
+import site.rahoon.message.monolithic.message.application.MessageEventPublisher
 import site.rahoon.message.monolithic.message.application.MessageEventSubscriber
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.CopyOnWriteArrayList
-
 
 class MessageEventRedisRepositoryIT(
     private val messageEventPublisher: MessageEventPublisher,
     private val testMessageSubscriber: TestMessageSubscriber, // 테스트용으로 주입
 ) : IntegrationTestBase() {
-
     @BeforeEach
     fun setUp() {
         testMessageSubscriber.clear()
@@ -36,14 +34,14 @@ class MessageEventRedisRepositoryIT(
             chatRoomId = chatRoomId,
             userId = "user-1",
             content = "통합 테스트 메시지",
-            createdAt = LocalDateTime.now()
+            createdAt = LocalDateTime.now(),
         )
 
-        logger.info { "EventCreated: ${event.toString()}"}
+        logger.info { "EventCreated: $event" }
 
         // when
         messageEventPublisher.publishCreated(event)
-        logger.info { "EventPublished: ${event.toString()}"}
+        logger.info { "EventPublished: $event" }
 
         // then: Redis를 거쳐 비동기로 돌아오므로 Awaitility 사용
         await.atMost(Duration.ofSeconds(3)) untilAsserted {
@@ -67,13 +65,14 @@ class MessageEventRedisRepositoryIT(
 @Component
 class TestMessageSubscriber : MessageEventSubscriber {
     private val receivedEvents = CopyOnWriteArrayList<MessageEvent.Created>()
-    private val logger = KotlinLogging.logger {  }
+    private val logger = KotlinLogging.logger { }
 
     override fun onCreated(event: MessageEvent.Created) {
-        logger.info { "EventReceived: ${event.toString()}"}
+        logger.info { "EventReceived: $event" }
         receivedEvents.add(event)
     }
 
     fun getReceivedEvents() = receivedEvents
+
     fun clear() = receivedEvents.clear()
 }

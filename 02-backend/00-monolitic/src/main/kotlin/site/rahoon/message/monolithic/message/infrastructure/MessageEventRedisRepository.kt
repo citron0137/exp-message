@@ -8,7 +8,6 @@ import site.rahoon.message.monolithic.common.global.AsyncRunner
 import site.rahoon.message.monolithic.message.application.MessageEvent
 import site.rahoon.message.monolithic.message.application.MessageEventPublisher
 import site.rahoon.message.monolithic.message.application.MessageEventSubscriber
-import java.util.concurrent.CompletableFuture
 
 /**
  * Redisson 기반 메시지 이벤트 발행 구현체 (Adapter)

@@ -46,7 +46,6 @@ dependencies {
     implementation("com.github.victools:jsonschema-generator:4.35.0")
     implementation("com.github.victools:jsonschema-module-jackson:4.35.0")
 
-
     // TODO 코루틴 도입
 //    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 //    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.10.2")

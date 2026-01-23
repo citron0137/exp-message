@@ -8,11 +8,9 @@ import org.springframework.stereotype.Service
 import site.rahoon.message.monolithic.common.test.IntegrationTestBase
 import java.time.Duration
 
-
 class AsyncConfigIT(
-    private val asyncTestService: AsyncTestService
-): IntegrationTestBase() {
-
+    private val asyncTestService: AsyncTestService,
+) : IntegrationTestBase() {
     @Test
     fun `비동기_메소드는_다른_스레드에서_실행되어야_한다`() {
         // Given
@@ -60,7 +58,6 @@ class AsyncConfigIT(
     }
 }
 
-
 @Service
 class AsyncTestService {
     // 스레드 이름을 저장할 스레드 안전한 변수
@@ -74,7 +71,6 @@ class AsyncTestService {
     fun syncMethod() {
         lastExecutionThreadName = Thread.currentThread().name
     }
-
 
     @Async
     fun asyncThrowMethod() {

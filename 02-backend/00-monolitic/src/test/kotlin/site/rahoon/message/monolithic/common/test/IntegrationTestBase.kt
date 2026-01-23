@@ -29,7 +29,8 @@ import java.time.Duration
  */
 @IntegrationTest
 abstract class IntegrationTestBase {
-    protected val logger = KotlinLogging.logger {  }
+    protected val logger = KotlinLogging.logger { }
+
     /**
      * 테스트마다 고유한 이메일을 생성합니다.
      */

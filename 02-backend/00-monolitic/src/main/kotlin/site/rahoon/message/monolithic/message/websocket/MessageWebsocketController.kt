@@ -13,9 +13,6 @@ import site.rahoon.message.monolithic.message.application.MessageEventSubscriber
  */
 @Component
 class MessageWebSocketController : MessageEventSubscriber {
-
     @WebsocketSend("/topic/chat-rooms/{chatRoomId}/messages")
-    override fun onCreated(event: MessageEvent.Created): MessageEvent.Created {
-        return event
-    }
+    override fun onCreated(event: MessageEvent.Created): MessageEvent.Created = event
 }
