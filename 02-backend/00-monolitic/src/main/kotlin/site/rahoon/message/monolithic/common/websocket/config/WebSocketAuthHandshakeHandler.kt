@@ -26,25 +26,15 @@ class WebSocketAuthHandshakeHandler(
         attributes: MutableMap<String, Any>,
     ): Principal? {
         val tokenFromQuery =
-            UriComponentsBuilder
-                .fromUri(request.uri)
-                .build()
-                .queryParams
-                .getFirst("access_token")
+            UriComponentsBuilder.fromUri(request.uri).build().queryParams.getFirst("access_token")
         val tokenFromHeader = request.headers.getFirst("Authorization")
         val token =
-            tokenFromQuery
-                ?.takeIf { it.isNotBlank() }
-                ?: tokenFromHeader
-                    ?.takeIf { it.isNotBlank() }
-
-        if (token.isNullOrBlank()) {
-            return null
-        }
-
+            tokenFromQuery?.takeIf { it.isNotBlank() } ?: tokenFromHeader?.takeIf { it.isNotBlank() }
+        if (token.isNullOrBlank()) return null
         val authInfo = authTokenResolver.verify(token)
         return StompPrincipal(
             authInfo.userId,
+            authInfo.sessionId
         )
     }
 }
@@ -54,6 +44,7 @@ class WebSocketAuthHandshakeHandler(
  */
 data class StompPrincipal(
     val userId: String,
+    val sessionId: String?,
 ) : Principal {
     override fun getName(): String = userId
 }

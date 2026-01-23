@@ -38,6 +38,14 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+//    implementation("io.github.springwolf:springwolf-core:1.20.0")
+//    implementation("io.github.springwolf:springwolf-ui:1.20.0")
+//    implementation("io.github.springwolf:springwolf-stomp:1.20.0")
+//    implementation("io.github.20hyeonsulee:websocket-docs-generator:1.0.7")
+    implementation("org.reflections:reflections:0.10.2")
+    implementation("com.github.victools:jsonschema-generator:4.35.0")
+    implementation("com.github.victools:jsonschema-module-jackson:4.35.0")
+
 
     // TODO 코루틴 도입
 //    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")

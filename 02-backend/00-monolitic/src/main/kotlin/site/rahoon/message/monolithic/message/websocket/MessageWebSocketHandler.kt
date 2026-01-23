@@ -1,6 +1,5 @@
 package site.rahoon.message.monolithic.message.websocket
 
-import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Component
 import site.rahoon.message.monolithic.message.application.MessageEvent
 import site.rahoon.message.monolithic.message.application.MessageEventSubscriber
@@ -12,20 +11,10 @@ import site.rahoon.message.monolithic.message.application.MessageEventSubscriber
  * 비즈니스 로직은 포함하지 않음
  */
 @Component
-class WebSocketMessageHandler(
-    private val simpMessagingTemplate: SimpMessagingTemplate,
+class MessageWebSocketHandler (
+    private val messageWebsocketController: MessageWebsocketController,
 ): MessageEventSubscriber {
-
     override fun onCreated(event: MessageEvent.Created) {
-        sendMessage(event)
+        messageWebsocketController.onCreated(event.chatRoomId, event)
     }
-
-    /**
-     * 메시지 생성 이벤트를 WebSocket으로 전송
-     */
-    private fun sendMessage(event: MessageEvent.Created) {
-        val destination = "/topic/chat-rooms/${event.chatRoomId}/messages"
-        simpMessagingTemplate.convertAndSend(destination, event)
-    }
-
 }

@@ -20,6 +20,11 @@ class WebSocketConfig(
     private val webSocketAuthHandshakeHandler: WebSocketAuthHandshakeHandler,
 ) : WebSocketMessageBrokerConfigurer {
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
+
+        registry
+            .addEndpoint("/ws")
+            .setHandshakeHandler(webSocketAuthHandshakeHandler)
+
         registry
             .addEndpoint("/ws")
             .setHandshakeHandler(webSocketAuthHandshakeHandler)
@@ -27,6 +32,7 @@ class WebSocketConfig(
     }
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
+
         val taskScheduler = ThreadPoolTaskScheduler()
         taskScheduler.poolSize = 1
         taskScheduler.setThreadNamePrefix("ws-hb-")
@@ -34,8 +40,7 @@ class WebSocketConfig(
 
         registry
             .enableSimpleBroker("/topic")
-            .setHeartbeatValue(longArrayOf(10000, 10000)) // 서버↔클라이언트 10초마다 heartbeat
+            .setHeartbeatValue(longArrayOf(10000, 10000))
             .setTaskScheduler(taskScheduler)
-        registry.setApplicationDestinationPrefixes("/app")
     }
 }

@@ -40,7 +40,7 @@ class WebSocketAuthHandshakeHandlerUT {
         val principal = handler.determineUserPublic(request, wsHandler, attributes)
 
         // then
-        principal shouldBe StompPrincipal(userId)
+        principal shouldBe StompPrincipal(userId, null)
         (principal as StompPrincipal).getName() shouldBe userId
     }
 
@@ -63,7 +63,7 @@ class WebSocketAuthHandshakeHandlerUT {
         val principal = handler.determineUserPublic(request, wsHandler, attributes)
 
         // then
-        principal shouldBe StompPrincipal(userId)
+        principal shouldBe StompPrincipal(userId, null)
     }
 
     @Test
