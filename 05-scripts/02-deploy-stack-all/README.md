@@ -5,19 +5,19 @@
 ## 구조
 
 ```
-02-deploy-monolitic/
-├── Chart.yaml               # Helm 차트 정의
-├── templates/               # Helm 템플릿
-│   ├── ingress.yaml
-│   └── _helpers.tpl
+02-deploy-stack-all/
 ├── values.yaml              # 개인 설정 파일 (Git ignore, 실제 사용)
 ├── values.yaml.example      # 설정 예시 파일 (Git commit, 참고용)
+├── kubeconfig.yaml          # Kubernetes 클러스터 설정 (Git ignore)
 ├── docker-build-n-push.sh   # 이미지 빌드/푸시 스크립트 (Linux/Mac)
 ├── docker-build-n-push.ps1  # 이미지 빌드/푸시 스크립트 (Windows)
 ├── helm-deploy.sh           # Helm 배포 스크립트 (Linux/Mac)
 ├── helm-deploy.ps1          # Helm 배포 스크립트 (Windows)
 └── README.md
 ```
+
+> **참고**: Helm Chart는 `01-infrastructure/00-stack-all`에 위치합니다.  
+> 스크립트는 자동으로 해당 Chart를 참조하며, 이 디렉토리의 `values.yaml`을 사용합니다.
 
 ## Prerequisites
 

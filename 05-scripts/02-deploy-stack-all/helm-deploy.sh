@@ -7,6 +7,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CHART_DIR="${SCRIPT_DIR}/../../01-infrastructure/00-stack-all"
 VALUES_FILE="${SCRIPT_DIR}/values.yaml"
 KUBECONFIG_FILE="${SCRIPT_DIR}/kubeconfig.yaml"
 RELEASE_NAME="message-stack"
@@ -53,10 +54,10 @@ do_install() {
     pre_check
     
     log_info "Updating dependencies..."
-    helm dependency update --kubeconfig="$KUBECONFIG_FILE" "$SCRIPT_DIR"
+    helm dependency update --kubeconfig="$KUBECONFIG_FILE" "$CHART_DIR"
     
     log_info "Running Helm Install..."
-    helm install "$RELEASE_NAME" "$SCRIPT_DIR" \
+    helm install "$RELEASE_NAME" "$CHART_DIR" \
         --kubeconfig="$KUBECONFIG_FILE" \
         --values "$VALUES_FILE"
     
@@ -78,10 +79,10 @@ do_upgrade() {
     pre_check
     
     log_info "Updating dependencies..."
-    helm dependency update --kubeconfig="$KUBECONFIG_FILE" "$SCRIPT_DIR"
+    helm dependency update --kubeconfig="$KUBECONFIG_FILE" "$CHART_DIR"
     
     log_info "Running Helm Upgrade..."
-    helm upgrade "$RELEASE_NAME" "$SCRIPT_DIR" \
+    helm upgrade "$RELEASE_NAME" "$CHART_DIR" \
         --kubeconfig="$KUBECONFIG_FILE" \
         --values "$VALUES_FILE"
     
