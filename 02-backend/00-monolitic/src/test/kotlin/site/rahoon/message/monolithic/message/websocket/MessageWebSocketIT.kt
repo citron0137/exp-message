@@ -24,6 +24,7 @@ import site.rahoon.message.monolithic.chatroom.controller.ChatRoomRequest
 import site.rahoon.message.monolithic.chatroom.controller.ChatRoomResponse
 import site.rahoon.message.monolithic.common.test.IntegrationTestBase
 import site.rahoon.message.monolithic.common.test.assertSuccess
+import site.rahoon.message.monolithic.message.application.MessageEvent
 import site.rahoon.message.monolithic.message.controller.MessageRequest
 import site.rahoon.message.monolithic.message.controller.MessageResponse
 import java.util.concurrent.ArrayBlockingQueue
@@ -47,7 +48,7 @@ class MessageWebSocketIT(
         val wsUrl = "http://localhost:$port/ws?access_token=${authResult.accessToken}"
 
         // STOMP 클라이언트
-        val receives = ArrayBlockingQueue<MessageResponse.Detail>(1)
+        val receives = ArrayBlockingQueue<MessageEvent.Created>(1)
         val stompClient = createStompClient()
         val session: StompSession =
             stompClient
@@ -58,13 +59,13 @@ class MessageWebSocketIT(
         session.subscribe(
             "/topic/chat-rooms/$chatRoomId/messages",
             object : StompFrameHandler {
-                override fun getPayloadType(headers: StompHeaders): java.lang.reflect.Type = MessageResponse.Detail::class.java
+                override fun getPayloadType(headers: StompHeaders): java.lang.reflect.Type = MessageEvent.Created::class.java
 
                 override fun handleFrame(
                     headers: StompHeaders,
                     payload: Any?,
                 ) {
-                    if (payload is MessageResponse.Detail) {
+                    if (payload is MessageEvent.Created) {
                         receives.offer(payload)
                     }
                 }

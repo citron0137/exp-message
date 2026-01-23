@@ -1,10 +1,9 @@
 package site.rahoon.message.monolithic.message.websocket
 
-import org.springframework.messaging.handler.annotation.DestinationVariable
-import org.springframework.messaging.handler.annotation.Payload
-import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.stereotype.Component
+import site.rahoon.message.monolithic.common.websocket.WebsocketSend
 import site.rahoon.message.monolithic.message.application.MessageEvent
+import site.rahoon.message.monolithic.message.application.MessageEventSubscriber
 
 /**
  * WebSocket 메시지 전달 핸들러
@@ -13,13 +12,10 @@ import site.rahoon.message.monolithic.message.application.MessageEvent
  * 비즈니스 로직은 포함하지 않음
  */
 @Component
-class MessageWebsocketController {
+class MessageWebSocketController : MessageEventSubscriber {
 
-    @SendTo("/topic/chat-rooms/{chatRoomId}/messages")
-    fun onCreated(
-        @DestinationVariable chatRoomId: String,
-        @Payload event: MessageEvent.Created
-    ):MessageEvent.Created{
+    @WebsocketSend("/topic/chat-rooms/{chatRoomId}/messages")
+    override fun onCreated(event: MessageEvent.Created): MessageEvent.Created {
         return event
     }
 }

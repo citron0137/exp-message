@@ -15,6 +15,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Controller
+import site.rahoon.message.monolithic.common.websocket.WebsocketSend
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
@@ -38,7 +39,8 @@ class AsyncApiFullGenerator(private val objectMapper: ObjectMapper) {
         val reflections = Reflections(config)
 
         val allMethods = reflections.getMethodsAnnotatedWith(MessageMapping::class.java) +
-            reflections.getMethodsAnnotatedWith(SendTo::class.java)
+            reflections.getMethodsAnnotatedWith(SendTo::class.java) +
+            reflections.getMethodsAnnotatedWith(WebsocketSend::class.java)
 //            reflections.getMethodsAnnotatedWith(SendToUser::class.java)
 
         val targetMethods = allMethods.filter {
@@ -73,7 +75,7 @@ class AsyncApiFullGenerator(private val objectMapper: ObjectMapper) {
                 collectDomainClasses(type, domainClasses)
             }
 
-            // RECEIVE 액션 처리
+            // RECEIVE 액션 처리 (@SendTo)
             val receiveAddr = method.getAnnotation(SendTo::class.java)?.value
             receiveAddr?.let { addr ->
                 val type = method.genericReturnType
@@ -87,6 +89,29 @@ class AsyncApiFullGenerator(private val objectMapper: ObjectMapper) {
                         key = sanitize(rawKey), // 치환 적용
                         action = "RECEIVE",
                         address = addr.firstOrNull() ?: "/unknown",
+                        payloadType = type,
+                        payloadClassName = sanitize(getTypeName(type, basePackage)),
+                        method = method,
+                        parameters = pathParameters
+                    ))
+                    collectDomainClasses(type, domainClasses)
+                }
+            }
+
+            // RECEIVE 액션 처리 (@WebsocketSend)
+            val websocketSendAddr = method.getAnnotation(WebsocketSend::class.java)?.value
+            websocketSendAddr?.let { addr ->
+                val type = method.genericReturnType
+                if (type != Void.TYPE && type != Unit::class.java) {
+                    val rawKey = "$simplifiedClass.${method.name}.RECEIVE"
+                    val pathParameters = Regex("\\{([^}]+)\\}")
+                        .findAll(addr)
+                        .map { it.groupValues[1] }
+                        .toList()
+                    metadataList.add(StompMetadata(
+                        key = sanitize(rawKey), // 치환 적용
+                        action = "RECEIVE",
+                        address = addr,
                         payloadType = type,
                         payloadClassName = sanitize(getTypeName(type, basePackage)),
                         method = method,
