@@ -25,4 +25,3 @@ spec:
                 port:
                   number: {{ index .Values "app-monolitic" "app" "port" }}
 {{- end }}
-

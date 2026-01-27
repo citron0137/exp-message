@@ -3,3 +3,6 @@
 
 # Helm values (contains environment-specific secrets)
 values.yaml
+
+# Kubernetes config (contains cluster-specific secrets)
+kubeconfig.yaml

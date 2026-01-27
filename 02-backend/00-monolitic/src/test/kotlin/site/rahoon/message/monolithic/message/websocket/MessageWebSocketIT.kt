@@ -24,9 +24,9 @@ import site.rahoon.message.monolithic.chatroom.controller.ChatRoomRequest
 import site.rahoon.message.monolithic.chatroom.controller.ChatRoomResponse
 import site.rahoon.message.monolithic.common.test.IntegrationTestBase
 import site.rahoon.message.monolithic.common.test.assertSuccess
-import site.rahoon.message.monolithic.message.application.MessageEvent
 import site.rahoon.message.monolithic.message.controller.MessageRequest
 import site.rahoon.message.monolithic.message.controller.MessageResponse
+import site.rahoon.message.monolithic.message.websocket.MessageWsSend
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 
@@ -48,7 +48,7 @@ class MessageWebSocketIT(
         val wsUrl = "http://localhost:$port/ws?access_token=${authResult.accessToken}"
 
         // STOMP 클라이언트
-        val receives = ArrayBlockingQueue<MessageEvent.Created>(1)
+        val receives = ArrayBlockingQueue<MessageWsSend.Detail>(1)
         val stompClient = createStompClient()
         val session: StompSession =
             stompClient
@@ -59,21 +59,22 @@ class MessageWebSocketIT(
         session.subscribe(
             "/topic/chat-rooms/$chatRoomId/messages",
             object : StompFrameHandler {
-                override fun getPayloadType(headers: StompHeaders): java.lang.reflect.Type = MessageEvent.Created::class.java
+                override fun getPayloadType(headers: StompHeaders): java.lang.reflect.Type = MessageWsSend.Detail::class.java
 
                 override fun handleFrame(
                     headers: StompHeaders,
                     payload: Any?,
                 ) {
-                    if (payload is MessageEvent.Created) {
+                    if (payload is MessageWsSend.Detail) {
                         receives.offer(payload)
                     }
                 }
             },
         )
 
-        // 구독 등록 대기
-        Thread.sleep(200)
+        // 구독 등록 및 WebSocket 연결 이벤트 처리 대기
+        // @Async로 실행되므로 리스너 등록 완료를 보장하기 위해 충분한 대기 시간 필요
+        Thread.sleep(1000)
 
         // when: 메시지 전송
         val content = "웹소켓 IT 메시지"
