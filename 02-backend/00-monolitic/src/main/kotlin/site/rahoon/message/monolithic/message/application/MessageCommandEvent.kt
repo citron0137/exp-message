@@ -11,6 +11,8 @@ import java.time.LocalDateTime
 sealed class MessageCommandEvent {
     /**
      * 메시지 전송 명령 이벤트
+     *
+     * @param recipientUserId 수신자 userId. 생성 시 주입 (SPEL 토픽 `/topic/user/{recipientUserId}/messages` 해석용)
      */
     data class Send(
         val id: String,
@@ -18,15 +20,17 @@ sealed class MessageCommandEvent {
         val userId: String,
         val content: String,
         val createdAt: LocalDateTime,
+        val recipientUserId: String,
     ) : MessageCommandEvent() {
         companion object {
-            fun from(event: MessageEvent.Created): Send =
+            fun from(event: MessageEvent.Created, recipientUserId: String): Send =
                 Send(
                     id = event.id,
                     chatRoomId = event.chatRoomId,
                     userId = event.userId,
                     content = event.content,
                     createdAt = event.createdAt,
+                    recipientUserId = recipientUserId,
                 )
         }
     }

@@ -31,8 +31,8 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 
 /**
- * WebSocket(STOMP) 구독 후 POST /messages 시 /topic/chat-rooms/{id}/messages 로
- * 브로드캐스트되는지 통합 테스트.
+ * WebSocket(STOMP) 구독 후 POST /messages 시 /topic/user/{userId}/messages 로
+ * 수신자 유저 토픽에만 전달되는지 통합 테스트.
  */
 class MessageWebSocketIT(
     private val restTemplate: TestRestTemplate,
@@ -55,9 +55,9 @@ class MessageWebSocketIT(
                 .connect(wsUrl, object : StompSessionHandlerAdapter() {})
                 .get(5, TimeUnit.SECONDS)
 
-        // 구독
+        // 구독: 본인 유저 토픽만 허용 (/topic/user/{userId}/messages)
         session.subscribe(
-            "/topic/chat-rooms/$chatRoomId/messages",
+            "/topic/user/${authResult.userId}/messages",
             object : StompFrameHandler {
                 override fun getPayloadType(headers: StompHeaders): java.lang.reflect.Type = MessageWsSend.Detail::class.java
 

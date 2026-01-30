@@ -61,7 +61,7 @@ class MessageWebSocketController(
     }
 
     @EventListener
-    @WebsocketSend("/topic/chat-rooms/{chatRoomId}/messages")
+    @WebsocketSend("/topic/user/{recipientUserId}/messages")
     fun sendCreatedMessage(event: MessageCommandEvent.Send): MessageWsSend.Detail {
         return MessageWsSend.Detail.from(event)
     }

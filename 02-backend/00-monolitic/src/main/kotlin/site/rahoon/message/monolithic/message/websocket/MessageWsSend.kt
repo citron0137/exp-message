@@ -12,6 +12,7 @@ object MessageWsSend {
         val userId: String,
         val content: String,
         val createdAt: LocalDateTime,
+        val recipientUserId: String,
     ) {
         companion object {
             fun from(event: site.rahoon.message.monolithic.message.application.MessageCommandEvent.Send): Detail =
@@ -21,6 +22,7 @@ object MessageWsSend {
                     userId = event.userId,
                     content = event.content,
                     createdAt = event.createdAt,
+                    recipientUserId = event.recipientUserId,
                 )
         }
     }

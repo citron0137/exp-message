@@ -8,9 +8,9 @@ package site.rahoon.message.monolithic.message.application
  */
 interface MessageCommandEventRelayPort {
     /**
-     * 특정 사용자들에게 메시지 이벤트 전송
+     * 수신자별로 생성된 메시지 이벤트 전송 (각 Send의 recipientUserId 기준 토픽으로 발행)
      */
-    fun sendToUsers(userIds: List<String>, event: MessageCommandEvent.Send)
+    fun sendToUsers(sends: List<MessageCommandEvent.Send>)
 
     /**
      * 특정 사용자의 메시지 이벤트 구독 시작

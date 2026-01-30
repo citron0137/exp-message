@@ -19,8 +19,8 @@ class MessageCommandEventDispatcher(
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     fun sendToUsers(event: MessageEvent.Created) {
-        val sendCommandEvent = MessageCommandEvent.Send.from(event)
         val userIds = chatRoomMemberApplicationService.getByChatRoomId(event.chatRoomId).map { it.userId }
-        messageCommandEventRelayPort.sendToUsers(userIds, sendCommandEvent)
+        val sends = userIds.map { MessageCommandEvent.Send.from(event, it) }
+        messageCommandEventRelayPort.sendToUsers(sends)
     }
 }

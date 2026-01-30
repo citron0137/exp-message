@@ -27,11 +27,11 @@ class MessageCommandEventRelayRedisRepository(
         const val TOPIC_SUFFIX = ":messages"
     }
 
-    override fun sendToUsers(userIds: List<String>, event: MessageCommandEvent.Send) {
-        userIds.forEach { userId ->
-            val topic = "$TOPIC_PREFIX$userId$TOPIC_SUFFIX"
-            log.debug("Publishing message command event to Redis: topic=$topic, messageId=${event.id}")
-            redissonClient.getTopic(topic).publish(event)
+    override fun sendToUsers(sends: List<MessageCommandEvent.Send>) {
+        sends.forEach { send ->
+            val topic = "$TOPIC_PREFIX${send.recipientUserId}$TOPIC_SUFFIX"
+            log.debug("Publishing message command event to Redis: topic=$topic, messageId=${send.id}")
+            redissonClient.getTopic(topic).publish(send)
         }
     }
 
