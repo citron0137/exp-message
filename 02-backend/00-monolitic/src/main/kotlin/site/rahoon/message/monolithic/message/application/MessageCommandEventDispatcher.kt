@@ -12,7 +12,7 @@ import site.rahoon.message.monolithic.chatroommember.application.ChatRoomMemberA
  * MessageEvent.Created를 받아서 채팅방 멤버들에게 MessageCommandEvent.Send를 전달
  */
 @Component
-class MessageEventDispatcher(
+class MessageCommandEventDispatcher(
     private val messageCommandEventRelayPort: MessageCommandEventRelayPort,
     private val chatRoomMemberApplicationService: ChatRoomMemberApplicationService,
 ) {

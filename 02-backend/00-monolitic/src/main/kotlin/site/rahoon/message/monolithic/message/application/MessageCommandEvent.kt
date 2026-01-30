@@ -8,7 +8,7 @@ import java.time.LocalDateTime
  * 사용자별 Redis 토픽을 통해 전파되는 이벤트
  * 도메인 객체를 포함하지 않고 순수 데이터만 전달
  */
-sealed interface MessageCommandEvent {
+sealed class MessageCommandEvent {
     /**
      * 메시지 전송 명령 이벤트
      */
@@ -18,7 +18,7 @@ sealed interface MessageCommandEvent {
         val userId: String,
         val content: String,
         val createdAt: LocalDateTime,
-    ) : MessageCommandEvent {
+    ) : MessageCommandEvent() {
         companion object {
             fun from(event: MessageEvent.Created): Send =
                 Send(
