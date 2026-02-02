@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 import site.rahoon.message.monolithic.chatroom.application.ChatRoomApplicationService
 import site.rahoon.message.monolithic.chatroom.application.ChatRoomCriteria
 import site.rahoon.message.monolithic.common.controller.CommonApiResponse
-import site.rahoon.message.monolithic.common.controller.CommonAuthInfo
+import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 
 /**
  * 채팅방 관련 Controller

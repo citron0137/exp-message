@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.method.HandlerMethod
-import site.rahoon.message.monolithic.common.controller.CommonAuthInfo
+import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 
 /**
  * OpenAPI (Swagger) 설정

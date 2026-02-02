@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test
 import org.springframework.http.HttpHeaders
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.web.socket.WebSocketHandler
-import site.rahoon.message.monolithic.common.controller.CommonAuthInfo
-import site.rahoon.message.monolithic.common.controller.filter.AuthTokenResolver
+import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
+import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import java.net.URI
 
 /**

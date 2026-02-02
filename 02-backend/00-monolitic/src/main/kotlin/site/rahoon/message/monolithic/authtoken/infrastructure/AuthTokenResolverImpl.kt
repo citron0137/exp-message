@@ -3,8 +3,8 @@ package site.rahoon.message.monolithic.authtoken.infrastructure
 import org.springframework.stereotype.Component
 import site.rahoon.message.monolithic.authtoken.domain.AuthTokenError
 import site.rahoon.message.monolithic.authtoken.domain.component.AccessTokenVerifier
-import site.rahoon.message.monolithic.common.controller.CommonAuthInfo
-import site.rahoon.message.monolithic.common.controller.filter.AuthTokenResolver
+import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
+import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
 

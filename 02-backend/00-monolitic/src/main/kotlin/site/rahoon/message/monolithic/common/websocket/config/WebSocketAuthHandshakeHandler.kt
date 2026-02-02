@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.socket.WebSocketHandler
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler
 import org.springframework.web.util.UriComponentsBuilder
-import site.rahoon.message.monolithic.common.controller.filter.AuthTokenResolver
+import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import java.security.Principal
 
 /**

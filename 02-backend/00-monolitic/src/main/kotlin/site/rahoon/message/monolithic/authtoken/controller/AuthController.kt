@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import site.rahoon.message.monolithic.authtoken.application.AuthTokenApplicationService
 import site.rahoon.message.monolithic.common.controller.CommonApiResponse
-import site.rahoon.message.monolithic.common.controller.CommonAuthInfo
+import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.controller.component.IpAddressUtils
 
 /**
