@@ -1,63 +1,34 @@
 package site.rahoon.message.monolithic.message.websocket
 
-import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
-import org.springframework.messaging.simp.stomp.StompHeaderAccessor
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
-import org.springframework.web.socket.messaging.SessionConnectEvent
-import org.springframework.web.socket.messaging.SessionDisconnectEvent
+import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
+import site.rahoon.message.monolithic.common.websocket.WebsocketDisconnected
 import site.rahoon.message.monolithic.common.websocket.WebsocketSend
+import site.rahoon.message.monolithic.common.websocket.WebsocketSubscribe
 import site.rahoon.message.monolithic.message.application.MessageCommandEvent
 import site.rahoon.message.monolithic.message.application.MessageCommandEventRelayPort
 
 /**
  * WebSocket 메시지 전달 핸들러
  *
- * 순수하게 WebSocket을 통한 메시지 전달만 담당
- * 비즈니스 로직은 포함하지 않음
+ * - [WebsocketSubscribe]: 구독 허용 시 relay 등록
+ * - [WebsocketDisconnected]: 세션 끊김 시 relay 해제
+ * - [WebsocketSend]: 메시지 생성 이벤트를 `/topic/user/{recipientUserId}/messages`로 전달
  */
 @Component
 class MessageWebSocketController(
     private val messageCommandEventRelayPort: MessageCommandEventRelayPort,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
 
-    /**
-     * WebSocket 연결될 때 호출
-     */
-    @Async
-    @EventListener
-    fun onConnect(event: SessionConnectEvent) {
-        val accessor = StompHeaderAccessor.wrap(event.message)
-        val principal = accessor.user
-        val userId = principal?.name
-
-        if (userId != null) {
-            log.info("WebSocket 연결됨 - UserId: $userId, SessionId: ${accessor.sessionId}")
-            // TODO 중복 방지로직
-            messageCommandEventRelayPort.subscribe(userId)
-        } else {
-            log.warn("WebSocket 연결 시 Principal이 없습니다 - SessionId: ${accessor.sessionId}")
-        }
+    @WebsocketSubscribe("/topic/user/{userId}/messages")
+    fun onMessageTopicSubscribe(authInfo: CommonAuthInfo, pathVariables: Map<String, String>) {
+        messageCommandEventRelayPort.subscribe(authInfo.userId)
     }
 
-    /**
-     * WebSocket 끊어질때 호출
-     */
-    @Async
-    @EventListener
-    fun onDisconnect(event: SessionDisconnectEvent) {
-        val accessor = StompHeaderAccessor.wrap(event.message)
-        val principal = accessor.user
-        val userId = principal?.name
-
-        if (userId != null) {
-            log.info("WebSocket 연결 해제됨 - UserId: $userId, SessionId: ${accessor.sessionId}")
-            messageCommandEventRelayPort.unsubscribe(userId)
-        } else {
-            log.warn("WebSocket 연결 해제 시 Principal이 없습니다 - SessionId: ${accessor.sessionId}")
-        }
+    @WebsocketDisconnected
+    fun onDisconnect(authInfo: CommonAuthInfo) {
+        messageCommandEventRelayPort.unsubscribe(authInfo.userId)
     }
 
     @EventListener

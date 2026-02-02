@@ -13,13 +13,14 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  *
  * - 엔드포인트: /ws (SockJS fallback)
  * - Broker: /topic (구독 prefix)
- * - Handshake: JWT 검증 후 Principal 설정
+ * - Handshake: 토큰만 세션에 저장. CONNECT 시 [WebSocketConnectInterceptor]에서 토큰 검증·Principal 설정
  * - 구독: WebSocketTopicSubscribeInterceptor로 /topic/user/{uuid}/... 본인 토픽만 허용
  */
 @Configuration
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
     private val webSocketAuthHandshakeHandler: WebSocketAuthHandshakeHandler,
+    private val webSocketConnectInterceptor: WebSocketConnectInterceptor,
     private val webSocketTopicSubscribeInterceptor: WebSocketTopicSubscribeInterceptor,
 ) : WebSocketMessageBrokerConfigurer {
     companion object {
@@ -38,7 +39,8 @@ class WebSocketConfig(
     }
 
     override fun configureClientInboundChannel(registration: ChannelRegistration) {
-        registration.interceptors(webSocketTopicSubscribeInterceptor)
+        registration
+            .interceptors(webSocketConnectInterceptor, webSocketTopicSubscribeInterceptor)
     }
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {

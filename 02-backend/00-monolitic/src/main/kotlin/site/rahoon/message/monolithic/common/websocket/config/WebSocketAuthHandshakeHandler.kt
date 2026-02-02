@@ -5,21 +5,19 @@ import org.springframework.stereotype.Component
 import org.springframework.web.socket.WebSocketHandler
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler
 import org.springframework.web.util.UriComponentsBuilder
-import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import java.security.Principal
 
 /**
- * WebSocket Handshake 시 JWT를 검증하고 Principal(userId)을 설정합니다.
+ * WebSocket Handshake 시 Principal은 설정하지 않고, 토큰만 세션에 넣습니다.
  *
  * - 쿼리: `access_token`
  * - 헤더: `Authorization` (Bearer)
  *
- * `AuthTokenResolver`로 검증 후 실패 시 Handshake가 거부됩니다.
+ * 둘 다 확인하여 있으면 세션 attributes에 저장. 인증·Principal 설정은 STOMP CONNECT 시
+ * [WebSocketConnectInterceptor]에서 수행합니다.
  */
 @Component
-class WebSocketAuthHandshakeHandler(
-    private val authTokenResolver: AuthTokenResolver,
-) : DefaultHandshakeHandler() {
+class WebSocketAuthHandshakeHandler : DefaultHandshakeHandler() {
     override fun determineUser(
         request: ServerHttpRequest,
         wsHandler: WebSocketHandler,
@@ -34,21 +32,14 @@ class WebSocketAuthHandshakeHandler(
         val tokenFromHeader = request.headers.getFirst("Authorization")
         val token =
             tokenFromQuery?.takeIf { it.isNotBlank() } ?: tokenFromHeader?.takeIf { it.isNotBlank() }
-        if (token.isNullOrBlank()) return null
-        val authInfo = authTokenResolver.verify(token)
-        return StompPrincipal(
-            authInfo.userId,
-            authInfo.sessionId,
-        )
+        token?.let { attributes[ATTR_TOKEN] = it }
+        return null
     }
-}
 
-/**
- * STOMP Principal. [getName]이 userId를 반환합니다.
- */
-data class StompPrincipal(
-    val userId: String,
-    val sessionId: String?,
-) : Principal {
-    override fun getName(): String = userId
+    companion object {
+        /** CONNECT 인터셉터에서 읽는 세션/Handshake 토큰 키 */
+        const val ATTR_TOKEN = "ws.token"
+        /** CONNECT 검증 후 세션에 넣는 [site.rahoon.message.monolithic.common.auth.CommonAuthInfo] */
+        const val ATTR_AUTH_INFO = "ws.authInfo"
+    }
 }
