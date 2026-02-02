@@ -34,6 +34,7 @@ class AuthTokenResolverImpl(
             CommonAuthInfo(
                 userId = accessToken.userId,
                 sessionId = accessToken.sessionId,
+                expiresAt = accessToken.expiresAt,
             )
         } catch (e: DomainException) {
             // AuthTokenError

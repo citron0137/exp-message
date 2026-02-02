@@ -12,6 +12,7 @@ import org.springframework.web.socket.WebSocketHandler
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import java.net.URI
+import java.time.LocalDateTime
 
 /**
  * WebSocketAuthHandshakeHandler 단위 테스트
@@ -26,7 +27,7 @@ class WebSocketAuthHandshakeHandlerUT {
         // given
         val userId = "user-1"
         val authTokenResolver = mockk<AuthTokenResolver>()
-        every { authTokenResolver.verify("token-query") } returns CommonAuthInfo(userId = userId, sessionId = null)
+        every { authTokenResolver.verify("token-query") } returns CommonAuthInfo(userId = userId, sessionId = "s1", expiresAt = LocalDateTime.now().plusHours(1))
 
         val request = mockk<ServerHttpRequest>()
         every { request.uri } returns URI.create("http://localhost/ws?access_token=token-query")
@@ -40,7 +41,7 @@ class WebSocketAuthHandshakeHandlerUT {
         val principal = handler.determineUserPublic(request, wsHandler, attributes)
 
         // then
-        principal shouldBe StompPrincipal(userId, null)
+        principal shouldBe StompPrincipal(userId, "s1")
         (principal as StompPrincipal).getName() shouldBe userId
     }
 
@@ -49,7 +50,7 @@ class WebSocketAuthHandshakeHandlerUT {
         // given
         val userId = "user-2"
         val authTokenResolver = mockk<AuthTokenResolver>()
-        every { authTokenResolver.verify("Bearer token-header") } returns CommonAuthInfo(userId = userId, sessionId = null)
+        every { authTokenResolver.verify("Bearer token-header") } returns CommonAuthInfo(userId = userId, sessionId = "s2", expiresAt = LocalDateTime.now().plusHours(1))
 
         val request = mockk<ServerHttpRequest>()
         every { request.uri } returns URI.create("http://localhost/ws")
@@ -63,14 +64,14 @@ class WebSocketAuthHandshakeHandlerUT {
         val principal = handler.determineUserPublic(request, wsHandler, attributes)
 
         // then
-        principal shouldBe StompPrincipal(userId, null)
+        principal shouldBe StompPrincipal(userId, "s2")
     }
 
     @Test
     fun `쿼리 우선 - access_token과 Authorization 둘 다 있으면 access_token 사용`() {
         // given
         val authTokenResolver = mockk<AuthTokenResolver>()
-        every { authTokenResolver.verify("from-query") } returns CommonAuthInfo(userId = "q", sessionId = null)
+        every { authTokenResolver.verify("from-query") } returns CommonAuthInfo(userId = "q", sessionId = "sq", expiresAt = LocalDateTime.now().plusHours(1))
 
         val request = mockk<ServerHttpRequest>()
         every { request.uri } returns URI.create("http://localhost/ws?access_token=from-query")
@@ -85,6 +86,7 @@ class WebSocketAuthHandshakeHandlerUT {
 
         // then
         (principal as StompPrincipal).userId shouldBe "q"
+        (principal as StompPrincipal).sessionId shouldBe "sq"
     }
 
     @Test
