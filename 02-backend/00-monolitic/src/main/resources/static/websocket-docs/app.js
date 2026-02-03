@@ -26,17 +26,17 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
 });
 
-// 이벤트 리스너 설정
+// 이벤트 리스너 설정 (주석 처리된 DOM 요소는 null일 수 있음)
 function setupEventListeners() {
-    connectBtn.addEventListener('click', connect);
-    disconnectBtn.addEventListener('click', disconnect);
-    clearMessagesBtn.addEventListener('click', clearMessages);
-    loadApiBtn.addEventListener('click', loadAsyncApiDoc);
-    asyncApiUrlInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            loadAsyncApiDoc();
-        }
-    });
+    if (connectBtn) connectBtn.addEventListener('click', connect);
+    if (disconnectBtn) disconnectBtn.addEventListener('click', disconnect);
+    if (clearMessagesBtn) clearMessagesBtn.addEventListener('click', clearMessages);
+    if (loadApiBtn) loadApiBtn.addEventListener('click', loadAsyncApiDoc);
+    if (asyncApiUrlInput) {
+        asyncApiUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadAsyncApiDoc();
+        });
+    }
 }
 
 // 초기화: 메타데이터 로드 후 AsyncAPI 문서 로드
@@ -268,10 +268,18 @@ function renderAsyncApiDocs() {
                 channelOperations.forEach((operation, index) => {
                     const direction = getDirectionForOperation(operation);
                     const messageInfo = getMessageInfoForOperation(operation, channel);
+                    const isClientToServer = operation.action === 'receive';
+                    const addressEscaped = (channel.address || channelId).replace(/"/g, '&quot;');
+                    const messageKeyEscaped = (messageInfo.messageKey || '').replace(/"/g, '&quot;');
                     
-                    html += `<div class="message-item">`;
+                    html += `<div class="message-item message-item-with-actions">`;
                     html += `<span class="message-direction">[${direction}]</span>`;
                     html += `<span class="message-name">${messageInfo.name || '메시지'}</span>`;
+                    
+                    // 클라이언트 → 서버: 직접 보내기 버튼
+                    if (isClientToServer) {
+                        html += `<button type="button" class="btn btn-send-inline btn-small" data-address="${addressEscaped}" data-message-key="${messageKeyEscaped}" onclick="openSendModalFromButton(this)" title="이 destination으로 메시지 전송">보내기</button>`;
+                    }
                     
                     // 메시지 스키마 정보 표시
                     if (messageInfo.schema) {
@@ -351,7 +359,7 @@ function extractReadableMessageName(messageKey) {
 }
 
 function getMessageInfoForOperation(operation, channel) {
-    const result = { name: null, schema: null };
+    const result = { name: null, schema: null, messageKey: null };
     
     // operation의 messages에서 메시지 참조 가져오기
     if (operation.messages && operation.messages.length > 0) {
@@ -379,6 +387,7 @@ function getMessageInfoForOperation(operation, channel) {
                 if (channelMessageRef) {
                     // #/components/messages/{messageKey} 형식
                     const messageKey = channelMessageRef.replace('#/components/messages/', '');
+                    result.messageKey = messageKey;
                     
                     // components.messages에서 실제 메시지 정보 가져오기
                     if (asyncApiDoc.components && asyncApiDoc.components.messages && asyncApiDoc.components.messages[messageKey]) {
@@ -404,6 +413,7 @@ function getMessageInfoForOperation(operation, channel) {
             // 메시지 스키마 찾기
             if (messageRef.$ref) {
                 const messageKey = messageRef.$ref.replace('#/components/messages/', '');
+                result.messageKey = messageKey;
                 
                 if (asyncApiDoc.components && asyncApiDoc.components.messages && asyncApiDoc.components.messages[messageKey]) {
                     const message = asyncApiDoc.components.messages[messageKey];
@@ -606,6 +616,25 @@ function findReceiveOperation(address) {
     });
 }
 
+// 연결 실패 시 사용자 안내 (URL + 원인 + 체크리스트)
+function showConnectionError(attemptedUrl, reason, code) {
+    const codeHint = code === 1002 ? ' (프로토콜 오류: 서버가 연결을 거부했거나 경로/설정이 맞지 않을 수 있음)' : '';
+    const isFileProtocol = typeof window !== 'undefined' && window.location?.protocol === 'file:';
+    const fileHint = isFileProtocol
+        ? '\n\n※ 이 페이지를 file://로 열었다면, 서버 주소로 열어보세요. 예: http://localhost:8080/websocket-docs/'
+        : '';
+    const msg =
+        'WebSocket 연결 실패' + codeHint + '\n\n' +
+        '시도한 URL: ' + attemptedUrl + '\n' +
+        '사유: ' + reason + '\n\n' +
+        '확인할 것:\n' +
+        '1. 백엔드 서버가 실행 중인지\n' +
+        '2. URL의 host/port가 실제 서버와 같은지 (context-path가 있으면 /ws 앞에 경로가 붙어야 함)\n' +
+        '3. 이 페이지를 서버에서 연 주소와 동일한 origin인지 (예: http://localhost:8080/websocket-docs/)' +
+        fileHint;
+    alert(msg);
+}
+
 // WebSocket 연결
 function connect() {
     if (!metadata || !metadata.websocketUrl) {
@@ -630,9 +659,10 @@ function connect() {
     const socket = new SockJS(url);
     
     // SockJS 연결 에러 처리
+    const attemptedUrl = url;
     socket.onerror = (error) => {
         console.error('SockJS 연결 오류:', error);
-        alert('WebSocket 연결에 실패했습니다. URL을 확인해주세요: ' + url);
+        showConnectionError(attemptedUrl, 'SockJS 오류', null);
         updateConnectionStatus(false);
         connectBtn.disabled = false;
         disconnectBtn.disabled = true;
@@ -640,6 +670,11 @@ function connect() {
     
     socket.onclose = (event) => {
         console.log('SockJS 연결 종료:', event);
+        if (!stompClient || !stompClient.connected) {
+            // 연결 전에 닫힌 경우 = 연결 실패
+            const reason = event.reason || ('code ' + event.code);
+            showConnectionError(attemptedUrl, reason, event.code);
+        }
         if (stompClient) {
             stompClient = null;
             updateConnectionStatus(false);
@@ -647,8 +682,8 @@ function connect() {
             disconnectBtn.disabled = true;
             subscriptions.clear();
             renderChannels();
-            addMessage('system', '연결이 종료되었습니다', { event });
         }
+        addMessage('system', '연결이 종료되었습니다', { event });
     };
     
     const client = new StompJs.Client({
@@ -690,6 +725,10 @@ function connect() {
 
     client.onWebSocketClose = (event) => {
         console.log('연결 종료:', event);
+        if (!stompClient?.connected) {
+            const reason = event.reason || ('code ' + (event.code || ''));
+            showConnectionError(attemptedUrl, reason, event.code);
+        }
         stompClient = null;
         updateConnectionStatus(false);
         connectBtn.disabled = false;
@@ -880,6 +919,13 @@ function unsubscribe(address) {
     }
 }
 
+// 문서 내 "보내기" 버튼에서 호출 (data-address, data-message-key 사용)
+function openSendModalFromButton(buttonEl) {
+    const address = (buttonEl.dataset.address || '').replace(/&quot;/g, '"');
+    const messageKey = (buttonEl.dataset.messageKey || '').replace(/&quot;/g, '"');
+    openSendModal(address, messageKey);
+}
+
 // 메시지 전송 모달 열기
 function openSendModal(address, messageType) {
     if (!stompClient || !stompClient.connected) {
@@ -887,47 +933,50 @@ function openSendModal(address, messageType) {
         return;
     }
 
-    // 메시지 스키마 가져오기
-    const schema = getMessageSchema(messageType);
-    const example = generateExampleMessage(schema);
+    // 메시지 스키마 가져오기 (없으면 빈 객체로 전송 가능)
+    const schema = messageType ? getMessageSchema(messageType) : null;
+    const example = schema ? generateExampleMessage(schema) : {};
 
     const modal = document.createElement('div');
     modal.className = 'modal active';
     modal.innerHTML = `
         <div class="modal-content">
-            <h3>메시지 전송: ${address}</h3>
+            <h3>메시지 전송: ${escapeHtml(address)}</h3>
             <div class="form-group">
                 <label>메시지 (JSON):</label>
-                <textarea id="messagePayload" placeholder='예: ${JSON.stringify(example, null, 2)}'>${JSON.stringify(example, null, 2)}</textarea>
+                <textarea id="messagePayload" placeholder='예: ${escapeHtml(JSON.stringify(example, null, 2))}'>${escapeHtml(JSON.stringify(example, null, 2))}</textarea>
             </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">취소</button>
-                <button class="btn btn-primary" onclick="sendMessage('${address}')">전송</button>
+                <button class="btn btn-primary" onclick="sendMessageFromModal(this.closest('.modal'))" data-address="${escapeHtml(address)}">전송</button>
             </div>
         </div>
     `;
     document.body.appendChild(modal);
 }
 
-// 메시지 전송
-function sendMessage(address) {
-    const modal = document.querySelector('.modal.active');
-    const payloadTextarea = document.getElementById('messagePayload');
-    const payloadText = payloadTextarea.value.trim();
+function escapeHtml(str) {
+    if (str == null) return '';
+    const s = String(str);
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
-    if (!payloadText) {
-        alert('메시지 내용을 입력해주세요');
-        return;
-    }
+// 모달에서 전송 버튼 클릭 시 (주소는 data-address로 전달)
+function sendMessageFromModal(modalEl) {
+    if (!modalEl || !stompClient || !stompClient.connected) return;
+    const payloadTextarea = modalEl.querySelector('#messagePayload');
+    const addressEl = modalEl.querySelector('[data-address]');
+    const address = addressEl ? addressEl.getAttribute('data-address') : null;
+    if (!address) return;
+
+    const payloadText = payloadTextarea ? payloadTextarea.value.trim() : '';
+    const body = payloadText ? payloadText : '{}';
 
     try {
-        const payload = JSON.parse(payloadText);
-        
-        // 주소에 파라미터가 있는 경우 처리
+        const payload = JSON.parse(body);
         let destination = address;
         const channel = findChannelByAddress(address);
         if (channel && channel.parameters) {
-            // 간단한 파라미터 치환 (실제로는 더 복잡한 로직 필요)
             Object.keys(channel.parameters).forEach(param => {
                 if (payload[param]) {
                     destination = destination.replace(`{${param}}`, payload[param]);
@@ -940,6 +989,33 @@ function sendMessage(address) {
             body: JSON.stringify(payload)
         });
 
+        addMessage(address, '메시지 전송', payload);
+        modalEl.remove();
+    } catch (error) {
+        alert('메시지 전송 실패: ' + error.message);
+        console.error('전송 오류:', error);
+    }
+}
+
+// 메시지 전송 (기존 호환용)
+function sendMessage(address) {
+    const modal = document.querySelector('.modal.active');
+    if (!modal) return;
+    const payloadTextarea = document.getElementById('messagePayload');
+    const payloadText = payloadTextarea ? payloadTextarea.value.trim() : '{}';
+    if (!address) return;
+    try {
+        const payload = JSON.parse(payloadText || '{}');
+        let destination = address;
+        const channel = findChannelByAddress(address);
+        if (channel && channel.parameters) {
+            Object.keys(channel.parameters).forEach(param => {
+                if (payload[param]) {
+                    destination = destination.replace(`{${param}}`, payload[param]);
+                }
+            });
+        }
+        stompClient.publish({ destination: destination, body: JSON.stringify(payload) });
         addMessage(address, '메시지 전송', payload);
         modal.remove();
     } catch (error) {
@@ -1109,6 +1185,8 @@ window.unsubscribe = unsubscribe;
 window.openSubscribeModal = openSubscribeModal;
 window.confirmSubscribe = confirmSubscribe;
 window.openSendModal = openSendModal;
+window.openSendModalFromButton = openSendModalFromButton;
 window.sendMessage = sendMessage;
+window.sendMessageFromModal = sendMessageFromModal;
 window.toggleDropdown = toggleDropdown;
 window.toggleChannel = toggleChannel;

@@ -721,6 +721,42 @@ h2 {
     line-height: 1.6;
 }
 
+.message-item-with-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.message-item-with-actions .message-direction {
+    flex-shrink: 0;
+}
+
+.message-item-with-actions .message-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.message-item-with-actions .btn-send-inline {
+    flex-shrink: 0;
+    background: #667eea;
+    color: white;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.85em;
+    cursor: pointer;
+}
+
+.message-item-with-actions .btn-send-inline:hover {
+    background: #5568d3;
+}
+
+.message-item-with-actions .message-schema {
+    flex-basis: 100%;
+    margin-left: 0;
+}
+
 .message-indent {
     color: #999;
     font-family: monospace;

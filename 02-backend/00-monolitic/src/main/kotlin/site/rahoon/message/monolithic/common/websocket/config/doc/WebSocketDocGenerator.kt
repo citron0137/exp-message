@@ -15,7 +15,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Controller
-import site.rahoon.message.monolithic.common.websocket.WebsocketSend
+import site.rahoon.message.monolithic.common.websocket.annotation.WebsocketSend
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
@@ -26,6 +26,9 @@ import java.lang.reflect.TypeVariable
 class WebSocketDocGenerator(
     private val objectMapper: ObjectMapper,
 ) {
+    /** Application destination prefix (WebSocketConfig와 동일). SEND 시 클라이언트가 사용하는 destination 접두사. */
+    private val applicationDestinationPrefix: String = "/app"
+
     // 1. 특수문자 치환 함수 (내부 식별자용)
     private fun sanitize(key: String): String =
         key
@@ -82,12 +85,14 @@ class WebSocketDocGenerator(
         method.getAnnotation(MessageMapping::class.java)?.let { anno ->
             val type = method.genericParameterTypes.firstOrNull() ?: Any::class.java
             val rawKey = "$simplifiedClass.${method.name}.SEND"
+            val mappingPath = anno.value.firstOrNull()?.trimStart('/') ?: "unknown"
+            val fullAddress = "$applicationDestinationPrefix/$mappingPath"
             val pathParameters = extractPathParameters(anno.value.first())
             metadataList.add(
                 StompMetadata(
                     key = sanitize(rawKey),
                     action = "SEND",
-                    address = anno.value.firstOrNull() ?: "/unknown",
+                    address = fullAddress,
                     payloadType = type,
                     payloadClassName = sanitize(getTypeName(type, basePackage)),
                     method = method,
