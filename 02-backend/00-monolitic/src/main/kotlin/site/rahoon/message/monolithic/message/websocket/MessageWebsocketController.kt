@@ -3,9 +3,9 @@ package site.rahoon.message.monolithic.message.websocket
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
-import site.rahoon.message.monolithic.common.websocket.WebsocketDisconnected
-import site.rahoon.message.monolithic.common.websocket.WebsocketSend
-import site.rahoon.message.monolithic.common.websocket.WebsocketSubscribe
+import site.rahoon.message.monolithic.common.websocket.annotation.WebsocketDisconnected
+import site.rahoon.message.monolithic.common.websocket.annotation.WebsocketSend
+import site.rahoon.message.monolithic.common.websocket.annotation.WebsocketSubscribe
 import site.rahoon.message.monolithic.message.application.MessageCommandEvent
 import site.rahoon.message.monolithic.message.application.MessageCommandEventRelayPort
 

@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket
+package site.rahoon.message.monolithic.common.websocket.annotation
 
 /**
  * WebSocket 메시지 전송을 위한 어노테이션

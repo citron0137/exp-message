@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket
+package site.rahoon.message.monolithic.common.websocket.config
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.aspectj.lang.ProceedingJoinPoint
@@ -11,6 +11,7 @@ import org.springframework.expression.spel.support.StandardEvaluationContext
 import org.springframework.messaging.MessagingException
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Component
+import site.rahoon.message.monolithic.common.websocket.annotation.WebsocketSend
 
 /**
  * @WebsocketSend 어노테이션이 달린 메서드의 반환값을 자동으로 WebSocket 토픽으로 브로드캐스트하는 Aspect

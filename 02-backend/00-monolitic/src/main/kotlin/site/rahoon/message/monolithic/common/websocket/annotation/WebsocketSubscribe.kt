@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket
+package site.rahoon.message.monolithic.common.websocket.annotation
 
 /**
  * 해당 destination이 구독될 때 메서드를 호출한다.

@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket
+package site.rahoon.message.monolithic.common.websocket.annotation
 
 /**
  * WebSocket 세션이 끊어질 때 메서드를 호출한다.

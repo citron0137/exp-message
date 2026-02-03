@@ -5,8 +5,8 @@ import org.springframework.aop.support.AopUtils
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
-import site.rahoon.message.monolithic.common.websocket.WebsocketDisconnected
-import site.rahoon.message.monolithic.common.websocket.WebsocketSubscribe
+import site.rahoon.message.monolithic.common.websocket.annotation.WebsocketDisconnected
+import site.rahoon.message.monolithic.common.websocket.annotation.WebsocketSubscribe
 import java.lang.reflect.Method
 import kotlin.reflect.jvm.isAccessible
 

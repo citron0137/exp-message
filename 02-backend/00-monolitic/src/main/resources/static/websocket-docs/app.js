@@ -715,12 +715,26 @@ function connect() {
 
     client.onStompError = (frame) => {
         console.error('STOMP 오류:', frame);
-        const errorMsg = frame.headers['message'] || '알 수 없는 오류';
-        alert('STOMP 오류: ' + errorMsg);
-        addMessage('system', 'STOMP 오류: ' + errorMsg, { frame });
-        updateConnectionStatus(false);
-        connectBtn.disabled = false;
-        disconnectBtn.disabled = true;
+        let errorMsg = frame.headers['message'] || '알 수 없는 오류';
+        let body = frame.body;
+        if (body) {
+            try {
+                const parsed = JSON.parse(body);
+                if (parsed.code != null || parsed.message != null) {
+                    body = parsed;
+                    errorMsg = parsed.message || parsed.code || errorMsg;
+                }
+            } catch (_) { /* body 그대로 사용 */ }
+        }
+        addMessage('system', '서버 오류 (ERROR 프레임)', body ? { message: errorMsg, ...(typeof body === 'object' ? body : { body }) } : { message: errorMsg });
+        alert('서버 오류: ' + errorMsg);
+        // SEND 처리 중 발생한 ERROR는 연결 유지 (CONNECT 실패 등만 연결 해제)
+        const isConnectError = frame.headers['message']?.includes('CONNECT') || frame.headers['message']?.includes('Unauthorized');
+        if (isConnectError) {
+            updateConnectionStatus(false);
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+        }
     };
 
     client.onWebSocketClose = (event) => {
@@ -984,8 +998,10 @@ function sendMessageFromModal(modalEl) {
             });
         }
 
+        const receiptId = 'send-' + Date.now();
         stompClient.publish({
             destination: destination,
+            headers: { receipt: receiptId },
             body: JSON.stringify(payload)
         });
 

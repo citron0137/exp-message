@@ -6,13 +6,14 @@ import org.springframework.core.annotation.Order
 import org.springframework.lang.Nullable
 import org.springframework.messaging.Message
 import org.springframework.messaging.MessageChannel
-import org.springframework.messaging.MessageDeliveryException
 import org.springframework.messaging.simp.stomp.StompCommand
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor
 import org.springframework.messaging.support.ChannelInterceptor
 import org.springframework.stereotype.Component
 import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
+import site.rahoon.message.monolithic.common.domain.CommonError
+import site.rahoon.message.monolithic.common.domain.DomainException
 
 /**
  * STOMP CONNECT 수신 시 토큰을 검증하고 세션 속성에 [CommonAuthInfo]를 넣습니다.
@@ -20,7 +21,7 @@ import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
  * - CONNECT가 아니면 통과.
  * - 토큰: CONNECT 프레임 헤더(Authorization) 또는 Handshake 시 세션에 넣어둔 값([WebSocketAuthHandshakeHandler.ATTR_TOKEN]).
  * - 검증 성공: 세션 속성 [ATTR_AUTH_INFO]에 [CommonAuthInfo] 설정.
- * - 토큰 없음/검증 실패: 예외 발생 → 프레임워크가 ERROR 프레임 반환 후 연결 종료.
+ * - 토큰 없음/검증 실패: [DomainException](CommonError.UNAUTHORIZED) → [WebSocketStompErrorHandler]가 ERROR 프레임 반환.
  */
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE - 100)
@@ -45,7 +46,7 @@ class WebSocketConnectInterceptor(
                         accessor.sessionId,
                         accessor.sessionAttributes?.keys?.toList(),
                     )
-                    throw MessageDeliveryException(message, "Authorization required")
+                    throw DomainException(CommonError.UNAUTHORIZED, mapOf("reason" to "Authorization required"))
                 }
 
         val authInfo =
@@ -53,7 +54,7 @@ class WebSocketConnectInterceptor(
                 authTokenResolver.verify(token)
             } catch (e: Exception) {
                 log.warn("CONNECT 실패: 토큰 검증 실패, sessionId={}, cause={}", accessor.sessionId, e.message)
-                throw MessageDeliveryException(message, e)
+                throw DomainException(CommonError.UNAUTHORIZED, mapOf("reason" to (e.message ?: "Invalid token")), e)
             }
 
         (accessor.sessionAttributes as? MutableMap<String, Any>)?.set(WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO, authInfo)
