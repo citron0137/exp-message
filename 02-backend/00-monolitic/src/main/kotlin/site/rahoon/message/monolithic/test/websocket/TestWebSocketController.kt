@@ -16,7 +16,7 @@ import site.rahoon.message.monolithic.common.websocket.reply.WebSocketReplyBody
  *
  * - `/app/test/ping`: SEND만으로 연결/라우팅 확인 (응답 없음)
  * - `/app/test/echo`: Reply
- * - `/app/test/error`: SEND 시 [DomainException] 발생. ERROR 프레임/에러 핸들러 테스트용.
+ * - `/app/test/error`: SEND 시 [DomainException] 발생. [WebSocketMessageExceptionAdvice]에서 전역 처리.
  */
 @Controller
 class TestWebSocketController {
@@ -42,7 +42,7 @@ class TestWebSocketController {
     }
 
     /**
-     * SEND 시 DomainException 발생. WebSocketExceptionStompSubProtocolErrorHandler / ERROR 프레임 테스트용.
+     * SEND 시 DomainException 발생. [WebSocketMessageExceptionAdvice]에서 전역 처리 (ERROR 프레임 + exception 큐).
      */
     @MessageMapping("test/error")
     fun error(@Suppress("UNUSED_PARAMETER") message: Message<*>) {

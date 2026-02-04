@@ -24,11 +24,18 @@ class WebSocketConfig(
     private val webSocketConnectInterceptor: WebSocketConnectInterceptor,
     private val webSocketTopicSubscribeInterceptor: WebSocketTopicSubscribeInterceptor,
     private val webSocketExceptionStompSubProtocolErrorHandler: WebSocketExceptionStompSubProtocolErrorHandler,
-    private val webSocketExceptionInterceptor: WebSocketExceptionInterceptor,
     private val webSocketConnectedSessionHeaderInterceptor: WebSocketConnectedSessionHeaderInterceptor,
 ) : WebSocketMessageBrokerConfigurer {
+
     companion object {
         private const val HEARTBEAT_INTERVAL_MS = 10000L
+    }
+
+    override fun configureClientInboundChannel(registration: ChannelRegistration) {
+        registration.interceptors(
+            webSocketConnectInterceptor,
+            webSocketTopicSubscribeInterceptor,
+        )
     }
 
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
@@ -43,15 +50,6 @@ class WebSocketConfig(
 
         // 엔드포인트 등록 후 에러 핸들러 설정 (SEND 처리 중 @MessageMapping 예외 → ERROR 프레임)
         registry.setErrorHandler(webSocketExceptionStompSubProtocolErrorHandler)
-    }
-
-    override fun configureClientInboundChannel(registration: ChannelRegistration) {
-        registration
-            .interceptors(
-                webSocketConnectInterceptor,
-                webSocketTopicSubscribeInterceptor,
-                webSocketExceptionInterceptor,
-            )
     }
 
     override fun configureClientOutboundChannel(registration: ChannelRegistration) {

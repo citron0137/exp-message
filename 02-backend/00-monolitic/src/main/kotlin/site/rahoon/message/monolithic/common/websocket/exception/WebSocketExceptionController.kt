@@ -59,6 +59,7 @@ class WebSocketExceptionController(
         body.details?.let { map["details"] = it }
         body.websocketSessionId?.let { map["websocketSessionId"] = it }
         body.receiptId?.let { map["receiptId"] = it }
+        body.requestDestination?.let { map["requestDestination"] = it }
         val payload = objectMapper.writeValueAsBytes(map)
         val accessor = StompHeaderAccessor.create(StompCommand.ERROR)
         accessor.message = body.message

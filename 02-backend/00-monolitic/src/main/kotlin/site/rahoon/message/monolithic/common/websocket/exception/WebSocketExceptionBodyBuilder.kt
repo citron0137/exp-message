@@ -17,12 +17,13 @@ class WebSocketExceptionBodyBuilder {
      * Throwable에서 DomainException을 찾아 [WebSocketExceptionBody]로 변환.
      * cause 체인 내 DomainException이 있으면 해당 값 사용.
      * DomainException이 아니면 [CommonError.SERVER_ERROR]로 body를 만든다.
-     * [websocketSessionId], [receiptId]가 있으면 body에 포함한다.
+     * [websocketSessionId], [receiptId], [requestDestination]이 있으면 body에 포함한다.
      */
     fun build(
         throwable: Throwable,
         websocketSessionId: String? = null,
         receiptId: String? = null,
+        requestDestination: String? = null,
     ): WebSocketExceptionBody {
         val domainException = resolveDomainException(throwable)
             ?: DomainException(
@@ -30,7 +31,7 @@ class WebSocketExceptionBodyBuilder {
                 mapOf("reason" to (throwable.message ?: "Unknown error")),
                 throwable,
             )
-        return fromDomainException(domainException, websocketSessionId, receiptId)
+        return fromDomainException(domainException, websocketSessionId, receiptId, requestDestination)
     }
 
     /**
@@ -40,6 +41,7 @@ class WebSocketExceptionBodyBuilder {
         domainException: DomainException,
         websocketSessionId: String? = null,
         receiptId: String? = null,
+        requestDestination: String? = null,
     ): WebSocketExceptionBody =
         WebSocketExceptionBody(
             code = domainException.error.code,
@@ -47,6 +49,7 @@ class WebSocketExceptionBodyBuilder {
             details = domainException.details,
             websocketSessionId = websocketSessionId,
             receiptId = receiptId,
+            requestDestination = requestDestination,
         )
 
     private fun resolveDomainException(throwable: Throwable): DomainException? {
