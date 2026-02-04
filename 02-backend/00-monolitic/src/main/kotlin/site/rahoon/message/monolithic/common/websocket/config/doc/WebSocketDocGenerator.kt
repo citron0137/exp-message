@@ -15,7 +15,9 @@ import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Controller
+import site.rahoon.message.monolithic.common.websocket.annotation.WebSocketReply
 import site.rahoon.message.monolithic.common.websocket.annotation.WebsocketSend
+import site.rahoon.message.monolithic.common.websocket.reply.WebSocketReplyBody
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
@@ -54,7 +56,8 @@ class WebSocketDocGenerator(
 
         val allMethods = reflections.getMethodsAnnotatedWith(MessageMapping::class.java) +
             reflections.getMethodsAnnotatedWith(SendTo::class.java) +
-            reflections.getMethodsAnnotatedWith(WebsocketSend::class.java)
+            reflections.getMethodsAnnotatedWith(WebsocketSend::class.java) +
+            reflections.getMethodsAnnotatedWith(WebSocketReply::class.java)
 
         val targetMethods = allMethods
             .filter {
@@ -70,6 +73,7 @@ class WebSocketDocGenerator(
             processMessageMapping(method, simplifiedClass, basePackage, metadataList, domainClasses)
             processSendTo(method, simplifiedClass, basePackage, metadataList, domainClasses)
             processWebsocketSend(method, simplifiedClass, basePackage, metadataList, domainClasses)
+            processWebSocketReply(method, simplifiedClass, basePackage, metadataList, domainClasses)
         }
 
         return Pair(metadataList, domainClasses)
@@ -159,6 +163,35 @@ class WebSocketDocGenerator(
                 collectDomainClasses(type, domainClasses)
             }
         }
+    }
+
+    private fun processWebSocketReply(
+        method: Method,
+        simplifiedClass: String,
+        basePackage: String,
+        metadataList: MutableList<StompMetadata>,
+        domainClasses: MutableSet<Class<*>>,
+    ) {
+        val webSocketReply = method.getAnnotation(WebSocketReply::class.java) ?: return
+        val returnType = method.genericReturnType
+        if (returnType == Void.TYPE || returnType == Unit::class.java) return
+
+        // Reply 메시지 body는 WebSocketReplyBody 전체(payload, receiptId, requestDestination, websocketSessionId)로 문서화
+        val addr = webSocketReply.value
+        val rawKey = "$simplifiedClass.${method.name}.RECEIVE"
+        val pathParameters = extractPathParameters(addr)
+        metadataList.add(
+            StompMetadata(
+                key = sanitize(rawKey),
+                action = "RECEIVE",
+                address = addr,
+                payloadType = returnType,
+                payloadClassName = sanitize(getTypeName(returnType, basePackage)),
+                method = method,
+                parameters = pathParameters,
+            ),
+        )
+        collectDomainClasses(returnType, domainClasses)
     }
 
     private fun extractPathParameters(address: String): List<String> =

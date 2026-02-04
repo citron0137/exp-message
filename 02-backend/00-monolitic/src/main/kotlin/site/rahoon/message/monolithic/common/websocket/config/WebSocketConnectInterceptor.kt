@@ -14,6 +14,7 @@ import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
+import java.security.Principal
 
 /**
  * STOMP CONNECT 수신 시 토큰을 검증하고 세션 속성에 [CommonAuthInfo]를 넣습니다.
@@ -21,7 +22,7 @@ import site.rahoon.message.monolithic.common.domain.DomainException
  * - CONNECT가 아니면 통과.
  * - 토큰: CONNECT 프레임 헤더(Authorization) 또는 Handshake 시 세션에 넣어둔 값([WebSocketAuthHandshakeHandler.ATTR_TOKEN]).
  * - 검증 성공: 세션 속성 [ATTR_AUTH_INFO]에 [CommonAuthInfo] 설정.
- * - 토큰 없음/검증 실패: [DomainException](CommonError.UNAUTHORIZED) → [WebSocketStompErrorHandler]가 ERROR 프레임 반환.
+ * - 토큰 없음/검증 실패: [DomainException](CommonError.UNAUTHORIZED) → [WebSocketExceptionStompSubProtocolErrorHandler]가 ERROR 프레임 반환.
  */
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE - 100)
@@ -58,6 +59,9 @@ class WebSocketConnectInterceptor(
             }
 
         (accessor.sessionAttributes as? MutableMap<String, Any>)?.set(WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO, authInfo)
+        accessor.user = object : Principal {
+            override fun getName(): String = authInfo.userId
+        }
         log.debug("CONNECT 성공: userId={}, sessionId={}", authInfo.userId, accessor.sessionId)
         return message
     }

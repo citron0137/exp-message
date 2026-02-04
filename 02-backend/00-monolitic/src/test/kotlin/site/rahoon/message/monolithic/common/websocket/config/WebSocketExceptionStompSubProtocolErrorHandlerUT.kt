@@ -4,18 +4,27 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import org.springframework.messaging.MessageChannel
+import org.springframework.messaging.simp.SimpMessagingTemplate
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
+import site.rahoon.message.monolithic.common.websocket.exception.WebSocketExceptionBodyBuilder
+import site.rahoon.message.monolithic.common.websocket.exception.WebSocketExceptionController
 
 /**
- * WebSocketStompErrorHandler 단위 테스트.
+ * WebSocketExceptionStompSubProtocolErrorHandler 단위 테스트.
  *
  * DomainException 발생 시 ERROR 프레임 payload에 code·message가 담기는지 검증.
  */
-class WebSocketStompErrorHandlerUT {
-    private val handler = WebSocketStompErrorHandler()
+class WebSocketExceptionStompSubProtocolErrorHandlerUT {
     private val objectMapper = jacksonObjectMapper()
+    private val mockChannel = mockk<MessageChannel>(relaxed = true)
+    private val mockMessagingTemplate = mockk<SimpMessagingTemplate>(relaxed = true)
+    private val exceptionController = WebSocketExceptionController(objectMapper, mockChannel, mockMessagingTemplate)
+    private val exceptionBodyBuilder = WebSocketExceptionBodyBuilder()
+    private val handler = WebSocketExceptionStompSubProtocolErrorHandler(exceptionBodyBuilder, exceptionController)
 
     @Test
     fun `DomainException 발생 시 ERROR payload에 code와 message 담김`() {

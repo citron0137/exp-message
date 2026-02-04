@@ -9,9 +9,13 @@ import org.springframework.expression.ExpressionParser
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.expression.spel.support.StandardEvaluationContext
 import org.springframework.messaging.MessagingException
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.messaging.simp.SimpMessagingTemplate
+import org.springframework.messaging.support.MessageBuilder
 import org.springframework.stereotype.Component
+import site.rahoon.message.monolithic.common.websocket.annotation.WebSocketReply
 import site.rahoon.message.monolithic.common.websocket.annotation.WebsocketSend
+import site.rahoon.message.monolithic.common.websocket.reply.WebSocketReplyBody
 
 /**
  * @WebsocketSend 어노테이션이 달린 메서드의 반환값을 자동으로 WebSocket 토픽으로 브로드캐스트하는 Aspect
@@ -34,22 +38,47 @@ class WebsocketSendAspect(
         // 메서드 실행
         val returnValue = joinPoint.proceed()
 
-        // 반환값이 null이 아니면 브로드캐스트
-        if (returnValue != null) {
-            try {
-                val topic = resolveTopic(websocketSend.value, returnValue)
-                logger.info { "WebSocket 브로드캐스트 시도: topic=$topic, returnValue=$returnValue" }
-                messagingTemplate.convertAndSend(topic, returnValue)
-                logger.info { "WebSocket 브로드캐스트 완료: topic=$topic" }
-            } catch (e: MessagingException) {
-                logger.error(e) { "WebSocket 브로드캐스트 실패: topic=${websocketSend.value}, error=${e.message}" }
-            } catch (e: IllegalStateException) {
-                logger.error(e) { "WebSocket 브로드캐스트 실패: topic=${websocketSend.value}, error=${e.message}" }
-            }
-        } else {
-            logger.info { "반환값이 null이므로 브로드캐스트하지 않음" }
-        }
+        return sendIfNotNull(returnValue, websocketSend.value)
+    }
 
+    @Around("@annotation(webSocketReply)")
+    fun broadcastReturnValueForReply(
+        joinPoint: ProceedingJoinPoint,
+        webSocketReply: WebSocketReply,
+    ): Any? {
+        logger.info { "@WebSocketReply Aspect 실행: method=${joinPoint.signature.name}, topic=${webSocketReply.value}" }
+        val returnValue = joinPoint.proceed()
+        return sendIfNotNull(returnValue, webSocketReply.value)
+    }
+
+    private fun sendIfNotNull(returnValue: Any?, destinationTemplate: String): Any? {
+        if (returnValue == null) {
+            logger.info { "반환값이 null이므로 브로드캐스트하지 않음" }
+            return null
+        }
+        try {
+            if (returnValue is WebSocketReplyBody<*>) {
+                val topic = resolveTopic(destinationTemplate, returnValue)
+                val receiptId = returnValue.receiptId
+                logger.info { "WebSocket reply 전송 시도: topic=$topic, receiptId=$receiptId" }
+                messagingTemplate.convertAndSend(topic, returnValue) { message ->
+                    val accessor = SimpMessageHeaderAccessor.wrap(message)
+                    receiptId?.let { accessor.setNativeHeader("receipt-id", it) }
+                    accessor.setLeaveMutable(true)
+                    MessageBuilder.createMessage(message.payload, accessor.messageHeaders)
+                }
+                logger.info { "WebSocket reply 전송 완료: topic=$topic" }
+                return returnValue
+            }
+            val topic = resolveTopic(destinationTemplate, returnValue)
+            logger.info { "WebSocket 브로드캐스트 시도: topic=$topic, returnValue=$returnValue" }
+            messagingTemplate.convertAndSend(topic, returnValue)
+            logger.info { "WebSocket 브로드캐스트 완료: topic=$topic" }
+        } catch (e: MessagingException) {
+            logger.error(e) { "WebSocket 브로드캐스트 실패: topic=$destinationTemplate, error=${e.message}" }
+        } catch (e: IllegalStateException) {
+            logger.error(e) { "WebSocket 브로드캐스트 실패: topic=$destinationTemplate, error=${e.message}" }
+        }
         return returnValue
     }
 

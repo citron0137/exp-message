@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit
  *
  * - 성공: 연결 후 새 토큰으로 SEND /app/auth/refresh → 세션 갱신, 이후 구독·수신 정상
  * - 실패(토큰 없음/잘못된 토큰): 서버가 예외 없이 ERROR 응답 처리하는지 스모크 검증.
- *   ERROR payload 형식(code·message)은 [WebSocketStompErrorHandlerUT]에서 검증.
+ *   ERROR payload 형식(code·message)은 [WebSocketExceptionStompSubProtocolErrorHandlerUT]에서 검증.
  */
 class WebSocketAuthRefreshControllerIT(
     private val restTemplate: TestRestTemplate,
@@ -125,8 +125,8 @@ class WebSocketAuthRefreshControllerIT(
         }
         session.send(sendHeaders, "")
 
-        // 서버가 DomainException → WebSocketStompErrorHandler로 ERROR 전송 후 정상 처리. 클라이언트는 연결 끊김 가능.
-        // ERROR payload 형식은 WebSocketStompErrorHandlerUT에서 검증.
+        // 서버가 DomainException → WebSocketExceptionStompSubProtocolErrorHandler로 ERROR 전송 후 정상 처리. 클라이언트는 연결 끊김 가능.
+        // ERROR payload 형식은 WebSocketExceptionStompSubProtocolErrorHandlerUT에서 검증.
     }
 
     @Test
@@ -143,8 +143,8 @@ class WebSocketAuthRefreshControllerIT(
         }
         session.send(sendHeaders, "")
 
-        // 서버가 DomainException → WebSocketStompErrorHandler로 ERROR 전송 후 정상 처리.
-        // ERROR payload 형식은 WebSocketStompErrorHandlerUT에서 검증.
+        // 서버가 DomainException → WebSocketExceptionStompSubProtocolErrorHandler로 ERROR 전송 후 정상 처리.
+        // ERROR payload 형식은 WebSocketExceptionStompSubProtocolErrorHandlerUT에서 검증.
     }
 
     private fun createStompClient(): WebSocketStompClient {

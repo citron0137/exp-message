@@ -13,7 +13,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  *
  * - 엔드포인트: /ws (SockJS fallback)
  * - Application destination: /app (SEND 수신, 예: /app/auth/refresh)
- * - Broker: /topic (구독 prefix)
+ * - Broker: /topic, /queue (구독 prefix. /queue는 reply-queue 등 user queue용)
  * - Handshake: 토큰만 세션에 저장. CONNECT 시 [WebSocketConnectInterceptor]에서 토큰 검증·Principal 설정
  * - 구독: WebSocketTopicSubscribeInterceptor로 /topic/user/{uuid}/... 본인 토픽만 허용
  */
@@ -23,8 +23,9 @@ class WebSocketConfig(
     private val webSocketAuthHandshakeHandler: WebSocketAuthHandshakeHandler,
     private val webSocketConnectInterceptor: WebSocketConnectInterceptor,
     private val webSocketTopicSubscribeInterceptor: WebSocketTopicSubscribeInterceptor,
-    private val webSocketStompErrorHandler: WebSocketStompErrorHandler,
-    private val webSocketClientInboundErrorInterceptor: WebSocketClientInboundErrorInterceptor,
+    private val webSocketExceptionStompSubProtocolErrorHandler: WebSocketExceptionStompSubProtocolErrorHandler,
+    private val webSocketExceptionInterceptor: WebSocketExceptionInterceptor,
+    private val webSocketConnectedSessionHeaderInterceptor: WebSocketConnectedSessionHeaderInterceptor,
 ) : WebSocketMessageBrokerConfigurer {
     companion object {
         private const val HEARTBEAT_INTERVAL_MS = 10000L
@@ -41,7 +42,7 @@ class WebSocketConfig(
             .withSockJS()
 
         // 엔드포인트 등록 후 에러 핸들러 설정 (SEND 처리 중 @MessageMapping 예외 → ERROR 프레임)
-        registry.setErrorHandler(webSocketStompErrorHandler)
+        registry.setErrorHandler(webSocketExceptionStompSubProtocolErrorHandler)
     }
 
     override fun configureClientInboundChannel(registration: ChannelRegistration) {
@@ -49,8 +50,12 @@ class WebSocketConfig(
             .interceptors(
                 webSocketConnectInterceptor,
                 webSocketTopicSubscribeInterceptor,
-                webSocketClientInboundErrorInterceptor,
+                webSocketExceptionInterceptor,
             )
+    }
+
+    override fun configureClientOutboundChannel(registration: ChannelRegistration) {
+        registration.interceptors(webSocketConnectedSessionHeaderInterceptor)
     }
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
@@ -62,7 +67,7 @@ class WebSocketConfig(
         taskScheduler.initialize()
 
         registry
-            .enableSimpleBroker("/topic")
+            .enableSimpleBroker("/topic", "/queue")
             .setHeartbeatValue(longArrayOf(HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS))
             .setTaskScheduler(taskScheduler)
     }

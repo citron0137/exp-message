@@ -17,7 +17,7 @@ import site.rahoon.message.monolithic.common.websocket.config.WebSocketAuthHands
  * - destination: `/app/auth/refresh`
  * - 클라이언트: STOMP SEND 시 헤더에 새 액세스 토큰(Authorization) 전달
  * - 서버: 토큰 검증 후 해당 세션의 [WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO] 갱신. 연결 유지.
- * - 검증 실패: [DomainException](CommonError.UNAUTHORIZED) → [WebSocketStompErrorHandler]가 ERROR 프레임 payload에 code·message 전달
+ * - 검증 실패: [DomainException](CommonError.UNAUTHORIZED) → [WebSocketExceptionStompSubProtocolErrorHandler]가 ERROR 프레임 payload에 code·message 전달
  */
 @Controller
 class WebSocketAuthRefreshController(

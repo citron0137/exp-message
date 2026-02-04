@@ -4,6 +4,8 @@ let stompClient = null;
 let asyncApiDoc = null;
 let subscriptions = new Map();
 let metadata = null;
+/** 서버가 CONNECTED 프레임에 넣어준 WebSocket session ID (연결 성공 시에만 존재) */
+let currentSessionId = null;
 
 // DOM 요소
 const accessTokenInput = document.getElementById('accessToken');
@@ -501,16 +503,21 @@ function generateExampleFromSchema(schema) {
     return { example: 'value' };
 }
 
-// 채널 목록 렌더링
+// 채널 목록 렌더링 (구독 가능한 채널만 표시)
 function renderChannels() {
     if (!asyncApiDoc || !asyncApiDoc.channels) {
-        channelsList.innerHTML = '<p class="empty">채널이 없습니다</p>';
+        channelsList.innerHTML = '<p class="empty">구독 가능한 채널이 없습니다</p>';
         return;
     }
 
-    const channels = Object.entries(asyncApiDoc.channels);
+    const allChannels = Object.entries(asyncApiDoc.channels);
+    const channels = allChannels.filter(([channelId, channel]) => {
+        const address = channel.address || channelId;
+        return findReceiveOperation(address);
+    });
+
     if (channels.length === 0) {
-        channelsList.innerHTML = '<p class="empty">채널이 없습니다</p>';
+        channelsList.innerHTML = '<p class="empty">구독 가능한 채널이 없습니다</p>';
         return;
     }
 
@@ -657,7 +664,21 @@ function connect() {
 
     // SockJS를 사용한 연결
     const socket = new SockJS(url);
-    
+
+    // 나가는 STOMP 프레임(CONNECT, SEND, SUBSCRIBE 등) 로그에 남기기. heartbeat(핑)는 제외.
+    const originalSend = socket.send.bind(socket);
+    socket.send = function(data) {
+        if (data != null) {
+            const raw = typeof data === 'string' ? data : (data instanceof ArrayBuffer ? new TextDecoder().decode(data) : String(data));
+            const isHeartbeat = raw === '\n' || raw === '\r\n' || /^[\r\n]+$/.test(raw);
+            if (!isHeartbeat) {
+                const display = raw.endsWith('\u0000') ? raw.slice(0, -1) + '\n^@' : raw;
+                addLogEntry('OUT', display);
+            }
+        }
+        return originalSend(data);
+    };
+
     // SockJS 연결 에러 처리
     const attemptedUrl = url;
     socket.onerror = (error) => {
@@ -677,13 +698,14 @@ function connect() {
         }
         if (stompClient) {
             stompClient = null;
+            currentSessionId = null;
             updateConnectionStatus(false);
             connectBtn.disabled = false;
             disconnectBtn.disabled = true;
             subscriptions.clear();
             renderChannels();
         }
-        addMessage('system', '연결이 종료되었습니다', { event });
+        addLogEntry('IN', '연결 종료 (code=' + (event.code || '') + ', reason=' + (event.reason || '') + ')');
     };
     
     const client = new StompJs.Client({
@@ -706,11 +728,14 @@ function connect() {
 
     client.onConnect = (frame) => {
         console.log('연결 성공:', frame);
+        // Spring STOMP 서버는 CONNECTED 프레임에 session 헤더로 WebSocket session ID를 내려줌
+        currentSessionId = frame.headers?.['session'] ?? frame.headers?.['Session'] ?? null;
         stompClient = client;
         updateConnectionStatus(true);
         connectBtn.disabled = true;
         disconnectBtn.disabled = false;
-        addMessage('system', '연결되었습니다', { frame });
+        const raw = frameToRaw('CONNECTED', frame.headers || {}, frame.body ?? '');
+        addLogEntry('IN', raw);
     };
 
     client.onStompError = (frame) => {
@@ -726,7 +751,9 @@ function connect() {
                 }
             } catch (_) { /* body 그대로 사용 */ }
         }
-        addMessage('system', '서버 오류 (ERROR 프레임)', body ? { message: errorMsg, ...(typeof body === 'object' ? body : { body }) } : { message: errorMsg });
+        const errHeaders = frame.headers || {};
+        const errRaw = frameToRaw('ERROR', errHeaders, typeof body === 'string' ? body : JSON.stringify(body || { message: errorMsg }));
+        addLogEntry('IN', errRaw);
         alert('서버 오류: ' + errorMsg);
         // SEND 처리 중 발생한 ERROR는 연결 유지 (CONNECT 실패 등만 연결 해제)
         const isConnectError = frame.headers['message']?.includes('CONNECT') || frame.headers['message']?.includes('Unauthorized');
@@ -744,12 +771,13 @@ function connect() {
             showConnectionError(attemptedUrl, reason, event.code);
         }
         stompClient = null;
+        currentSessionId = null;
         updateConnectionStatus(false);
         connectBtn.disabled = false;
         disconnectBtn.disabled = true;
         subscriptions.clear();
         renderChannels();
-        addMessage('system', '연결이 종료되었습니다', { event });
+        addLogEntry('IN', '연결 종료 (code=' + (event.code || '') + ', reason=' + (event.reason || '') + ')');
     };
 
     try {
@@ -779,6 +807,7 @@ function disconnect() {
 
         stompClient.deactivate();
         stompClient = null;
+        currentSessionId = null;
         updateConnectionStatus(false);
         connectBtn.disabled = false;
         disconnectBtn.disabled = true;
@@ -894,12 +923,8 @@ function subscribe(destination, templateAddress = null, params = {}) {
 
     try {
         const subscription = stompClient.subscribe(destination, (message) => {
-            try {
-                const body = JSON.parse(message.body);
-                addMessage(destination, '메시지 수신', body);
-            } catch (e) {
-                addMessage(destination, '메시지 수신 (파싱 실패)', { raw: message.body, error: e.message });
-            }
+            const raw = frameToRaw(message.command || 'MESSAGE', message.headers || {}, message.body ?? '');
+            addLogEntry('IN', raw);
         });
 
         // 구독 정보를 객체로 저장
@@ -910,7 +935,7 @@ function subscribe(destination, templateAddress = null, params = {}) {
             templateAddress: templateAddress || destination
         });
         renderChannels();
-        addMessage('system', `구독 시작: ${destination}`, {});
+        // 로그는 socket.send 래퍼에서 한 번만 남김 (수동 로그 제거 시 중복 방지)
     } catch (error) {
         console.error('구독 실패:', error);
         alert('구독 실패: ' + error.message);
@@ -924,8 +949,8 @@ function unsubscribe(address) {
         try {
             subInfo.subscription.unsubscribe();
             subscriptions.delete(address);
-            renderChannels(); // updateSubscriptionsList 대신 renderChannels 사용
-            addMessage('system', `구독 해제: ${address}`, {});
+            renderChannels();
+            // 로그는 socket.send 래퍼에서 한 번만 남김 (수동 로그 제거 시 중복 방지)
         } catch (error) {
             console.error('구독 해제 실패:', error);
             alert('구독 해제 실패: ' + error.message);
@@ -999,13 +1024,14 @@ function sendMessageFromModal(modalEl) {
         }
 
         const receiptId = 'send-' + Date.now();
+        const headers = { receipt: receiptId, 'content-type': 'application/json' };
+        const bodyStr = JSON.stringify(payload);
         stompClient.publish({
             destination: destination,
-            headers: { receipt: receiptId },
-            body: JSON.stringify(payload)
+            headers: headers,
+            body: bodyStr
         });
-
-        addMessage(address, '메시지 전송', payload);
+        // 로그는 socket.send 래퍼에서 한 번만 남김 (수동 로그 제거 시 중복 방지)
         modalEl.remove();
     } catch (error) {
         alert('메시지 전송 실패: ' + error.message);
@@ -1121,49 +1147,86 @@ function generateExampleMessage(schema) {
 }
 
 
-// 메시지 추가
-function addMessage(channel, title, data) {
+// STOMP 프레임을 raw 문자열로 변환 (패치노트 예시와 동일: command + 헤더 + 빈 줄 + body + ^@)
+function frameToRaw(command, headers, body) {
+    const headerLines = headers && typeof headers === 'object'
+        ? Object.entries(headers).map(([k, v]) => `${k}:${v}`).join('\n')
+        : '';
+    const bodyStr = body != null ? String(body) : '';
+    const frame = headerLines ? `${command}\n${headerLines}\n\n${bodyStr}` : `${command}\n\n${bodyStr}`;
+    return frame + '\n^@';
+}
+
+// 로컬 시간 HH:mm:ss.SSS (toISOString은 UTC라 9시간 차이 남)
+function formatLocalTimeHHmmssSSS(date) {
+    const h = date.getHours().toString().padStart(2, '0');
+    const m = date.getMinutes().toString().padStart(2, '0');
+    const s = date.getSeconds().toString().padStart(2, '0');
+    const ms = date.getMilliseconds().toString().padStart(3, '0');
+    return `${h}:${m}:${s}.${ms}`;
+}
+
+// Grafana 로그 스타일 엔트리 추가 (가능한 raw 형식)
+function addLogEntry(direction, rawContent) {
     const messageItem = document.createElement('div');
-    messageItem.className = 'message-item';
-    
-    const time = new Date().toLocaleTimeString('ko-KR');
+    messageItem.className = 'log-line';
+    const now = new Date();
+    const timeStr = formatLocalTimeHHmmssSSS(now);
+    const directionClass = direction === 'OUT' ? 'out' : 'in';
+    const directionLabel = direction === 'OUT' ? 'Client -> Server' : 'Server -> Client';
     messageItem.innerHTML = `
-        <div class="message-header">
-            <span class="message-channel">${channel}</span>
-            <span class="message-time">${time}</span>
-        </div>
-        <div class="message-body">${JSON.stringify(data, null, 2)}</div>
+        <span class="log-time-direction ${directionClass}" title="${now.toISOString()} (UTC)">${timeStr}<br>${directionLabel}</span>
+        <pre class="log-raw">${escapeHtml(rawContent)}</pre>
     `;
 
-    // 빈 메시지 텍스트 제거
     const emptyText = messagesList.querySelector('.empty');
-    if (emptyText) {
-        emptyText.remove();
-    }
+    if (emptyText) emptyText.remove();
 
     messagesList.insertBefore(messageItem, messagesList.firstChild);
 }
 
-// 메시지 지우기
-function clearMessages() {
-    messagesList.innerHTML = '<p class="empty">수신된 메시지가 없습니다</p>';
+// 기존 addMessage 호환: data를 raw 문자열로 변환해 로그 추가 (direction은 title로 추론)
+function addMessage(channel, title, data) {
+    const direction = title === '메시지 전송' ? 'OUT' : 'IN';
+    const rawContent = typeof data === 'string'
+        ? data
+        : (data && data.raw != null)
+            ? data.raw
+            : (data && typeof data === 'object' && Object.keys(data).length === 0)
+                ? title
+                : `${title}\n${JSON.stringify(data, null, 2)}`;
+    addLogEntry(direction, rawContent);
 }
 
-// 연결 상태 업데이트
+// 메시지 지우기
+function clearMessages() {
+    messagesList.innerHTML = '<p class="empty">메시지 로그가 비어 있습니다</p>';
+}
+
+// 연결 상태 업데이트 (연결 시 session ID 표시)
 function updateConnectionStatus(connected) {
     const statusDot = connectionStatus.querySelector('.status-dot');
     const statusText = connectionStatus.querySelector('span:last-child');
     const tokenInputGroup = document.querySelector('.token-input-group');
+    const sessionIdEl = document.getElementById('connectionSessionId');
     
     if (connected) {
         statusDot.className = 'status-dot connected';
         statusText.textContent = '연결됨';
+        if (sessionIdEl) {
+            sessionIdEl.textContent = currentSessionId ? `session: ${currentSessionId}` : '';
+            sessionIdEl.title = currentSessionId || 'session ID 없음';
+        }
         if (tokenInputGroup) {
             tokenInputGroup.style.display = 'none';
         }
     } else {
         statusDot.className = 'status-dot disconnected';
         statusText.textContent = '연결 안 됨';
+        if (sessionIdEl) {
+            sessionIdEl.textContent = '';
+            sessionIdEl.title = '';
+        }
         if (tokenInputGroup) {
             tokenInputGroup.style.display = 'flex';
         }
