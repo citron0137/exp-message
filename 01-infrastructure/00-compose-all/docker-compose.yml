@@ -114,8 +114,13 @@ services:
       DB_SHOW_SQL: ${DB_SHOW_SQL:-true}
       DB_FORMAT_SQL: ${DB_FORMAT_SQL:-true}
       DB_USE_SQL_COMMENTS: ${DB_USE_SQL_COMMENTS:-true}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       db-migrations:
         condition: service_completed_successfully
