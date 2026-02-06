@@ -241,13 +241,17 @@ function renderAsyncApiDocs() {
     if (asyncApiDoc.channels) {
         html += '<div class="swagger-tags">';
         
+        const replyChannelAddresses = getReplyChannelAddresses();
         const channels = Object.entries(asyncApiDoc.channels);
         channels.forEach(([channelId, channel]) => {
             const address = channel.address || channelId;
-            const uniqueId = `channel-${channelId.replace(/[^a-zA-Z0-9]/g, '-')}`;
-            
-            // 해당 채널과 연결된 operations 찾기
+            // reply 전용 채널은 우측 문서에서 제외 (응답은 요청 operation 아래 "응답 (Reply)"로 표시됨)
             const channelOperations = findOperationsForChannel(channelId);
+            if (replyChannelAddresses.has(address) && channelOperations.length === 0) {
+                return;
+            }
+            
+            const uniqueId = `channel-${channelId.replace(/[^a-zA-Z0-9]/g, '-')}`;
             
             // 채널의 messages 정보 가져오기
             const messages = channel.messages || {};
@@ -288,6 +292,23 @@ function renderAsyncApiDocs() {
                         const exampleJson = generateExampleFromSchema(messageInfo.schema);
                         html += `<div class="message-schema">`;
                         html += `<pre class="schema-content example-json">${JSON.stringify(exampleJson, null, 2)}</pre>`;
+                        html += `</div>`;
+                    }
+                    
+                    // Reply(응답)가 있으면 응답 메시지 표시
+                    const replyInfo = getReplyInfoForOperation(operation);
+                    if (replyInfo.replySchema || replyInfo.replyChannelAddress) {
+                        html += `<div class="message-reply">`;
+                        html += `<span class="reply-label">응답 (Reply)</span>`;
+                        if (replyInfo.replyChannelAddress) {
+                            html += `<span class="reply-channel">→ ${escapeHtml(replyInfo.replyChannelAddress)}</span>`;
+                        }
+                        if (replyInfo.replySchema) {
+                            const replyExample = generateExampleFromSchema(replyInfo.replySchema);
+                            html += `<div class="message-schema reply-schema">`;
+                            html += `<pre class="schema-content example-json">${JSON.stringify(replyExample, null, 2)}</pre>`;
+                            html += `</div>`;
+                        }
                         html += `</div>`;
                     }
                     
@@ -332,6 +353,39 @@ function getDirectionForOperation(operation) {
         return '서버 → 클라이언트';
     }
     return '알 수 없음';
+}
+
+// Operation의 reply(응답) 정보 가져오기 (AsyncAPI 3.0 Operation Reply)
+function getReplyInfoForOperation(operation) {
+    const result = { replyChannelAddress: null, replyMessageName: null, replySchema: null };
+    if (!operation.reply) return result;
+
+    const reply = operation.reply;
+    // reply.channel.$ref -> #/channels/{channelId}
+    const channelRef = reply.channel?.$ref;
+    if (channelRef && asyncApiDoc.channels) {
+        const channelId = channelRef.replace('#/channels/', '');
+        const replyChannel = asyncApiDoc.channels[channelId];
+        if (replyChannel) {
+            result.replyChannelAddress = replyChannel.address || channelId;
+        }
+    }
+    // reply.messages[0].$ref -> #/components/messages/{messageKey}
+    if (reply.messages && reply.messages.length > 0) {
+        const messageRef = reply.messages[0].$ref;
+        if (messageRef && asyncApiDoc.components?.messages) {
+            const messageKey = messageRef.replace('#/components/messages/', '');
+            const message = asyncApiDoc.components.messages[messageKey];
+            if (message?.payload?.$ref) {
+                const schemaName = message.payload.$ref.replace('#/components/schemas/', '');
+                if (asyncApiDoc.components.schemas?.[schemaName]) {
+                    result.replySchema = asyncApiDoc.components.schemas[schemaName];
+                }
+            }
+            result.replyMessageName = extractReadableMessageName(messageKey);
+        }
+    }
+    return result;
 }
 
 // Operation의 메시지 정보 가져오기
@@ -510,10 +564,11 @@ function renderChannels() {
         return;
     }
 
+    const replyChannelAddresses = getReplyChannelAddresses();
     const allChannels = Object.entries(asyncApiDoc.channels);
     const channels = allChannels.filter(([channelId, channel]) => {
         const address = channel.address || channelId;
-        return findReceiveOperation(address);
+        return findReceiveOperation(address) || replyChannelAddresses.has(address);
     });
 
     if (channels.length === 0) {
@@ -527,6 +582,8 @@ function renderChannels() {
         const messageKeys = Object.keys(messages);
         const hasSendOperation = findSendOperation(address);
         const hasReceiveOperation = findReceiveOperation(address);
+        const isReplyChannel = replyChannelAddresses.has(address);
+        const isSubscribable = hasReceiveOperation || isReplyChannel;
         
         // 구독 상태 확인: 템플릿 address로 시작하는 구독이 있는지 확인
         const subscribedItems = Array.from(subscriptions.entries())
@@ -579,7 +636,7 @@ function renderChannels() {
             <div class="channel-card ${isSubscribed ? 'subscribed' : ''}">
                 <div class="channel-card-content">
                     <div class="address">${address}</div>
-                    ${hasReceiveOperation ? `
+                    ${isSubscribable ? `
                         <button class="btn btn-subscribe btn-small" onclick="openSubscribeModal('${channelId}', '${address}')">
                             구독
                         </button>
@@ -607,7 +664,7 @@ function findSendOperation(address) {
     });
 }
 
-// RECEIVE 작업 찾기
+// RECEIVE 작업 찾기 (서버가 보내는 채널 = 클라이언트가 구독하는 채널)
 function findReceiveOperation(address) {
     if (!asyncApiDoc.operations) return false;
     return Object.values(asyncApiDoc.operations).some(op => {
@@ -621,6 +678,23 @@ function findReceiveOperation(address) {
         }
         return false;
     });
+}
+
+// operation.reply로 참조되는 채널 주소 집합 (reply 채널은 별도 operation 없이 reply로만 등장)
+function getReplyChannelAddresses() {
+    const addresses = new Set();
+    if (!asyncApiDoc.operations || !asyncApiDoc.channels) return addresses;
+    Object.values(asyncApiDoc.operations).forEach(op => {
+        const replyChannelRef = op.reply?.channel?.$ref;
+        if (replyChannelRef) {
+            const channelId = replyChannelRef.replace('#/channels/', '');
+            const channel = asyncApiDoc.channels[channelId];
+            if (channel?.address) {
+                addresses.add(channel.address);
+            }
+        }
+    });
+    return addresses;
 }
 
 // 연결 실패 시 사용자 안내 (URL + 원인 + 체크리스트)

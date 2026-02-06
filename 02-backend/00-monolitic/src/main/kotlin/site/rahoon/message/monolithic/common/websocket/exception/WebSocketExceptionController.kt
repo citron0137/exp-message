@@ -57,6 +57,7 @@ class WebSocketExceptionController(
     fun buildErrorMessage(body: WebSocketExceptionBody): Message<ByteArray> {
         val map = mutableMapOf<String, Any>("code" to body.code, "message" to body.message)
         body.details?.let { map["details"] = it }
+        body.occurredAt?.let { map["occurredAt"] = it }
         body.websocketSessionId?.let { map["websocketSessionId"] = it }
         body.receiptId?.let { map["receiptId"] = it }
         body.requestDestination?.let { map["requestDestination"] = it }

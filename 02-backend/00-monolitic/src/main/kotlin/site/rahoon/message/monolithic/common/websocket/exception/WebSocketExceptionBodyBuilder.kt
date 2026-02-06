@@ -3,6 +3,7 @@ package site.rahoon.message.monolithic.common.websocket.exception
 import org.springframework.stereotype.Component
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
+import java.time.ZonedDateTime
 
 /**
  * 다양한 입력으로 [WebSocketExceptionBody]를 만든다.
@@ -47,6 +48,7 @@ class WebSocketExceptionBodyBuilder {
             code = domainException.error.code,
             message = domainException.error.message,
             details = domainException.details,
+            occurredAt = ZonedDateTime.now(),
             websocketSessionId = websocketSessionId,
             receiptId = receiptId,
             requestDestination = requestDestination,

@@ -231,18 +231,50 @@ class WebSocketDocGenerator(
             channelId to channelContent
         }
 
-    private fun buildOperations(metadataList: List<StompMetadata>): Map<String, Any> =
-        metadataList.associate { meta ->
-            val channelId = sanitize(meta.address)
-            val messageId = meta.payloadClassName
-            meta.key to mapOf(
-                "action" to if (meta.action == "SEND") "receive" else "send",
-                "channel" to mapOf("\$ref" to "#/channels/$channelId"),
-                "messages" to listOf(
-                    mapOf("\$ref" to "#/channels/$channelId/messages/$messageId"),
-                ),
-            )
-        }
+    /**
+     * RECEIVE 메타가 동일 메서드의 SEND(요청)에 대한 응답인지 여부.
+     * @WebSocketReply가 있는 경우 SEND와 같은 method를 가지는 RECEIVE가 응답 메시지이다.
+     */
+    private fun findReplyMetadata(sendMeta: StompMetadata, metadataList: List<StompMetadata>): StompMetadata? =
+        metadataList.find { it.action == "RECEIVE" && it.method == sendMeta.method }
+
+    private fun buildOperations(metadataList: List<StompMetadata>): Map<String, Any> {
+        val replyReceiveKeys = metadataList
+            .filter { it.action == "SEND" }
+            .mapNotNull { findReplyMetadata(it, metadataList)?.key }
+            .toSet()
+
+        return metadataList
+            .filter { meta ->
+                // RECEIVE이면서 어떤 SEND의 reply인 경우 별도 operation 생성하지 않음 (해당 SEND operation의 reply로 표시)
+                if (meta.action == "RECEIVE" && meta.key in replyReceiveKeys) false
+                else true
+            }
+            .associate { meta ->
+                val channelId = sanitize(meta.address)
+                val messageId = meta.payloadClassName
+                val operationContent = mutableMapOf<String, Any>(
+                    "action" to if (meta.action == "SEND") "receive" else "send",
+                    "channel" to mapOf("\$ref" to "#/channels/$channelId"),
+                    "messages" to listOf(
+                        mapOf("\$ref" to "#/channels/$channelId/messages/$messageId"),
+                    ),
+                )
+                // @WebSocketReply가 있는 경우: SEND operation에 reply(응답 메시지) 추가
+                if (meta.action == "SEND") {
+                    findReplyMetadata(meta, metadataList)?.let { replyMeta ->
+                        val replyChannelId = sanitize(replyMeta.address)
+                        operationContent["reply"] = mapOf(
+                            "channel" to mapOf("\$ref" to "#/channels/$replyChannelId"),
+                            "messages" to listOf(
+                                mapOf("\$ref" to "#/components/messages/${replyMeta.key}"),
+                            ),
+                        )
+                    }
+                }
+                meta.key to operationContent
+            }
+    }
 
     private fun buildMessages(metadataList: List<StompMetadata>): Map<String, Any> =
         metadataList.associate { meta ->
