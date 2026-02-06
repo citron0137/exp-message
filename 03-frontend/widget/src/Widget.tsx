@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import FloatingButton from './components/FloatingButton';
 import ChatWindow from './components/ChatWindow';
+import type { WidgetConfig } from './lib/widgetConfig';
 
 
 interface WidgetProps {
-    config: {
-        apiUrl?: string;
-        wsUrl?: string;
-        theme?: 'light' | 'dark';
-    };
+    config: WidgetConfig;
 }
 
 export default function Widget({ config }: WidgetProps) {

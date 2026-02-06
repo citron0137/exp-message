@@ -2,13 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import Widget from './Widget';
 import './styles/index.css';
-
-// Global interface for widget configuration
-interface WidgetConfig {
-    apiUrl?: string;
-    wsUrl?: string;
-    theme?: 'light' | 'dark';
-}
+import type { WidgetConfig } from './lib/widgetConfig';
 
 // Expose widget initialization function globally
 declare global {
