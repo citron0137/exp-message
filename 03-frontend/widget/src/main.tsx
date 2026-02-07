@@ -49,8 +49,8 @@ if (import.meta.env.DEV) {
                 <React.StrictMode>
                     <Widget
                         config={{
-                            apiUrl: 'http://localhost:8080/api',
-                            wsUrl: 'ws://localhost:8080/ws',
+                            apiUrl: import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api',
+                            wsUrl: import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws',
                         }}
                     />
                 </React.StrictMode>

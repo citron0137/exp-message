@@ -9,14 +9,6 @@ export type MessageWsDetail = {
     recipientUserId: string;
 };
 
-type ConnectParams = {
-    wsUrl: string;
-    accessToken: string;
-    userId: string;
-    onMessage: (message: MessageWsDetail) => void;
-    onError?: (message: string) => void;
-};
-
 let client: Client | null = null;
 let subscription: StompSubscription | null = null;
 let connectedKey: string | null = null;
@@ -92,7 +84,13 @@ const disposeClient = async (): Promise<void> => {
  *   `/topic/user/{principalUserId}/...`
  */
 export const wsClient = {
-    async connect(params: ConnectParams): Promise<void> {
+    async connect(params: {
+        wsUrl: string;
+        accessToken: string;
+        userId: string;
+        onMessage: (message: MessageWsDetail) => void;
+        onError?: (message: string) => void;
+    }): Promise<void> {
         const key = `${params.wsUrl}::${params.userId}::${params.accessToken}`;
         if (connectedKey === key) {
             return;
