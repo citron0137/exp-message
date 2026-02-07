@@ -47,7 +47,7 @@ class OpenApiConfig {
                             .type(SecurityScheme.Type.HTTP)
                             .scheme("bearer")
                             .bearerFormat("JWT")
-                            .description("JWT 토큰을 사용한 인증. 'Bearer ' 접두사를 포함하여 토큰을 입력하세요."),
+                            .description("JWT 토큰을 입력하세요. (Bearer 접두사는 자동으로 추가됩니다) Please enter a JWT token. (Bearer prefix is automatically added)"),
                     )
                 }
 
