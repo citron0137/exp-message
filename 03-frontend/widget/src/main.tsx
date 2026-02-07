@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import Widget from './Widget';
-import './styles/index.css';
+import widgetStyles from './styles/index.css?inline';
 import type { WidgetConfig } from './lib/widgetConfig';
 
 // Expose widget initialization function globally
@@ -26,11 +26,9 @@ window.ChatWidget = {
         const mountPoint = document.createElement('div');
         shadowRoot.appendChild(mountPoint);
 
-        // Inject Tailwind styles into Shadow DOM
+        // Inject built styles into Shadow DOM
         const style = document.createElement('style');
-        style.textContent = `
-      @import url('https://cdn.jsdelivr.net/npm/tailwindcss@3.4.17/dist/tailwind.min.css');
-    `;
+        style.textContent = widgetStyles;
         shadowRoot.appendChild(style);
 
         // Render React widget
@@ -51,8 +49,8 @@ if (import.meta.env.DEV) {
                 <React.StrictMode>
                     <Widget
                         config={{
-                            apiUrl: 'http://localhost:8080/api',
-                            wsUrl: 'ws://localhost:8080/ws',
+                            apiUrl: import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api',
+                            wsUrl: import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws',
                         }}
                     />
                 </React.StrictMode>

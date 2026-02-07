@@ -1,0 +1,51 @@
+# =============================================================================
+# Docker ignore file for the widget frontend
+# Prevents unnecessary files from being copied to the Docker build context
+# =============================================================================
+
+# Node.js dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+yarn.lock
+
+# Build outputs
+dist
+dist-ssr
+*.local
+
+# Environment files (should be passed via Docker env, not copied)
+.env
+.env.local
+.env.*.local
+
+# IDE and editor files
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# Testing
+coverage
+*.test.ts
+*.test.tsx
+__tests__
+__mocks__
+
+# Documentation
+README.md
+*.md
+
+# Docker files themselves (not needed in build context)
+Dockerfile
+.dockerignore
+
+# Include widget-index.html for Docker build
+!widget-index.html
