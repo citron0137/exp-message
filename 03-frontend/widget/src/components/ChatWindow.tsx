@@ -20,7 +20,7 @@ import { useMessageStore } from '../lib/messageStore';
  */
 
 interface ChatWindowProps {
-    onClose: () => void;
+    // onClose: () => void;
     config: {
         apiUrl?: string;
         wsUrl?: string;
@@ -28,7 +28,9 @@ interface ChatWindowProps {
     };
 }
 
-export default function ChatWindow({ onClose, config }: ChatWindowProps) {
+export default function ChatWindow({
+    // onClose,
+    config }: ChatWindowProps) {
     const { error: bootstrapError } = useBootstrap(config);
     const status = useAuthStore((s) => s.status);
     const hydrate = useAuthStore((s) => s.hydrate);

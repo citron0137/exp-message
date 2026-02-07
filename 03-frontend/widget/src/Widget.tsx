@@ -14,7 +14,9 @@ export default function Widget({ config }: WidgetProps) {
     return (
         <div className="chat-widget">
             <FloatingButton onClick={() => setIsOpen(!isOpen)} isOpen={isOpen} />
-            {isOpen && <ChatWindow onClose={() => setIsOpen(false)} config={config} />}
+            {isOpen && <ChatWindow
+                // onClose={() => setIsOpen(false)}
+                config={config} />}
         </div>
     );
 }
