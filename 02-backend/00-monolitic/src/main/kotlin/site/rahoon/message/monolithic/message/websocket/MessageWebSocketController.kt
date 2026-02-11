@@ -47,6 +47,5 @@ class MessageWebSocketController(
      */
     @EventListener(MessageCommandEvent.Send::class)
     @WebsocketSend("/topic/user/{recipientUserId}/messages")
-    fun sendCreatedMessage(send: MessageCommandEvent.Send): MessageWsSend.Detail =
-        MessageWsSend.Detail.from(send)
+    fun sendCreatedMessage(send: MessageCommandEvent.Send): MessageWsSend.Detail = MessageWsSend.Detail.from(send)
 }

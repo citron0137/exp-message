@@ -2,8 +2,10 @@ package site.rahoon.message.monolithic.common.test
 
 import com.redis.testcontainers.RedisContainer
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.junit.jupiter.api.BeforeEach
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import site.rahoon.message.monolithic.common.domain.SoftDeleteContext
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.MySQLContainer
 import org.testcontainers.containers.Network
@@ -30,6 +32,13 @@ import java.time.Duration
 @IntegrationTest
 abstract class IntegrationTestBase {
     protected val logger = KotlinLogging.logger { }
+
+    @BeforeEach
+    fun checkSoftDeleteContextState() {
+        if (SoftDeleteContext.isExplicitlyDisabled()) {
+            logger.warn { "[SoftDeleteContext] 이전 테스트에서 disable 블록 누수 가능" }
+        }
+    }
 
     /**
      * 테스트마다 고유한 이메일을 생성합니다.
