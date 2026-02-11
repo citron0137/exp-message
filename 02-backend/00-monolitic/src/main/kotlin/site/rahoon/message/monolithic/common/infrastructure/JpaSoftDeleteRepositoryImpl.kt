@@ -39,11 +39,17 @@ class JpaSoftDeleteRepositoryImpl<T, ID : Any>(
         deletedAt: LocalDateTime,
     ): Int {
         val entityName = domainClass.simpleName
-        return entityManager
-            .createQuery(
-                "UPDATE $entityName e SET e.deletedAt = :now WHERE e.id = :id",
-            ).setParameter("now", LocalDateTime.now())
-            .setParameter("id", id)
-            .executeUpdate()
+        val updated =
+            entityManager
+                .createQuery(
+                    "UPDATE $entityName e SET e.deletedAt = :now WHERE e.id = :id",
+                )
+                .setParameter("now", LocalDateTime.now())
+                .setParameter("id", id)
+                .executeUpdate()
+        // Bulk UPDATE는 1차 캐시를 갱신하지 않으므로, 캐시된 엔티티를 제거해
+        // 다음 findById 시 DB에서 갱신된(deletedAt 설정된) 행을 읽도록 한다.
+        entityManager.find(entityInformation.javaType, id)?.let { entityManager.detach(it) }
+        return updated
     }
 }

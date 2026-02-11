@@ -31,7 +31,6 @@ class WebSocketSessionExpiryIT(
     private val authApplicationITUtils: AuthApplicationITUtils,
     @LocalServerPort private var port: Int = 0,
 ) : IntegrationTestBase() {
-
     companion object {
         /** WebSocketConfig.HEARTBEAT_INTERVAL_MS와 동일 값. 이 시간 이내에 만료 세션 연결이 끊겨야 함. */
         private const val HEARTBEAT_INTERVAL_MS = 10000L

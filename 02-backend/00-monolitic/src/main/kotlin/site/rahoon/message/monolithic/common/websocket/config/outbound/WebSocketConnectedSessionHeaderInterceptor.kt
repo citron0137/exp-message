@@ -19,13 +19,18 @@ import org.springframework.stereotype.Component
  * 바꿔 두면, 핸들러가 그대로 인코딩해 클라이언트에 session이 포함된 CONNECTED를 보낸다.
  */
 @Component
-class WebSocketConnectedSessionHeaderInterceptor : ChannelInterceptor, Ordered {
-
+class WebSocketConnectedSessionHeaderInterceptor :
+    ChannelInterceptor,
+    Ordered {
     companion object {
         private val SUPPORTED_VERSIONS = arrayOf("1.2", "1.1", "1.0")
     }
 
-    override fun preSend(message: Message<*>, channel: MessageChannel): Message<*>? {
+    @Suppress("ReturnCount")
+    override fun preSend(
+        message: Message<*>,
+        channel: MessageChannel,
+    ): Message<*>? {
         if (SimpMessageHeaderAccessor.getMessageType(message.headers) != SimpMessageType.CONNECT_ACK) {
             return message
         }
@@ -37,6 +42,7 @@ class WebSocketConnectedSessionHeaderInterceptor : ChannelInterceptor, Ordered {
         return MessageBuilder.createMessage(payload, connectedAccessor.messageHeaders)
     }
 
+    @Suppress("ReturnCount")
     private fun buildConnectedHeadersWithSession(connectAckMessage: Message<*>): StompHeaderAccessor? {
         val connectMessage = connectAckMessage.headers[StompHeaderAccessor.CONNECT_MESSAGE_HEADER] as? Message<*>
             ?: return null
@@ -58,8 +64,8 @@ class WebSocketConnectedSessionHeaderInterceptor : ChannelInterceptor, Ordered {
 
         val sessionId = SimpMessageHeaderAccessor.getSessionId(connectAckMessage.headers)
         if (sessionId != null) {
-            connectedAccessor.sessionId = sessionId  // SubProtocolWebSocketHandler 라우팅용
-            connectedAccessor.setNativeHeader("session", sessionId)  // 클라이언트에 내려줄 STOMP 헤더
+            connectedAccessor.sessionId = sessionId // SubProtocolWebSocketHandler 라우팅용
+            connectedAccessor.setNativeHeader("session", sessionId) // 클라이언트에 내려줄 STOMP 헤더
         }
 
         return connectedAccessor

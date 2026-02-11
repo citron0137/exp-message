@@ -31,7 +31,10 @@ class WebSocketAnnotatedMethodInvoker(
     private val subscribeHandlers: List<SubscribeHandler> by lazy { discoverSubscribeHandlers() }
     private val disconnectHandlers: List<Pair<Any, Method>> by lazy { discoverDisconnectHandlers() }
 
-    fun invokeSubscribe(destination: String, authInfo: CommonAuthInfo) {
+    fun invokeSubscribe(
+        destination: String,
+        authInfo: CommonAuthInfo,
+    ) {
         for (handler in subscribeHandlers) {
             val match = handler.regex.matchEntire(destination) ?: continue
             val pathVars = handler.varNames.mapIndexed { i, name -> name to match.groupValues[i + 1] }.toMap()
@@ -55,6 +58,7 @@ class WebSocketAnnotatedMethodInvoker(
         }
     }
 
+    @Suppress("LoopWithTooManyJumpStatements")
     private fun discoverSubscribeHandlers(): List<SubscribeHandler> {
         val list = mutableListOf<SubscribeHandler>()
         for (name in applicationContext.beanDefinitionNames) {
@@ -73,6 +77,7 @@ class WebSocketAnnotatedMethodInvoker(
         return list
     }
 
+    @Suppress("LoopWithTooManyJumpStatements")
     private fun discoverDisconnectHandlers(): List<Pair<Any, Method>> {
         val list = mutableListOf<Pair<Any, Method>>()
         for (name in applicationContext.beanDefinitionNames) {
@@ -94,7 +99,10 @@ class WebSocketAnnotatedMethodInvoker(
         val varNameRegex = Regex("\\{([^}]+)}")
         val varNames = varNameRegex.findAll(pattern).map { it.groupValues[1] }.toList()
         val parts = pattern.split(varNameRegex)
-        val regexStr = "^" + parts.dropLast(1).zip(varNames).joinToString("") { (part, _) -> Regex.escape(part) + "([^/]+)" } + Regex.escape(parts.last()) + "$"
+        val escapedParts = parts.dropLast(1).zip(varNames).joinToString("") { (part, _) ->
+            Regex.escape(part) + "([^/]+)"
+        }
+        val regexStr = "^" + escapedParts + Regex.escape(parts.last()) + "$"
         return Regex(regexStr) to varNames
     }
 }

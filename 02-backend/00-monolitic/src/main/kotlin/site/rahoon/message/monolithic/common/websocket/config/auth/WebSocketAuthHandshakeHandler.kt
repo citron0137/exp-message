@@ -39,6 +39,7 @@ class WebSocketAuthHandshakeHandler : DefaultHandshakeHandler() {
     companion object {
         /** CONNECT 인터셉터에서 읽는 세션/Handshake 토큰 키 */
         const val ATTR_TOKEN = "ws.token"
+
         /** CONNECT 검증 후 세션에 넣는 [site.rahoon.message.monolithic.common.auth.CommonAuthInfo] */
         const val ATTR_AUTH_INFO = "ws.authInfo"
     }

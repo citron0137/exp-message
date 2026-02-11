@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket.config.event
+package site.rahoon.message.monolithic.common.websocket.config.session
 
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component
 import org.springframework.web.socket.messaging.SessionDisconnectEvent
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
-import site.rahoon.message.monolithic.common.websocket.config.expiry.WebSocketSessionAuthInfoRegistry
 import site.rahoon.message.monolithic.common.websocket.config.subscribe.WebSocketAnnotatedMethodInvoker
 
 /**

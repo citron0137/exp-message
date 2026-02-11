@@ -10,8 +10,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
 import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketConnectInterceptor
 import site.rahoon.message.monolithic.common.websocket.config.exception.WebSocketExceptionStompSubProtocolErrorHandler
-import site.rahoon.message.monolithic.common.websocket.config.expiry.WebSocketSessionExpiryInterceptor
 import site.rahoon.message.monolithic.common.websocket.config.outbound.WebSocketConnectedSessionHeaderInterceptor
+import site.rahoon.message.monolithic.common.websocket.config.session.WebSocketSessionExpiryInterceptor
 import site.rahoon.message.monolithic.common.websocket.config.subscribe.WebSocketTopicSubscribeInterceptor
 
 /**
@@ -22,7 +22,8 @@ import site.rahoon.message.monolithic.common.websocket.config.subscribe.WebSocke
  * - Broker: /topic, /queue (구독 prefix. /queue는 reply-queue 등 user queue용)
  * - Handshake: 토큰만 세션에 저장. CONNECT 시 [WebSocketConnectInterceptor]에서 토큰 검증·Principal 설정
  * - 구독: WebSocketTopicSubscribeInterceptor로 /topic/user/{uuid}/... 본인 토픽만 허용
- * - 세션 만료: 인바운드 메시지 수신 시(WebSocketSessionExpiryInterceptor) + Heartbeat 주기(WebSocketSessionExpiryHeartbeatTask)에서 만료 검사, 만료 시 ERROR 후 종료
+ * - 세션 만료: 인바운드(session.WebSocketSessionExpiryInterceptor) +
+ *   Heartbeat 주기(session.WebSocketSessionExpiryHeartbeatTask)에서 만료 검사, 만료 시 ERROR 후 종료
  */
 @Configuration
 @EnableWebSocketMessageBroker
@@ -34,7 +35,6 @@ class WebSocketConfig(
     private val webSocketExceptionStompSubProtocolErrorHandler: WebSocketExceptionStompSubProtocolErrorHandler,
     private val webSocketConnectedSessionHeaderInterceptor: WebSocketConnectedSessionHeaderInterceptor,
 ) : WebSocketMessageBrokerConfigurer {
-
     companion object {
         private const val HEARTBEAT_INTERVAL_MS = 10000L
     }

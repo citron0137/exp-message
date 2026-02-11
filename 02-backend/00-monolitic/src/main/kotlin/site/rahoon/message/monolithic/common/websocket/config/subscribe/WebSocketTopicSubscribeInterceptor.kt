@@ -23,19 +23,24 @@ import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuth
  *   불일치 시 DomainException이 아닌 일반 예외를 던져 ERROR 프레임으로 연결만 끊는다 (상세 payload·exception 큐 전송 없음).
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 10)
+@Order(WebSocketTopicSubscribeInterceptor.ORDER_FOR_SUBSCRIBE)
 class WebSocketTopicSubscribeInterceptor(
     private val annotatedMethodInvoker: WebSocketAnnotatedMethodInvoker,
 ) : ChannelInterceptor {
     private val log = LoggerFactory.getLogger(javaClass)
 
     companion object {
+        private const val ORDER_FOR_SUBSCRIBE = Ordered.HIGHEST_PRECEDENCE + 10
         private val USER_TOPIC_PATTERN = Regex("^/topic/user/([^/]+)(/.*)?$")
         private val SESSION_QUEUE_PATTERN = Regex("^/queue/session/([^/]+)/(reply|exception)$")
     }
 
+    @Suppress("ReturnCount")
     @Nullable
-    override fun preSend(message: Message<*>, channel: MessageChannel): Message<*>? {
+    override fun preSend(
+        message: Message<*>,
+        channel: MessageChannel,
+    ): Message<*>? {
         val accessor = StompHeaderAccessor.wrap(message)
         if (accessor.command != StompCommand.SUBSCRIBE) return message
 

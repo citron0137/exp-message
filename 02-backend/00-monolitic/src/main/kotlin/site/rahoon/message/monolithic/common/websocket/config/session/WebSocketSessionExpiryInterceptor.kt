@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket.config.expiry
+package site.rahoon.message.monolithic.common.websocket.config.session
 
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
@@ -30,11 +30,14 @@ import java.time.LocalDateTime
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE) // CONNECT 처리(WebSocketConnectInterceptor) 직후에 실행. 구독 검증보다는 나중에 실행되도록.
 class WebSocketSessionExpiryInterceptor : ChannelInterceptor {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
+    @Suppress("ReturnCount")
     @Nullable
-    override fun preSend(message: Message<*>, channel: MessageChannel): Message<*>? {
+    override fun preSend(
+        message: Message<*>,
+        channel: MessageChannel,
+    ): Message<*>? {
         val accessor = StompHeaderAccessor.wrap(message)
         if (accessor.command == StompCommand.CONNECT) {
             return message

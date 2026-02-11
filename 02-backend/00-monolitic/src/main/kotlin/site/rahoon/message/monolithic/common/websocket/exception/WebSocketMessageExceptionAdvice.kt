@@ -24,9 +24,11 @@ class WebSocketMessageExceptionAdvice(
     private val exceptionBodyBuilder: WebSocketExceptionBodyBuilder,
     private val exceptionController: WebSocketExceptionController,
 ) {
-
     @MessageExceptionHandler(DomainException::class)
-    fun handleDomainException(ex: DomainException, message: Message<*>) {
+    fun handleDomainException(
+        ex: DomainException,
+        message: Message<*>,
+    ) {
         val stompAccessor = StompHeaderAccessor.wrap(message)
         val sessionId = SimpMessageHeaderAccessor.getSessionId(message.headers) ?: stompAccessor.sessionId
         val receiptId = stompAccessor.receipt
@@ -38,7 +40,10 @@ class WebSocketMessageExceptionAdvice(
     }
 
     @MessageExceptionHandler(Exception::class)
-    fun handleException(ex: Exception, message: Message<*>) {
+    fun handleException(
+        ex: Exception,
+        message: Message<*>,
+    ) {
         val stompAccessor = StompHeaderAccessor.wrap(message)
         val sessionId = SimpMessageHeaderAccessor.getSessionId(message.headers) ?: stompAccessor.sessionId
         val receiptId = stompAccessor.receipt

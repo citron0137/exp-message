@@ -14,7 +14,7 @@ import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
-import site.rahoon.message.monolithic.common.websocket.config.expiry.WebSocketSessionAuthInfoRegistry
+import site.rahoon.message.monolithic.common.websocket.config.session.WebSocketSessionAuthInfoRegistry
 import java.security.Principal
 
 /**
@@ -26,20 +26,30 @@ import java.security.Principal
  * - 토큰 없음/검증 실패: [DomainException](CommonError.UNAUTHORIZED) → [WebSocketExceptionStompSubProtocolErrorHandler]가 ERROR 프레임 반환.
  */
 @Component
-@Order(Ordered.LOWEST_PRECEDENCE - 100)
+@Order(WebSocketConnectInterceptor.ORDER_FOR_CONNECT)
 class WebSocketConnectInterceptor(
     private val authTokenResolver: AuthTokenResolver,
     private val sessionAuthInfoRegistry: WebSocketSessionAuthInfoRegistry,
 ) : ChannelInterceptor {
+    companion object {
+        private const val ORDER_FOR_CONNECT = Ordered.LOWEST_PRECEDENCE - 100
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Nullable
-    override fun preSend(message: Message<*>, channel: MessageChannel): Message<*>? {
+    override fun preSend(
+        message: Message<*>,
+        channel: MessageChannel,
+    ): Message<*>? {
         val accessor = StompHeaderAccessor.wrap(message)
         if (accessor.command != StompCommand.CONNECT) return message
 
         val tokenFromHeader = accessor.getFirstNativeHeader("Authorization")?.takeIf { it.isNotBlank() }
-        val tokenFromSession = accessor.sessionAttributes?.get(WebSocketAuthHandshakeHandler.ATTR_TOKEN)?.toString()?.takeIf { it.isNotBlank() }
+        val tokenFromSession = accessor.sessionAttributes
+            ?.get(WebSocketAuthHandshakeHandler.ATTR_TOKEN)
+            ?.toString()
+            ?.takeIf { it.isNotBlank() }
         val token =
             tokenFromHeader
                 ?: tokenFromSession
@@ -60,7 +70,8 @@ class WebSocketConnectInterceptor(
                 throw DomainException(CommonError.UNAUTHORIZED, mapOf("reason" to (e.message ?: "Invalid token")), e)
             }
 
-        (accessor.sessionAttributes as? MutableMap<String, Any>)?.set(WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO, authInfo)
+        (accessor.sessionAttributes as? MutableMap<String, Any>)
+            ?.set(WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO, authInfo)
         accessor.user = object : Principal {
             override fun getName(): String = authInfo.userId
         }

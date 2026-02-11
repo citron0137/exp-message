@@ -13,7 +13,6 @@ import java.time.ZonedDateTime
  */
 @Component
 class WebSocketExceptionBodyBuilder {
-
     /**
      * Throwable에서 DomainException을 찾아 [WebSocketExceptionBody]로 변환.
      * cause 체인 내 DomainException이 있으면 해당 값 사용.

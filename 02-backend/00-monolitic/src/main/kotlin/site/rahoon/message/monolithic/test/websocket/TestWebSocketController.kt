@@ -20,9 +20,10 @@ import site.rahoon.message.monolithic.common.websocket.reply.WebSocketReplyBody
  */
 @Controller
 class TestWebSocketController {
-
     @MessageMapping("test/ping")
-    fun ping(@Suppress("UNUSED_PARAMETER") message: Message<*>) { // no-op, 연결/라우팅 테스트용
+    fun ping(
+        @Suppress("UNUSED_PARAMETER") message: Message<*>,
+    ) { // no-op, 연결/라우팅 테스트용
     }
 
     @MessageMapping("test/echo")
@@ -45,12 +46,11 @@ class TestWebSocketController {
      * SEND 시 DomainException 발생. [WebSocketMessageExceptionAdvice]에서 전역 처리 (ERROR 프레임 + exception 큐).
      */
     @MessageMapping("test/error")
-    fun error(@Suppress("UNUSED_PARAMETER") message: Message<*>) {
+    fun error(
+        @Suppress("UNUSED_PARAMETER") message: Message<*>,
+    ): Unit =
         throw DomainException(
             CommonError.CLIENT_ERROR,
             mapOf("reason" to "Test WebSocket error endpoint"),
         )
-    }
 }
-
-

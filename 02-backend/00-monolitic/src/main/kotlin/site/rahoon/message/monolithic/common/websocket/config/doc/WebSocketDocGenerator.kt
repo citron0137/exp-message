@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component
 import org.springframework.stereotype.Controller
 import site.rahoon.message.monolithic.common.websocket.annotation.WebSocketReply
 import site.rahoon.message.monolithic.common.websocket.annotation.WebsocketSend
-import site.rahoon.message.monolithic.common.websocket.reply.WebSocketReplyBody
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
@@ -235,8 +234,10 @@ class WebSocketDocGenerator(
      * RECEIVE 메타가 동일 메서드의 SEND(요청)에 대한 응답인지 여부.
      * @WebSocketReply가 있는 경우 SEND와 같은 method를 가지는 RECEIVE가 응답 메시지이다.
      */
-    private fun findReplyMetadata(sendMeta: StompMetadata, metadataList: List<StompMetadata>): StompMetadata? =
-        metadataList.find { it.action == "RECEIVE" && it.method == sendMeta.method }
+    private fun findReplyMetadata(
+        sendMeta: StompMetadata,
+        metadataList: List<StompMetadata>,
+    ): StompMetadata? = metadataList.find { it.action == "RECEIVE" && it.method == sendMeta.method }
 
     private fun buildOperations(metadataList: List<StompMetadata>): Map<String, Any> {
         val replyReceiveKeys = metadataList
@@ -247,10 +248,12 @@ class WebSocketDocGenerator(
         return metadataList
             .filter { meta ->
                 // RECEIVE이면서 어떤 SEND의 reply인 경우 별도 operation 생성하지 않음 (해당 SEND operation의 reply로 표시)
-                if (meta.action == "RECEIVE" && meta.key in replyReceiveKeys) false
-                else true
-            }
-            .associate { meta ->
+                if (meta.action == "RECEIVE" && meta.key in replyReceiveKeys) {
+                    false
+                } else {
+                    true
+                }
+            }.associate { meta ->
                 val channelId = sanitize(meta.address)
                 val messageId = meta.payloadClassName
                 val operationContent = mutableMapOf<String, Any>(

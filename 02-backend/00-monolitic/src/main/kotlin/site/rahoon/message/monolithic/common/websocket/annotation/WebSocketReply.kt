@@ -12,4 +12,3 @@ package site.rahoon.message.monolithic.common.websocket.annotation
 annotation class WebSocketReply(
     val value: String = "/queue/session/{websocketSessionId}/reply",
 )
-

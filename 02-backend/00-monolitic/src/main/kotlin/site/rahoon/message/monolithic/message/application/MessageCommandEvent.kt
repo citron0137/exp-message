@@ -23,7 +23,10 @@ sealed class MessageCommandEvent {
         val recipientUserId: String,
     ) : MessageCommandEvent() {
         companion object {
-            fun from(event: MessageEvent.Created, recipientUserId: String): Send =
+            fun from(
+                event: MessageEvent.Created,
+                recipientUserId: String,
+            ): Send =
                 Send(
                     id = event.id,
                     chatRoomId = event.chatRoomId,

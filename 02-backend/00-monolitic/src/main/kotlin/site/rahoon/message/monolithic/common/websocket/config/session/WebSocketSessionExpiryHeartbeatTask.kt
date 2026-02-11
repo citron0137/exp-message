@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket.config.expiry
+package site.rahoon.message.monolithic.common.websocket.config.session
 
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -70,7 +70,10 @@ class WebSocketSessionExpiryHeartbeatTask(
         }
     }
 
-    private fun buildExpiredBody(websocketSessionId: String, authInfo: CommonAuthInfo): WebSocketExceptionBody {
+    private fun buildExpiredBody(
+        websocketSessionId: String,
+        authInfo: CommonAuthInfo,
+    ): WebSocketExceptionBody {
         val domainException = DomainException(
             CommonError.UNAUTHORIZED,
             mapOf(

@@ -27,7 +27,6 @@ class WebSocketExceptionStompSubProtocolErrorHandler(
     private val exceptionBodyBuilder: WebSocketExceptionBodyBuilder,
     private val exceptionController: WebSocketExceptionController,
 ) : StompSubProtocolErrorHandler() {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Nullable

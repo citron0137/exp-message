@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket.config.send
+package site.rahoon.message.monolithic.common.websocket.config.outbound
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.aspectj.lang.ProceedingJoinPoint
@@ -51,7 +51,11 @@ class WebsocketSendAspect(
         return sendIfNotNull(returnValue, webSocketReply.value)
     }
 
-    private fun sendIfNotNull(returnValue: Any?, destinationTemplate: String): Any? {
+    @Suppress("ReturnCount")
+    private fun sendIfNotNull(
+        returnValue: Any?,
+        destinationTemplate: String,
+    ): Any? {
         if (returnValue == null) {
             logger.info { "반환값이 null이므로 브로드캐스트하지 않음" }
             return null

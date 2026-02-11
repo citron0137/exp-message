@@ -1,6 +1,7 @@
 package site.rahoon.message.monolithic.common.websocket.exception
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Lazy
 import org.springframework.messaging.Message
@@ -26,17 +27,19 @@ class WebSocketExceptionController(
     private val objectMapper: ObjectMapper,
     @Qualifier("clientOutboundChannel") @Lazy private val clientOutboundChannel: MessageChannel,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     /**
      * [body]로 ERROR command 메시지를 만들어 [clientOutboundChannel]로 전송한다.
      * (@MessageMapping 예외 시 인터셉터에서 호출)
      */
+    @Suppress("SwallowedException")
     fun sendErrorFrame(body: WebSocketExceptionBody) {
         val errorMessage = buildErrorMessage(body)
         try {
             clientOutboundChannel.send(errorMessage)
         } catch (e: Exception) {
-            // 전송 실패 시 로그만 (연결 끊김 등)
+            log.debug("ERROR 프레임 전송 실패(연결 끊김 등): sessionId={}", body.websocketSessionId, e)
         }
     }
 
@@ -45,10 +48,8 @@ class WebSocketExceptionController(
      * body.websocketSessionId가 있을 때만 body를 반환하여 [@WebsocketSend] Aspect가 전송.
      */
     @WebsocketSend("/queue/session/{websocketSessionId}/exception")
-    fun sendToExceptionQueue(body: WebSocketExceptionBody): WebSocketExceptionBody? {
-        return body.takeIf { it.websocketSessionId != null }
-    }
-    
+    fun sendToExceptionQueue(body: WebSocketExceptionBody): WebSocketExceptionBody? = body.takeIf { it.websocketSessionId != null }
+
     /**
      * ERROR 메시지를 생성해 반환한다. 전송은 호출 측에서 수행.
      * (STOMP 프로토콜 에러 시 Spring이 이 메시지를 전송)

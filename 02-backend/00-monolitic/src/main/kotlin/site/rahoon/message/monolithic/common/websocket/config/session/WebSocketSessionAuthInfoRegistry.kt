@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket.config.expiry
+package site.rahoon.message.monolithic.common.websocket.config.session
 
 import org.springframework.stereotype.Component
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
@@ -12,10 +12,12 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Component
 class WebSocketSessionAuthInfoRegistry {
-
     private val sessionIdToAuthInfo = ConcurrentHashMap<String, CommonAuthInfo>()
 
-    fun register(sessionId: String, authInfo: CommonAuthInfo) {
+    fun register(
+        sessionId: String,
+        authInfo: CommonAuthInfo,
+    ) {
         sessionIdToAuthInfo[sessionId] = authInfo
     }
 

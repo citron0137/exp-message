@@ -14,7 +14,7 @@ import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
 import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
-import site.rahoon.message.monolithic.common.websocket.config.expiry.WebSocketSessionExpiryInterceptor
+import site.rahoon.message.monolithic.common.websocket.config.session.WebSocketSessionExpiryInterceptor
 import java.time.LocalDateTime
 
 /**
@@ -26,7 +26,6 @@ import java.time.LocalDateTime
  * - expiresAt이 과거면 DomainException(UNAUTHORIZED) 발생
  */
 class WebSocketSessionExpiryInterceptorUT {
-
     private val interceptor = WebSocketSessionExpiryInterceptor()
     private val mockChannel = mockk<MessageChannel>(relaxed = true)
 
@@ -84,7 +83,10 @@ class WebSocketSessionExpiryInterceptorUT {
         }
     }
 
-    private fun messageWithSessionAuth(command: StompCommand, authInfo: CommonAuthInfo?): Message<ByteArray> {
+    private fun messageWithSessionAuth(
+        command: StompCommand,
+        authInfo: CommonAuthInfo?,
+    ): Message<ByteArray> {
         val accessor = StompHeaderAccessor.create(command)
         accessor.sessionId = "ws-session-1"
         val sessionAttrs = mutableMapOf<String, Any>()

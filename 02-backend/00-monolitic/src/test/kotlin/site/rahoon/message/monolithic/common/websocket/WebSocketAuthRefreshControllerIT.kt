@@ -45,7 +45,6 @@ class WebSocketAuthRefreshControllerIT(
     private val authTokenApplicationService: AuthTokenApplicationService,
     @LocalServerPort private var port: Int = 0,
 ) : IntegrationTestBase() {
-
     @Test
     fun `auth refresh 성공 - 새 토큰으로 SEND 후 구독 수신 정상`() {
         // given: 로그인, 채팅방 생성 → 첫 액세스 토큰으로 WebSocket 연결
@@ -76,10 +75,12 @@ class WebSocketAuthRefreshControllerIT(
         session.subscribe(
             "/topic/user/${authResult.userId}/messages",
             object : StompFrameHandler {
-                override fun getPayloadType(headers: StompHeaders): java.lang.reflect.Type =
-                    MessageWsSend.Detail::class.java
+                override fun getPayloadType(headers: StompHeaders): java.lang.reflect.Type = MessageWsSend.Detail::class.java
 
-                override fun handleFrame(headers: StompHeaders, payload: Any?) {
+                override fun handleFrame(
+                    headers: StompHeaders,
+                    payload: Any?,
+                ) {
                     if (payload is MessageWsSend.Detail) receives.offer(payload)
                 }
             },
@@ -102,8 +103,7 @@ class WebSocketAuthRefreshControllerIT(
                 HttpMethod.POST,
                 entity,
                 String::class.java,
-            )
-            .assertSuccess<MessageResponse.Create>(objectMapper, org.springframework.http.HttpStatus.CREATED) { data ->
+            ).assertSuccess<MessageResponse.Create>(objectMapper, org.springframework.http.HttpStatus.CREATED) { data ->
                 data.content shouldBe content
             }
 
@@ -168,14 +168,13 @@ class WebSocketAuthRefreshControllerIT(
                 },
             )
         val res =
-            restTemplate.exchange(
-                "http://localhost:$port/chat-rooms",
-                HttpMethod.POST,
-                entity,
-                String::class.java,
-            )
-        return res
-            .assertSuccess<ChatRoomResponse.Create>(objectMapper, org.springframework.http.HttpStatus.CREATED) { }
-            .id
+            restTemplate
+                .exchange(
+                    "http://localhost:$port/chat-rooms",
+                    HttpMethod.POST,
+                    entity,
+                    String::class.java,
+                ).assertSuccess<ChatRoomResponse.Create>(objectMapper, org.springframework.http.HttpStatus.CREATED) { }
+        return res.id
     }
 }

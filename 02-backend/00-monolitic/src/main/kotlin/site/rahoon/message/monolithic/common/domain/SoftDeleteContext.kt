@@ -24,6 +24,9 @@ class SoftDeleteContext(
         lateinit var inst: SoftDeleteContext
             private set
 
+        /** disable {} 블록 안에서 호출된 코드에서 isDisabled()가 true가 되도록 하는 스레드 로컬 플래그 */
+        private val filterDisabledByThread = ThreadLocal.withInitial { false }
+
         /**
          * SoftDelete 필터를 비활성화한 상태에서 action을 실행합니다.
          * action 실행 후 필터는 자동으로 다시 활성화됩니다.
@@ -79,9 +82,11 @@ class SoftDeleteContext(
         val wasEnabled = session.getEnabledFilter(filterName) != null
 
         return try {
+            filterDisabledByThread.set(true)
             if (wasEnabled) session.disableFilter(filterName)
             action()
         } finally {
+            filterDisabledByThread.set(false)
             if (wasEnabled) session.enableFilter(filterName)
         }
     }
@@ -123,10 +128,11 @@ class SoftDeleteContext(
 
     /**
      * SoftDelete 필터가 현재 비활성화되어 있는지 확인합니다.
+     * disable {} 블록 안에서는 ThreadLocal 플래그로 항상 true를 반환합니다.
      *
      * @return 필터가 비활성화되어 있으면 true, 그렇지 않으면 false
      */
-    fun isDisabled(): Boolean = !isEnabled()
+    fun isDisabled(): Boolean = filterDisabledByThread.get() || !isEnabled()
 
     /**
      * 현재 트랜잭션에 바인딩된 EntityManager를 가져옵니다.
