@@ -23,6 +23,7 @@ class MessageWebSocketController(
      * 클라이언트가 메시지 토픽을 구독할 때 Redis 쪽 구독을 등록한다.
      * [WebSocketTopicSubscribeInterceptor]에서 권한 검증 후 호출됨.
      */
+    @Suppress("UnusedParameter")
     @WebsocketSubscribe("/topic/user/{userId}/messages")
     fun onMessageTopicSubscribe(
         authInfo: CommonAuthInfo,
