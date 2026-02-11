@@ -19,7 +19,8 @@ import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuth
  * SUBSCRIBE 시 destination에 대한 권한 검증.
  *
  * - `/topic/user/{uuid}/...`: uuid가 [CommonAuthInfo.userId]와 일치할 때만 구독 허용. 허용 시 [WebsocketSubscribe] 호출.
- * - `/queue/session/{sessionId}/reply`, `/queue/session/{sessionId}/exception`: sessionId가 현재 세션 ID와 일치할 때만 구독 허용.
+ * - `/queue/session/{sessionId}/reply`, `/queue/session/{sessionId}/exception`,
+ *   `/queue/session/{sessionId}/auth`: sessionId가 현재 세션 ID와 일치할 때만 구독 허용.
  *   불일치 시 DomainException이 아닌 일반 예외를 던져 ERROR 프레임으로 연결만 끊는다 (상세 payload·exception 큐 전송 없음).
  */
 @Component
@@ -32,7 +33,7 @@ class WebSocketTopicSubscribeInterceptor(
     companion object {
         private const val ORDER_FOR_SUBSCRIBE = Ordered.HIGHEST_PRECEDENCE + 10
         private val USER_TOPIC_PATTERN = Regex("^/topic/user/([^/]+)(/.*)?$")
-        private val SESSION_QUEUE_PATTERN = Regex("^/queue/session/([^/]+)/(reply|exception)$")
+        private val SESSION_QUEUE_PATTERN = Regex("^/queue/session/([^/]+)/(reply|exception|auth)$")
     }
 
     @Suppress("ReturnCount")
