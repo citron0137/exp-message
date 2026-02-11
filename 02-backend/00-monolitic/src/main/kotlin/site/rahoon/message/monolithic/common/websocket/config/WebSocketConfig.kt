@@ -7,6 +7,12 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer
+import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
+import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketConnectInterceptor
+import site.rahoon.message.monolithic.common.websocket.config.exception.WebSocketExceptionStompSubProtocolErrorHandler
+import site.rahoon.message.monolithic.common.websocket.config.expiry.WebSocketSessionExpiryInterceptor
+import site.rahoon.message.monolithic.common.websocket.config.outbound.WebSocketConnectedSessionHeaderInterceptor
+import site.rahoon.message.monolithic.common.websocket.config.subscribe.WebSocketTopicSubscribeInterceptor
 
 /**
  * WebSocket(STOMP) 설정
@@ -16,12 +22,14 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  * - Broker: /topic, /queue (구독 prefix. /queue는 reply-queue 등 user queue용)
  * - Handshake: 토큰만 세션에 저장. CONNECT 시 [WebSocketConnectInterceptor]에서 토큰 검증·Principal 설정
  * - 구독: WebSocketTopicSubscribeInterceptor로 /topic/user/{uuid}/... 본인 토픽만 허용
+ * - 세션 만료: 인바운드 메시지 수신 시(WebSocketSessionExpiryInterceptor) + Heartbeat 주기(WebSocketSessionExpiryHeartbeatTask)에서 만료 검사, 만료 시 ERROR 후 종료
  */
 @Configuration
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
     private val webSocketAuthHandshakeHandler: WebSocketAuthHandshakeHandler,
     private val webSocketConnectInterceptor: WebSocketConnectInterceptor,
+    private val webSocketSessionExpiryInterceptor: WebSocketSessionExpiryInterceptor,
     private val webSocketTopicSubscribeInterceptor: WebSocketTopicSubscribeInterceptor,
     private val webSocketExceptionStompSubProtocolErrorHandler: WebSocketExceptionStompSubProtocolErrorHandler,
     private val webSocketConnectedSessionHeaderInterceptor: WebSocketConnectedSessionHeaderInterceptor,
@@ -34,6 +42,7 @@ class WebSocketConfig(
     override fun configureClientInboundChannel(registration: ChannelRegistration) {
         registration.interceptors(
             webSocketConnectInterceptor,
+            webSocketSessionExpiryInterceptor,
             webSocketTopicSubscribeInterceptor,
         )
     }
@@ -48,7 +57,7 @@ class WebSocketConfig(
             .setHandshakeHandler(webSocketAuthHandshakeHandler)
             .withSockJS()
 
-        // 엔드포인트 등록 후 에러 핸들러 설정 (SEND 처리 중 @MessageMapping 예외 → ERROR 프레임)
+        // 인바운드 채널·인터셉터 단계 예외만 전달됨. @MessageMapping 내부 예외는 WebSocketMessageExceptionAdvice에서 처리.
         registry.setErrorHandler(webSocketExceptionStompSubProtocolErrorHandler)
     }
 

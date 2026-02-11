@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket.config
+package site.rahoon.message.monolithic.common.websocket.config.event
 
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -7,7 +7,9 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.messaging.SessionDisconnectEvent
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
-import site.rahoon.message.monolithic.common.websocket.config.WebSocketAnnotatedMethodInvoker
+import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
+import site.rahoon.message.monolithic.common.websocket.config.expiry.WebSocketSessionAuthInfoRegistry
+import site.rahoon.message.monolithic.common.websocket.config.subscribe.WebSocketAnnotatedMethodInvoker
 
 /**
  * [SessionDisconnectEvent] 수신 시 세션의 [WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO](CommonAuthInfo)를 꺼내
@@ -16,6 +18,7 @@ import site.rahoon.message.monolithic.common.websocket.config.WebSocketAnnotated
 @Component
 class WebSocketDisconnectEventDispatcher(
     private val annotatedMethodInvoker: WebSocketAnnotatedMethodInvoker,
+    private val sessionAuthInfoRegistry: WebSocketSessionAuthInfoRegistry,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -23,6 +26,7 @@ class WebSocketDisconnectEventDispatcher(
     @EventListener
     fun onDisconnect(event: SessionDisconnectEvent) {
         val accessor = StompHeaderAccessor.wrap(event.message)
+        accessor.sessionId?.let { sessionAuthInfoRegistry.unregister(it) }
         val authInfo = accessor.sessionAttributes?.get(WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO) as? CommonAuthInfo
 
         if (authInfo != null) {

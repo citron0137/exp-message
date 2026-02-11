@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket.config
+package site.rahoon.message.monolithic.common.websocket.config.subscribe
 
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
-import site.rahoon.message.monolithic.common.websocket.config.WebSocketAnnotatedMethodInvoker
+import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
 
 /**
  * SUBSCRIBE 시 destination에 대한 권한 검증.

@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket.config
+package site.rahoon.message.monolithic.common.websocket.config.auth
 
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
@@ -14,6 +14,7 @@ import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
+import site.rahoon.message.monolithic.common.websocket.config.expiry.WebSocketSessionAuthInfoRegistry
 import java.security.Principal
 
 /**
@@ -28,6 +29,7 @@ import java.security.Principal
 @Order(Ordered.LOWEST_PRECEDENCE - 100)
 class WebSocketConnectInterceptor(
     private val authTokenResolver: AuthTokenResolver,
+    private val sessionAuthInfoRegistry: WebSocketSessionAuthInfoRegistry,
 ) : ChannelInterceptor {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -62,6 +64,7 @@ class WebSocketConnectInterceptor(
         accessor.user = object : Principal {
             override fun getName(): String = authInfo.userId
         }
+        accessor.sessionId?.let { sessionAuthInfoRegistry.register(it, authInfo) }
         log.debug("CONNECT 성공: userId={}, sessionId={}", authInfo.userId, accessor.sessionId)
         return message
     }

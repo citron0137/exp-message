@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket.config
+package site.rahoon.message.monolithic.common.websocket.config.auth
 
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.stereotype.Component

@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket.config
+package site.rahoon.message.monolithic.common.websocket.config.send
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.aspectj.lang.ProceedingJoinPoint

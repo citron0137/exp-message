@@ -1,5 +1,6 @@
 package site.rahoon.message.monolithic.common.websocket.config
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -7,9 +8,9 @@ import io.kotest.matchers.shouldBe
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import org.springframework.messaging.MessageChannel
-import org.springframework.messaging.simp.SimpMessagingTemplate
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
+import site.rahoon.message.monolithic.common.websocket.config.exception.WebSocketExceptionStompSubProtocolErrorHandler
 import site.rahoon.message.monolithic.common.websocket.exception.WebSocketExceptionBodyBuilder
 import site.rahoon.message.monolithic.common.websocket.exception.WebSocketExceptionController
 
@@ -19,10 +20,9 @@ import site.rahoon.message.monolithic.common.websocket.exception.WebSocketExcept
  * DomainException 발생 시 ERROR 프레임 payload에 code·message가 담기는지 검증.
  */
 class WebSocketExceptionStompSubProtocolErrorHandlerUT {
-    private val objectMapper = jacksonObjectMapper()
+    private val objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule())
     private val mockChannel = mockk<MessageChannel>(relaxed = true)
-    private val mockMessagingTemplate = mockk<SimpMessagingTemplate>(relaxed = true)
-    private val exceptionController = WebSocketExceptionController(objectMapper, mockChannel, mockMessagingTemplate)
+    private val exceptionController = WebSocketExceptionController(objectMapper, mockChannel)
     private val exceptionBodyBuilder = WebSocketExceptionBodyBuilder()
     private val handler = WebSocketExceptionStompSubProtocolErrorHandler(exceptionBodyBuilder, exceptionController)
 

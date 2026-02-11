@@ -1,4 +1,4 @@
-package site.rahoon.message.monolithic.common.websocket.config
+package site.rahoon.message.monolithic.common.websocket.config.subscribe
 
 import org.slf4j.LoggerFactory
 import org.springframework.aop.support.AopUtils

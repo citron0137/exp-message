@@ -9,7 +9,8 @@ import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
-import site.rahoon.message.monolithic.common.websocket.config.WebSocketAuthHandshakeHandler
+import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
+import site.rahoon.message.monolithic.common.websocket.config.expiry.WebSocketSessionAuthInfoRegistry
 
 /**
  * WebSocket 연결 유지 중 토큰 갱신용 엔드포인트.
@@ -22,6 +23,7 @@ import site.rahoon.message.monolithic.common.websocket.config.WebSocketAuthHands
 @Controller
 class WebSocketAuthRefreshController(
     private val authTokenResolver: AuthTokenResolver,
+    private val sessionAuthInfoRegistry: WebSocketSessionAuthInfoRegistry,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -47,6 +49,7 @@ class WebSocketAuthRefreshController(
             WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO,
             authInfo,
         )
+        accessor.sessionId?.let { sessionAuthInfoRegistry.register(it, authInfo) }
         log.debug("auth/refresh 성공: userId={}, sessionId={}", authInfo.userId, accessor.sessionId)
     }
 }

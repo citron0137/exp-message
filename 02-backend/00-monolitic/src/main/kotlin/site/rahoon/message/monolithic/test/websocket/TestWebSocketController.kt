@@ -8,7 +8,7 @@ import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
 import site.rahoon.message.monolithic.common.websocket.annotation.WebSocketReply
-import site.rahoon.message.monolithic.common.websocket.config.WebSocketAuthHandshakeHandler
+import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
 import site.rahoon.message.monolithic.common.websocket.reply.WebSocketReplyBody
 
 /**
