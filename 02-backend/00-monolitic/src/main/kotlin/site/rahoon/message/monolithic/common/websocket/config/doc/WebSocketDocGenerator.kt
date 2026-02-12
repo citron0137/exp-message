@@ -199,6 +199,27 @@ class WebSocketDocGenerator(
             .map { it.groupValues[1] }
             .toList()
 
+    private fun buildInfoDescription(): String =
+        """
+        |## 인증 규칙
+        |
+        |- **인증**: CONNECT 시 쿼리 파라미터 `access_token` 또는 헤더 `Authorization: Bearer {accessToken}`로 액세스 토큰 전달.
+        |- **토큰 갱신**: 만료 임박 시 `/queue/session/{sessionId}/auth`에서 `token_expiring_soon` MESSAGE 수신.
+        |  → `/app/auth/refresh`로 SEND: 헤더 `Authorization: Bearer {accessToken}` 또는 Body `{"accessToken":"..."}`.
+        |- **만료**: 토큰 만료 시 서버가 ERROR 전송 후 연결 종료.
+        |
+        |## 구독 권한
+        |
+        |- `/topic/user/{uuid}/...` 구독 시 `uuid`는 현재 principal(토큰 사용자)와 일치해야 함. 불일치 시 ERROR.
+        |- `/queue/session/{sessionId}/...` 구독 시 `sessionId`는 CONNECTED 프레임의 `session` 헤더 값과 일치해야 함. 불일치 시 구독 거부.
+        |
+        |## 세션 큐 설명
+        |
+        |- `/queue/session/{sessionId}/reply`: SEND 요청의 성공 응답을 MESSAGE로 전달.
+        |- `/queue/session/{sessionId}/exception`: 웹소켓으로 보낸 요청 처리 중 예외 발생 시 비즈니스 예외를 MESSAGE로 전달. 연결 유지.
+        |- `/queue/session/{sessionId}/auth`: 토큰 만료 임박 등 인증 관련 알림을 MESSAGE로 전달. 갱신 유도.
+        """.trimMargin()
+
     private fun buildAsyncApiDocument(
         metadataList: List<StompMetadata>,
         schemas: Map<String, Any>,
@@ -206,7 +227,11 @@ class WebSocketDocGenerator(
     ): Map<String, Any> =
         mapOf(
             "asyncapi" to "3.0.0",
-            "info" to mapOf("title" to "STOMP API Specification", "version" to "1.0.0"),
+            "info" to mapOf(
+                "title" to "STOMP API Specification",
+                "version" to "1.0.0",
+                "description" to buildInfoDescription(),
+            ),
             "channels" to buildChannels(metadataList),
             "operations" to buildOperations(metadataList),
             "components" to mapOf(

@@ -11,8 +11,11 @@
         <!-- 상단: 프로젝트 설명 -->
         <header id="projectInfo">
             <h1 id="projectTitle">🔌 WebSocket STOMP 테스트</h1>
-            <p id="projectDescription">AsyncAPI 문서를 기반으로 WebSocket 통신을 테스트합니다</p>
+            <div id="projectDescription" class="project-description">AsyncAPI 문서를 기반으로 WebSocket 통신을 테스트합니다</div>
             <div id="projectVersion" class="project-meta"></div>
+            <div class="docs-nav">
+                <a href="../swagger-ui.html" class="docs-nav-link">REST API (Swagger)</a>
+            </div>
         </header>
 
         <!-- 메인 컨텐츠: 좌우 분할 -->
@@ -89,6 +92,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

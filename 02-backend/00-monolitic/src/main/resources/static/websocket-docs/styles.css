@@ -45,10 +45,57 @@ header p {
     margin-bottom: 8px;
 }
 
+.project-description {
+    color: #666;
+    font-size: 0.95em;
+    margin: 0 auto 8px auto;
+    max-width: 800px;
+    text-align: left;
+}
+
+.project-description h2 {
+    color: #667eea;
+    font-size: 1.1em;
+    margin: 12px 0 6px 0;
+}
+
+.project-description h2:first-child {
+    margin-top: 0;
+}
+
+.project-description p {
+    margin: 6px 0;
+}
+
+.project-description strong {
+    color: #444;
+}
+
+.project-description code {
+    background: #f0f0f0;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
 .project-meta {
     color: #888;
     font-size: 0.85em;
     margin-top: 8px;
+}
+
+.docs-nav {
+    margin-top: 12px;
+}
+
+.docs-nav-link {
+    color: #667eea;
+    font-size: 0.9em;
+    text-decoration: none;
+}
+
+.docs-nav-link:hover {
+    text-decoration: underline;
 }
 
 .main-content {

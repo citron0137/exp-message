@@ -212,6 +212,23 @@ async function loadAsyncApiDoc() {
     }
 }
 
+// Markdown 렌더링 (marked 라이브러리 사용, 없으면 평문)
+// breaks: true → `\n`을 `<br>`로 변환. HTML `<br>` 태그도 raw HTML로 통과.
+function renderMarkdown(text) {
+    if (typeof marked !== 'undefined' && marked.parse) {
+        marked.use({ breaks: true });
+        const result = marked.parse(String(text));
+        return typeof result === 'string' ? result : escapeHtml(text).replace(/\n/g, '<br>');
+    }
+    return escapeHtml(text).replace(/\n/g, '<br>');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // 프로젝트 정보 렌더링 (상단)
 function renderProjectInfo() {
     if (!asyncApiDoc || !asyncApiDoc.info) return;
@@ -221,7 +238,7 @@ function renderProjectInfo() {
         projectTitle.textContent = info.title;
     }
     if (info.description && projectDescription) {
-        projectDescription.textContent = info.description;
+        projectDescription.innerHTML = renderMarkdown(info.description);
     }
     if (info.version && projectVersion) {
         projectVersion.textContent = `Version: ${info.version}`;
