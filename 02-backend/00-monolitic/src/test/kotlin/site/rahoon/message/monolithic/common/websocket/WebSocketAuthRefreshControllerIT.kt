@@ -112,6 +112,72 @@ class WebSocketAuthRefreshControllerIT(
     }
 
     @Test
+    fun `auth refresh 성공 - Body의 accessToken으로 SEND 후 구독 수신 정상`() {
+        // given: 로그인, 채팅방 생성 → 첫 액세스 토큰으로 WebSocket 연결
+        val authResult = authApplicationITUtils.signUpAndLogin()
+        val chatRoomId = createChatRoom(authResult.accessToken)
+        val wsUrl = "http://localhost:$port/ws?access_token=${authResult.accessToken}"
+        val stompClient = createStompClient()
+        val session: StompSession =
+            stompClient
+                .connect(wsUrl, object : StompSessionHandlerAdapter() {})
+                .get(5, TimeUnit.SECONDS)
+
+        // REST refresh로 새 액세스 토큰 발급
+        val refreshed = authTokenApplicationService.refresh(authResult.refreshToken)
+        val newAccessToken = refreshed.accessToken.token
+
+        // when: SEND /app/auth/refresh (헤더 없이 Body의 accessToken으로)
+        val body = mapOf("accessToken" to newAccessToken)
+        val headers = StompHeaders().apply {
+            destination = "/app/auth/refresh"
+        }
+        session.send(headers, objectMapper.writeValueAsString(body))
+
+        Thread.sleep(500)
+
+        // then: 갱신된 세션으로 본인 메시지 토픽 구독 후 메시지 수신 가능
+        val receives = ArrayBlockingQueue<MessageWsSend.Detail>(1)
+        session.subscribe(
+            "/topic/user/${authResult.userId}/messages",
+            object : StompFrameHandler {
+                override fun getPayloadType(headers: StompHeaders): java.lang.reflect.Type = MessageWsSend.Detail::class.java
+
+                override fun handleFrame(
+                    headers: StompHeaders,
+                    payload: Any?,
+                ) {
+                    if (payload is MessageWsSend.Detail) receives.offer(payload)
+                }
+            },
+        )
+        Thread.sleep(1000)
+
+        val content = "auth-refresh-body-it 메시지"
+        val createRequest = MessageRequest.Create(chatRoomId = chatRoomId, content = content)
+        val entity =
+            HttpEntity(
+                objectMapper.writeValueAsString(createRequest),
+                HttpHeaders().apply {
+                    set("Authorization", "Bearer $newAccessToken")
+                    contentType = MediaType.APPLICATION_JSON
+                },
+            )
+        restTemplate
+            .exchange(
+                "http://localhost:$port/messages",
+                HttpMethod.POST,
+                entity,
+                String::class.java,
+            ).assertSuccess<MessageResponse.Create>(objectMapper, org.springframework.http.HttpStatus.CREATED) { data ->
+                data.content shouldBe content
+            }
+
+        val received = receives.poll(5, TimeUnit.SECONDS).shouldNotBeNull()
+        received.content shouldBe content
+    }
+
+    @Test
     fun `auth refresh 실패 - 토큰 없이 SEND 시 서버가 예외 없이 처리`() {
         val authResult = authApplicationITUtils.signUpAndLogin()
         val wsUrl = "http://localhost:$port/ws?access_token=${authResult.accessToken}"
