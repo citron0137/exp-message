@@ -7,23 +7,44 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer
+import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
+import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketConnectInterceptor
+import site.rahoon.message.monolithic.common.websocket.config.exception.WebSocketExceptionStompSubProtocolErrorHandler
+import site.rahoon.message.monolithic.common.websocket.config.outbound.WebSocketConnectedSessionHeaderInterceptor
+import site.rahoon.message.monolithic.common.websocket.config.session.WebSocketSessionExpiryInterceptor
+import site.rahoon.message.monolithic.common.websocket.config.subscribe.WebSocketTopicSubscribeInterceptor
 
 /**
  * WebSocket(STOMP) 설정
  *
  * - 엔드포인트: /ws (SockJS fallback)
- * - Broker: /topic (구독 prefix)
- * - Handshake: JWT 검증 후 Principal 설정
+ * - Application destination: /app (SEND 수신, 예: /app/auth/refresh)
+ * - Broker: /topic, /queue (구독 prefix. /queue는 reply-queue 등 user queue용)
+ * - Handshake: 토큰만 세션에 저장. CONNECT 시 [WebSocketConnectInterceptor]에서 토큰 검증·Principal 설정
  * - 구독: WebSocketTopicSubscribeInterceptor로 /topic/user/{uuid}/... 본인 토픽만 허용
+ * - 세션 만료: 인바운드(session.WebSocketSessionExpiryInterceptor) +
+ *   Heartbeat 주기(session.WebSocketSessionExpiryHeartbeatTask)에서 만료 검사, 만료 시 ERROR 후 종료
  */
 @Configuration
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
     private val webSocketAuthHandshakeHandler: WebSocketAuthHandshakeHandler,
+    private val webSocketConnectInterceptor: WebSocketConnectInterceptor,
+    private val webSocketSessionExpiryInterceptor: WebSocketSessionExpiryInterceptor,
     private val webSocketTopicSubscribeInterceptor: WebSocketTopicSubscribeInterceptor,
+    private val webSocketExceptionStompSubProtocolErrorHandler: WebSocketExceptionStompSubProtocolErrorHandler,
+    private val webSocketConnectedSessionHeaderInterceptor: WebSocketConnectedSessionHeaderInterceptor,
 ) : WebSocketMessageBrokerConfigurer {
     companion object {
         private const val HEARTBEAT_INTERVAL_MS = 10000L
+    }
+
+    override fun configureClientInboundChannel(registration: ChannelRegistration) {
+        registration.interceptors(
+            webSocketConnectInterceptor,
+            webSocketSessionExpiryInterceptor,
+            webSocketTopicSubscribeInterceptor,
+        )
     }
 
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
@@ -35,20 +56,25 @@ class WebSocketConfig(
             .addEndpoint("/ws")
             .setHandshakeHandler(webSocketAuthHandshakeHandler)
             .withSockJS()
+
+        // 인바운드 채널·인터셉터 단계 예외만 전달됨. @MessageMapping 내부 예외는 WebSocketMessageExceptionAdvice에서 처리.
+        registry.setErrorHandler(webSocketExceptionStompSubProtocolErrorHandler)
     }
 
-    override fun configureClientInboundChannel(registration: ChannelRegistration) {
-        registration.interceptors(webSocketTopicSubscribeInterceptor)
+    override fun configureClientOutboundChannel(registration: ChannelRegistration) {
+        registration.interceptors(webSocketConnectedSessionHeaderInterceptor)
     }
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
+        registry.setApplicationDestinationPrefixes("/app")
+
         val taskScheduler = ThreadPoolTaskScheduler()
         taskScheduler.poolSize = 1
         taskScheduler.setThreadNamePrefix("ws-hb-")
         taskScheduler.initialize()
 
         registry
-            .enableSimpleBroker("/topic")
+            .enableSimpleBroker("/topic", "/queue")
             .setHeartbeatValue(longArrayOf(HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS))
             .setTaskScheduler(taskScheduler)
     }

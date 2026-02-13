@@ -25,11 +25,6 @@ class TestRepositoryIT : IntegrationTestBase() {
     @Autowired
     private lateinit var testRepositoryImpl: TestRepositoryImpl
 
-    @BeforeEach
-    fun setUp() {
-        // 테스트 전 데이터 정리 (필요한 경우)
-    }
-
     @Test
     fun `엔티티 저장 성공`() {
         // given

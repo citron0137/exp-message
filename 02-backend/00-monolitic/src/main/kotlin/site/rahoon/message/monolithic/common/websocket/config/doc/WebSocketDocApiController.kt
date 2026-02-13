@@ -56,11 +56,11 @@ class WebSocketDocApiController(
             "/websocket-docs/api"
         }
 
-        // WebSocket 경로 구성 (prefix + /ws)
-        val wsPath = if (pathPrefix.isNotBlank() && !pathPrefix.endsWith("/")) {
-            "$pathPrefix/ws"
-        } else {
-            "${pathPrefix}ws"
+        // WebSocket 경로 구성 (prefix + /ws). pathPrefix가 비어 있으면 "/ws"만 사용
+        val wsPath = when {
+            pathPrefix.isBlank() -> "/ws"
+            pathPrefix.endsWith("/") -> "${pathPrefix}ws"
+            else -> "$pathPrefix/ws"
         }
 
         // SockJS는 http/https URL을 사용해야 함 (ws/wss가 아님)

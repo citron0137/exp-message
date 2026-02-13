@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.method.HandlerMethod
-import site.rahoon.message.monolithic.common.controller.CommonAuthInfo
+import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 
 /**
  * OpenAPI (Swagger) 설정
@@ -34,7 +34,10 @@ class OpenApiConfig {
             info(
                 Info()
                     .title("Message API")
-                    .description("Message Service API Documentation")
+                    .description(
+                        "Message Service API Documentation\n\n" +
+                            "[WebSocket 문서](../websocket-docs/)에서 비동기 처리 API(AsyncAPI)를 확인할 수 있습니다.",
+                    )
                     .version("1.0.0"),
             )
 

@@ -1,6 +1,4 @@
-package site.rahoon.message.monolithic.common.controller.filter
-
-import site.rahoon.message.monolithic.common.controller.CommonAuthInfo
+package site.rahoon.message.monolithic.common.auth
 
 /**
  * 인증 토큰을 검증하고 AuthInfo 객체로 변환하는 인터페이스

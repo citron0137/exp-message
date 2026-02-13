@@ -15,7 +15,8 @@ import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Controller
-import site.rahoon.message.monolithic.common.websocket.WebsocketSend
+import site.rahoon.message.monolithic.common.websocket.annotation.WebSocketReply
+import site.rahoon.message.monolithic.common.websocket.annotation.WebsocketSend
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
@@ -26,6 +27,9 @@ import java.lang.reflect.TypeVariable
 class WebSocketDocGenerator(
     private val objectMapper: ObjectMapper,
 ) {
+    /** Application destination prefix (WebSocketConfig와 동일). SEND 시 클라이언트가 사용하는 destination 접두사. */
+    private val applicationDestinationPrefix: String = "/app"
+
     // 1. 특수문자 치환 함수 (내부 식별자용)
     private fun sanitize(key: String): String =
         key
@@ -51,7 +55,8 @@ class WebSocketDocGenerator(
 
         val allMethods = reflections.getMethodsAnnotatedWith(MessageMapping::class.java) +
             reflections.getMethodsAnnotatedWith(SendTo::class.java) +
-            reflections.getMethodsAnnotatedWith(WebsocketSend::class.java)
+            reflections.getMethodsAnnotatedWith(WebsocketSend::class.java) +
+            reflections.getMethodsAnnotatedWith(WebSocketReply::class.java)
 
         val targetMethods = allMethods
             .filter {
@@ -67,6 +72,7 @@ class WebSocketDocGenerator(
             processMessageMapping(method, simplifiedClass, basePackage, metadataList, domainClasses)
             processSendTo(method, simplifiedClass, basePackage, metadataList, domainClasses)
             processWebsocketSend(method, simplifiedClass, basePackage, metadataList, domainClasses)
+            processWebSocketReply(method, simplifiedClass, basePackage, metadataList, domainClasses)
         }
 
         return Pair(metadataList, domainClasses)
@@ -82,12 +88,14 @@ class WebSocketDocGenerator(
         method.getAnnotation(MessageMapping::class.java)?.let { anno ->
             val type = method.genericParameterTypes.firstOrNull() ?: Any::class.java
             val rawKey = "$simplifiedClass.${method.name}.SEND"
+            val mappingPath = anno.value.firstOrNull()?.trimStart('/') ?: "unknown"
+            val fullAddress = "$applicationDestinationPrefix/$mappingPath"
             val pathParameters = extractPathParameters(anno.value.first())
             metadataList.add(
                 StompMetadata(
                     key = sanitize(rawKey),
                     action = "SEND",
-                    address = anno.value.firstOrNull() ?: "/unknown",
+                    address = fullAddress,
                     payloadType = type,
                     payloadClassName = sanitize(getTypeName(type, basePackage)),
                     method = method,
@@ -156,11 +164,61 @@ class WebSocketDocGenerator(
         }
     }
 
+    private fun processWebSocketReply(
+        method: Method,
+        simplifiedClass: String,
+        basePackage: String,
+        metadataList: MutableList<StompMetadata>,
+        domainClasses: MutableSet<Class<*>>,
+    ) {
+        val webSocketReply = method.getAnnotation(WebSocketReply::class.java) ?: return
+        val returnType = method.genericReturnType
+        if (returnType == Void.TYPE || returnType == Unit::class.java) return
+
+        // Reply 메시지 body는 WebSocketReplyBody 전체(payload, receiptId, requestDestination, websocketSessionId)로 문서화
+        val addr = webSocketReply.value
+        val rawKey = "$simplifiedClass.${method.name}.RECEIVE"
+        val pathParameters = extractPathParameters(addr)
+        metadataList.add(
+            StompMetadata(
+                key = sanitize(rawKey),
+                action = "RECEIVE",
+                address = addr,
+                payloadType = returnType,
+                payloadClassName = sanitize(getTypeName(returnType, basePackage)),
+                method = method,
+                parameters = pathParameters,
+            ),
+        )
+        collectDomainClasses(returnType, domainClasses)
+    }
+
     private fun extractPathParameters(address: String): List<String> =
         Regex("\\{([^}]+)\\}")
             .findAll(address)
             .map { it.groupValues[1] }
             .toList()
+
+    private fun buildInfoDescription(): String =
+        """
+        |## 인증 규칙
+        |
+        |- **인증**: CONNECT 시 쿼리 파라미터 `access_token` 또는 헤더 `Authorization: Bearer {accessToken}`로 액세스 토큰 전달.
+        |- **토큰 갱신**: 만료 임박 시 `/queue/session/{sessionId}/auth`에서 `token_expiring_soon` MESSAGE 수신.
+        |  → `/app/auth/refresh`로 SEND: 헤더 `Authorization: Bearer {accessToken}` 또는 Body `{"accessToken":"..."}`.
+        |- **만료**: 토큰 만료 시 서버가 ERROR 전송 후 연결 종료.
+        |
+        |## 구독 권한
+        |
+        |- `/topic/user/{uuid}/...` 구독 시 `uuid`는 현재 principal(토큰 사용자)와 일치해야 함. 불일치 시 ERROR.
+        |- `/queue/session/{sessionId}/...` 구독 시 `sessionId`는 CONNECTED 프레임의 `session` 헤더 값과 일치해야 함. 불일치 시 구독 거부.
+        |
+        |## 세션 큐 설명
+        |
+        |- `/queue/session/{sessionId}/reply`: SEND 요청의 성공 응답을 MESSAGE로 전달.
+        |- `/queue/session/{sessionId}/exception`: 웹소켓으로 보낸 요청 처리 중 예외 발생 시 비즈니스 예외를 MESSAGE로 전달. 연결 유지.
+        |- `/queue/session/{sessionId}/auth`: 토큰 만료 임박 등 인증 관련 알림을 MESSAGE로 전달. 갱신 유도.
+        """.trimMargin()
 
     private fun buildAsyncApiDocument(
         metadataList: List<StompMetadata>,
@@ -169,7 +227,11 @@ class WebSocketDocGenerator(
     ): Map<String, Any> =
         mapOf(
             "asyncapi" to "3.0.0",
-            "info" to mapOf("title" to "STOMP API Specification", "version" to "1.0.0"),
+            "info" to mapOf(
+                "title" to "STOMP API Specification",
+                "version" to "1.0.0",
+                "description" to buildInfoDescription(),
+            ),
             "channels" to buildChannels(metadataList),
             "operations" to buildOperations(metadataList),
             "components" to mapOf(
@@ -193,18 +255,54 @@ class WebSocketDocGenerator(
             channelId to channelContent
         }
 
-    private fun buildOperations(metadataList: List<StompMetadata>): Map<String, Any> =
-        metadataList.associate { meta ->
-            val channelId = sanitize(meta.address)
-            val messageId = meta.payloadClassName
-            meta.key to mapOf(
-                "action" to if (meta.action == "SEND") "receive" else "send",
-                "channel" to mapOf("\$ref" to "#/channels/$channelId"),
-                "messages" to listOf(
-                    mapOf("\$ref" to "#/channels/$channelId/messages/$messageId"),
-                ),
-            )
-        }
+    /**
+     * RECEIVE 메타가 동일 메서드의 SEND(요청)에 대한 응답인지 여부.
+     * @WebSocketReply가 있는 경우 SEND와 같은 method를 가지는 RECEIVE가 응답 메시지이다.
+     */
+    private fun findReplyMetadata(
+        sendMeta: StompMetadata,
+        metadataList: List<StompMetadata>,
+    ): StompMetadata? = metadataList.find { it.action == "RECEIVE" && it.method == sendMeta.method }
+
+    private fun buildOperations(metadataList: List<StompMetadata>): Map<String, Any> {
+        val replyReceiveKeys = metadataList
+            .filter { it.action == "SEND" }
+            .mapNotNull { findReplyMetadata(it, metadataList)?.key }
+            .toSet()
+
+        return metadataList
+            .filter { meta ->
+                // RECEIVE이면서 어떤 SEND의 reply인 경우 별도 operation 생성하지 않음 (해당 SEND operation의 reply로 표시)
+                if (meta.action == "RECEIVE" && meta.key in replyReceiveKeys) {
+                    false
+                } else {
+                    true
+                }
+            }.associate { meta ->
+                val channelId = sanitize(meta.address)
+                val messageId = meta.payloadClassName
+                val operationContent = mutableMapOf<String, Any>(
+                    "action" to if (meta.action == "SEND") "receive" else "send",
+                    "channel" to mapOf("\$ref" to "#/channels/$channelId"),
+                    "messages" to listOf(
+                        mapOf("\$ref" to "#/channels/$channelId/messages/$messageId"),
+                    ),
+                )
+                // @WebSocketReply가 있는 경우: SEND operation에 reply(응답 메시지) 추가
+                if (meta.action == "SEND") {
+                    findReplyMetadata(meta, metadataList)?.let { replyMeta ->
+                        val replyChannelId = sanitize(replyMeta.address)
+                        operationContent["reply"] = mapOf(
+                            "channel" to mapOf("\$ref" to "#/channels/$replyChannelId"),
+                            "messages" to listOf(
+                                mapOf("\$ref" to "#/components/messages/${replyMeta.key}"),
+                            ),
+                        )
+                    }
+                }
+                meta.key to operationContent
+            }
+    }
 
     private fun buildMessages(metadataList: List<StompMetadata>): Map<String, Any> =
         metadataList.associate { meta ->
