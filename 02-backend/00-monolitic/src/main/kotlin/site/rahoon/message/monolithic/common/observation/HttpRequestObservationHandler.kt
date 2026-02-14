@@ -58,7 +58,7 @@ class HttpRequestObservationHandler : ObservationHandler<ServerRequestObservatio
         }
         MDC.put(MdcKeys.HTTP_DURATION_MS, durationMs.toString())
 
-        log.debug(
+        log.info(
             "Request completed: {} {} - {} ({}ms) - Start: {}, End: {} - user: {}, session: {}",
             context.carrier.method,
             context.carrier.requestURI,

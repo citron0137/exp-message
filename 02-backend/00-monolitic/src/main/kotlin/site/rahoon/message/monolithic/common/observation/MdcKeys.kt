@@ -18,4 +18,7 @@ object MdcKeys {
     const val WEBSOCKET_SESSION_ID = "websocket_session_id"
     const val WEBSOCKET_DESTINATION = "websocket_destination"
     const val WEBSOCKET_COMMAND = "websocket_command"
+    const val WEBSOCKET_START_TIME = "websocket_start_time"
+    const val WEBSOCKET_END_TIME = "websocket_end_time"
+    const val WEBSOCKET_DURATION_MS = "websocket_duration_ms"
 }

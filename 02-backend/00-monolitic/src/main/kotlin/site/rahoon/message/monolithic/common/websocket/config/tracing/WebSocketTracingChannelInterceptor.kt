@@ -14,13 +14,14 @@ import org.springframework.stereotype.Component
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.observation.MdcKeys
 import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
+import java.time.OffsetDateTime
 
 /**
  * clientInboundChannel용 ChannelInterceptor.
  *
  * 유저 요청(CONNECT, SUBSCRIBE, SEND)에 대해:
  * - traceId/spanId를 MDC에 설정
- * - websocket_command, websocket_session_id, websocket_destination, user_id, auth_session_id를 MDC에 설정
+ * - websocket_command, websocket_session_id, websocket_destination, websocket_start_time, websocket_end_time, websocket_duration_ms, user_id, auth_session_id를 MDC에 설정
  *
  * afterSendCompletion에서 scope·span·MDC를 정리한다.
  */
@@ -33,13 +34,16 @@ class WebSocketTracingChannelInterceptor(
     private val logger = KotlinLogging.logger {}
     private val spanHolder = ThreadLocal<Span?>()
     private val scopeHolder = ThreadLocal<Tracer.SpanInScope?>()
+    private val startTimeHolder = ThreadLocal.withInitial { 0L }
 
     override fun preSend(message: Message<*>, channel: MessageChannel): Message<*> {
+        startTimeHolder.set(System.nanoTime())
         val span = tracer.nextSpan().name("websocket-inbound").start()
         spanHolder.set(span)
         scopeHolder.set(tracer.withSpan(span))
 
         putWebSocketMdc(message)
+        MDC.put(MdcKeys.WEBSOCKET_START_TIME, OffsetDateTime.now().toString())
         return message
     }
 
@@ -53,14 +57,25 @@ class WebSocketTracingChannelInterceptor(
             scopeHolder.get()?.close()
             spanHolder.get()?.end()
         } finally {
-            logger.debug {
+            val durationMs = (System.nanoTime() - startTimeHolder.get()) / 1_000_000
+            MDC.put(MdcKeys.WEBSOCKET_END_TIME, OffsetDateTime.now().toString())
+            MDC.put(MdcKeys.WEBSOCKET_DURATION_MS, durationMs.toString())
+            val completionLog =
                 "WebSocket message completed: websocket_command=${MDC.get(MdcKeys.WEBSOCKET_COMMAND) ?: "-"}, " +
                     "websocket_session_id=${MDC.get(MdcKeys.WEBSOCKET_SESSION_ID) ?: "-"}, " +
                     "websocket_destination=${MDC.get(MdcKeys.WEBSOCKET_DESTINATION) ?: "-"}, " +
+                    "websocket_duration_ms=$durationMs, " +
+                    "websocket_start_time=${MDC.get(MdcKeys.WEBSOCKET_START_TIME) ?: "-"}, " +
+                    "websocket_end_time=${MDC.get(MdcKeys.WEBSOCKET_END_TIME) ?: "-"}, " +
                     "user_id=${MDC.get(MdcKeys.USER_ID) ?: "-"}, " +
                     "auth_session_id=${MDC.get(MdcKeys.AUTH_SESSION_ID) ?: "-"}"
+            if (StompHeaderAccessor.wrap(message).command != null) {
+                logger.info { completionLog }
+            } else {
+                logger.debug { completionLog }
             }
             removeWebSocketMdc()
+            startTimeHolder.remove()
             scopeHolder.remove()
             spanHolder.remove()
         }
@@ -83,6 +98,9 @@ class WebSocketTracingChannelInterceptor(
         MDC.remove(MdcKeys.WEBSOCKET_COMMAND)
         MDC.remove(MdcKeys.WEBSOCKET_SESSION_ID)
         MDC.remove(MdcKeys.WEBSOCKET_DESTINATION)
+        MDC.remove(MdcKeys.WEBSOCKET_START_TIME)
+        MDC.remove(MdcKeys.WEBSOCKET_END_TIME)
+        MDC.remove(MdcKeys.WEBSOCKET_DURATION_MS)
         MDC.remove(MdcKeys.USER_ID)
         MDC.remove(MdcKeys.AUTH_SESSION_ID)
     }
