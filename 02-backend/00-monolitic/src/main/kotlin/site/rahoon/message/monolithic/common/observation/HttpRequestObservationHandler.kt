@@ -18,14 +18,12 @@ import java.time.OffsetDateTime
  */
 @Component
 class HttpRequestObservationHandler : ObservationHandler<ServerRequestObservationContext> {
-
     companion object {
         private val log = LoggerFactory.getLogger(HttpRequestObservationHandler::class.java)
         private val startTime = ThreadLocal.withInitial { 0L }
     }
 
-    override fun supportsContext(context: Observation.Context): Boolean =
-        context is ServerRequestObservationContext
+    override fun supportsContext(context: Observation.Context): Boolean = context is ServerRequestObservationContext
 
     override fun onStart(context: ServerRequestObservationContext) {
         startTime.set(System.nanoTime())

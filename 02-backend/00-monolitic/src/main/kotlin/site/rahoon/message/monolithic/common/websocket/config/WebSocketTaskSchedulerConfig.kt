@@ -11,7 +11,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
  */
 @Configuration
 class WebSocketTaskSchedulerConfig {
-
     @Bean
     fun webSocketBrokerTaskScheduler(): ThreadPoolTaskScheduler =
         ThreadPoolTaskScheduler().apply {

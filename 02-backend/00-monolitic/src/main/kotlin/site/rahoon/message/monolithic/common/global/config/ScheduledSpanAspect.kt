@@ -16,9 +16,11 @@ import site.rahoon.message.monolithic.common.global.SpanRunner
 @Aspect
 @Component
 class ScheduledSpanAspect {
-
     @Around("@annotation(scheduled)")
-    fun wrapWithSpan(joinPoint: ProceedingJoinPoint, @Suppress("UnusedParameter") scheduled: Scheduled): Any? {
+    fun wrapWithSpan(
+        joinPoint: ProceedingJoinPoint,
+        @Suppress("UnusedParameter") scheduled: Scheduled,
+    ): Any? {
         val spanName = "${joinPoint.signature.declaringType.simpleName}.${joinPoint.signature.name}"
         return SpanRunner.supplyWithSpan(spanName) {
             joinPoint.proceed()

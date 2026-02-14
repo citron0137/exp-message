@@ -16,9 +16,10 @@ class AsyncConfig(
 ) {
     @Bean("taskExecutor")
     @Primary
-    fun taskExecutor(): ThreadPoolTaskExecutor = builder
-        .taskDecorator(ContextPropagatingTaskDecorator())
-        .build()
+    fun taskExecutor(): ThreadPoolTaskExecutor =
+        builder
+            .taskDecorator(ContextPropagatingTaskDecorator())
+            .build()
 
     @Bean("taskScheduler")
     @Primary

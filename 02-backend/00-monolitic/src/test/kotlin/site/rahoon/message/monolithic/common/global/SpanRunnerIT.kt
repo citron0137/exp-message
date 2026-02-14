@@ -12,7 +12,6 @@ import site.rahoon.message.monolithic.common.test.IntegrationTestBase
 class SpanRunnerIT(
     private val spanRunner: SpanRunner,
 ) : IntegrationTestBase() {
-
     @Test
     fun `runWithSpan - action 실행`() {
         var executed = false

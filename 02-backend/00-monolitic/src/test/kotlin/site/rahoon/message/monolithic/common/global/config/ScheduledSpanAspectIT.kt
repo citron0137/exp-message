@@ -17,7 +17,6 @@ import site.rahoon.message.monolithic.common.test.IntegrationTestBase
 class ScheduledSpanAspectIT(
     private val testScheduledComponent: ScheduledSpanAspectIT.TestScheduledComponent,
 ) : IntegrationTestBase() {
-
     @Test
     fun `@Scheduled 메서드 실행 시 SpanRunner로 감싸져 MDC에 traceId와 spanId 설정`() {
         testScheduledComponent.scheduledMethod()
@@ -54,6 +53,5 @@ class ScheduledSpanAspectIT(
             capturedSpanId = MDC.get("spanId")
             capturedSpanName = "TestScheduledComponent.scheduledMethod"
         }
-
     }
 }

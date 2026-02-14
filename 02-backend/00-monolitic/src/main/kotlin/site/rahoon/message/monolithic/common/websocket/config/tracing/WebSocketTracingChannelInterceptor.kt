@@ -32,13 +32,15 @@ import java.time.OffsetDateTime
 class WebSocketTracingChannelInterceptor(
     private val tracer: Tracer,
 ) : ChannelInterceptor {
-
     private val logger = KotlinLogging.logger {}
     private val spanHolder = ThreadLocal<Span?>()
     private val scopeHolder = ThreadLocal<Tracer.SpanInScope?>()
     private val startTimeHolder = ThreadLocal.withInitial { 0L }
 
-    override fun preSend(message: Message<*>, channel: MessageChannel): Message<*> {
+    override fun preSend(
+        message: Message<*>,
+        channel: MessageChannel,
+    ): Message<*> {
         startTimeHolder.set(System.nanoTime())
         val span = tracer.nextSpan().name("websocket-inbound").start()
         spanHolder.set(span)
