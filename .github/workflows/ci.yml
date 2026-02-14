@@ -10,9 +10,6 @@ jobs:
   backend-monolitic:
     name: detekt, formatKotlin, unitTest
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: 02-backend/00-monolitic
 
     steps:
       - name: Checkout
@@ -25,14 +22,5 @@ jobs:
           distribution: "temurin"
           cache: "gradle"
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Detekt
-        run: ./gradlew detekt
-
-      - name: Kotlin format check (ktlint)
-        run: ./gradlew ktlintCheck
-
-      - name: Unit test
-        run: ./gradlew unitTest
+      - name: Run test-all (except integration)
+        run: sh 05-scripts/03-test-all/run.sh --except-integration
