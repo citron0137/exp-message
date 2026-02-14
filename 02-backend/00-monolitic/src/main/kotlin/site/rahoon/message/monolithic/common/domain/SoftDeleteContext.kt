@@ -4,8 +4,8 @@ import jakarta.annotation.PostConstruct
 import jakarta.persistence.EntityManager
 import org.hibernate.Session
 import org.springframework.orm.jpa.EntityManagerHolder
-import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.stereotype.Component
+import org.springframework.transaction.support.TransactionSynchronizationManager
 
 /**
  * JPA SoftDelete 필터 관리를 위한 헬퍼 클래스
@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component
  */
 @Component
 class SoftDeleteContext {
-
     companion object {
         @Volatile
         lateinit var inst: SoftDeleteContext

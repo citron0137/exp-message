@@ -19,7 +19,6 @@ import site.rahoon.message.monolithic.common.domain.SoftDeleteContext
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE) // 트랜잭션 시작 후(내부에서) 실행
 class SoftDeleteFilterAspect {
-
     @Around(
         "@within(org.springframework.transaction.annotation.Transactional) || " +
             "@annotation(org.springframework.transaction.annotation.Transactional) || " +

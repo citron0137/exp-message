@@ -1,18 +1,8 @@
 package site.rahoon.message.monolithic.common.infrastructure.config
 
-import jakarta.persistence.EntityManager
-import jakarta.persistence.EntityManagerFactory
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.domain.EntityScan
-import org.springframework.context.annotation.Primary
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
-import org.springframework.orm.jpa.EntityManagerHolder
-import org.springframework.orm.jpa.JpaTransactionManager
-import org.springframework.transaction.PlatformTransactionManager
-import org.springframework.transaction.support.TransactionSynchronizationManager
-import site.rahoon.message.monolithic.common.domain.SoftDeleteContext
 import site.rahoon.message.monolithic.common.infrastructure.JpaSoftDeleteRepositoryImpl
 
 /**

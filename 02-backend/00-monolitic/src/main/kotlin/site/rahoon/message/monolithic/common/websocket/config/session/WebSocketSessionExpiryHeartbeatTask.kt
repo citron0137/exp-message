@@ -84,10 +84,16 @@ class WebSocketSessionExpiryHeartbeatTask(
         }
     }
 
-    private fun isExpiringSoon(expiresAt: LocalDateTime, now: LocalDateTime, imminentThreshold: LocalDateTime): Boolean =
-        !expiresAt.isBefore(now) && !expiresAt.isAfter(imminentThreshold)
+    private fun isExpiringSoon(
+        expiresAt: LocalDateTime,
+        now: LocalDateTime,
+        imminentThreshold: LocalDateTime,
+    ): Boolean = !expiresAt.isBefore(now) && !expiresAt.isAfter(imminentThreshold)
 
-    private fun sendTokenExpiringSoon(websocketSessionId: String, authInfo: CommonAuthInfo) {
+    private fun sendTokenExpiringSoon(
+        websocketSessionId: String,
+        authInfo: CommonAuthInfo,
+    ) {
         val expiresAtIso = authInfo.expiresAt.atZone(ZoneId.systemDefault()).toString()
         val body = WebSocketAuthBody(
             event = WebSocketAuthBody.EVENT_TOKEN_EXPIRING_SOON,

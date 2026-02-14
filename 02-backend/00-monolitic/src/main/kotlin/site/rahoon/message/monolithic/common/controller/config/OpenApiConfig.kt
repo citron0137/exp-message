@@ -37,8 +37,7 @@ class OpenApiConfig {
                     .description(
                         "Message Service API Documentation\n\n" +
                             "[WebSocket 문서](../websocket-docs/)에서 비동기 처리 API(AsyncAPI)를 확인할 수 있습니다.",
-                    )
-                    .version("1.0.0"),
+                    ).version("1.0.0"),
             )
 
             // Security Scheme 추가 (Bearer Token)
