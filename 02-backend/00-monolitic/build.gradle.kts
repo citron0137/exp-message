@@ -37,6 +37,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
+    implementation("net.logstash.logback:logstash-logback-encoder:7.4")
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
 //    implementation("io.github.springwolf:springwolf-core:1.20.0")
 //    implementation("io.github.springwolf:springwolf-ui:1.20.0")
