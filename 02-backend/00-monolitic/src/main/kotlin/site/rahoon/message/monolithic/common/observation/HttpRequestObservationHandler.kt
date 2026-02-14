@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import org.springframework.http.server.observation.ServerRequestObservationContext
 import org.springframework.stereotype.Component
+import site.rahoon.message.monolithic.common.global.nanoToMs
 import java.time.OffsetDateTime
 
 /**
@@ -49,7 +50,7 @@ class HttpRequestObservationHandler : ObservationHandler<ServerRequestObservatio
     }
 
     override fun onScopeClosed(context: ServerRequestObservationContext) {
-        val durationMs = (System.nanoTime() - startTime.get()) / 1_000_000
+        val durationMs = (System.nanoTime() - startTime.get()).nanoToMs()
         val response = context.response
 
         MDC.put(MdcKeys.HTTP_END_TIME, OffsetDateTime.now().toString())

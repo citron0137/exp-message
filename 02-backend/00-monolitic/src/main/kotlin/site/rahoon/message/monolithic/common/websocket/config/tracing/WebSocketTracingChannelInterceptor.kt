@@ -12,6 +12,7 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor
 import org.springframework.messaging.support.ChannelInterceptor
 import org.springframework.stereotype.Component
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
+import site.rahoon.message.monolithic.common.global.nanoToMs
 import site.rahoon.message.monolithic.common.observation.MdcKeys
 import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
 import java.time.OffsetDateTime
@@ -21,7 +22,8 @@ import java.time.OffsetDateTime
  *
  * 유저 요청(CONNECT, SUBSCRIBE, SEND)에 대해:
  * - traceId/spanId를 MDC에 설정
- * - websocket.command, websocket.session_id, websocket.destination, websocket.start_time, websocket.end_time, websocket.duration_ms, user_id, auth_session_id를 MDC에 설정
+ * - websocket.command, websocket.session_id, websocket.destination, websocket.start_time,
+ *   websocket.end_time, websocket.duration_ms, user_id, auth_session_id를 MDC에 설정
  *
  * afterSendCompletion에서 scope·span·MDC를 정리한다.
  */
@@ -57,7 +59,7 @@ class WebSocketTracingChannelInterceptor(
             scopeHolder.get()?.close()
             spanHolder.get()?.end()
         } finally {
-            val durationMs = (System.nanoTime() - startTimeHolder.get()) / 1_000_000
+            val durationMs = (System.nanoTime() - startTimeHolder.get()).nanoToMs()
             MDC.put(MdcKeys.WEBSOCKET_END_TIME, OffsetDateTime.now().toString())
             MDC.put(MdcKeys.WEBSOCKET_DURATION_MS, durationMs.toString())
             val completionLog =
