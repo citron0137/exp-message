@@ -7,7 +7,9 @@ import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
+import org.slf4j.MDC
 import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
+import site.rahoon.message.monolithic.common.observation.MdcKeys
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
@@ -78,7 +80,12 @@ class CommonAuthInfoArgumentResolver(
 
         try {
             // 토큰 검증 및 AuthInfo 반환
-            return authTokenResolver.verify(authHeader)
+            val authInfo = authTokenResolver.verify(authHeader)
+            authInfo?.let {
+                MDC.put(MdcKeys.USER_ID, it.userId)
+                MDC.put(MdcKeys.SESSION_ID, it.sessionId)
+            }
+            return authInfo
         } catch (e: DomainException) {
             // 토큰 검증 실패
             if (required) {

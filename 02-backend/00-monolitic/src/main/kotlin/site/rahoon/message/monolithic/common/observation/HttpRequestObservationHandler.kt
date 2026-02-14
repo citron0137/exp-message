@@ -20,14 +20,6 @@ class HttpRequestObservationHandler : ObservationHandler<ServerRequestObservatio
 
     companion object {
         private val log = LoggerFactory.getLogger(HttpRequestObservationHandler::class.java)
-
-        private const val MDC_HTTP_METHOD = "http.method"
-        private const val MDC_HTTP_PATH = "http.path"
-        private const val MDC_HTTP_STATUS = "http.status_code"
-        private const val MDC_HTTP_DURATION_MS = "http.duration_ms"
-        private const val MDC_HTTP_START_TIME = "http.start_time"
-        private const val MDC_HTTP_END_TIME = "http.end_time"
-
         private val startTime = ThreadLocal.withInitial { 0L }
     }
 
@@ -40,29 +32,42 @@ class HttpRequestObservationHandler : ObservationHandler<ServerRequestObservatio
 
     override fun onScopeOpened(context: ServerRequestObservationContext) {
         val request = context.carrier
-        MDC.put(MDC_HTTP_METHOD, request.method)
-        MDC.put(MDC_HTTP_PATH, request.requestURI)
-        MDC.put(MDC_HTTP_START_TIME, OffsetDateTime.now().toString())
+        MDC.put(MdcKeys.HTTP_METHOD, request.method)
+        MDC.put(MdcKeys.HTTP_PATH, request.requestURI)
+        MDC.put(MdcKeys.HTTP_START_TIME, OffsetDateTime.now().toString())
+        MDC.put(MdcKeys.CLIENT_IP, resolveClientIp(request))
+        request.getHeader("User-Agent")?.takeIf { it.isNotBlank() }?.let { MDC.put(MdcKeys.USER_AGENT, it) }
+    }
+
+    private fun resolveClientIp(request: jakarta.servlet.http.HttpServletRequest): String {
+        val forwardedFor = request.getHeader("X-Forwarded-For")
+        return if (!forwardedFor.isNullOrBlank()) {
+            forwardedFor.split(",").firstOrNull()?.trim() ?: request.remoteAddr
+        } else {
+            request.remoteAddr ?: "-"
+        }
     }
 
     override fun onScopeClosed(context: ServerRequestObservationContext) {
         val durationMs = (System.nanoTime() - startTime.get()) / 1_000_000
         val response = context.response
 
-        MDC.put(MDC_HTTP_END_TIME, OffsetDateTime.now().toString())
+        MDC.put(MdcKeys.HTTP_END_TIME, OffsetDateTime.now().toString())
         if (response != null) {
-            MDC.put(MDC_HTTP_STATUS, response.status.toString())
+            MDC.put(MdcKeys.HTTP_STATUS, response.status.toString())
         }
-        MDC.put(MDC_HTTP_DURATION_MS, durationMs.toString())
+        MDC.put(MdcKeys.HTTP_DURATION_MS, durationMs.toString())
 
         log.debug(
-            "Request completed: {} {} - {} ({}ms) - Start: {}, End: {}",
+            "Request completed: {} {} - {} ({}ms) - Start: {}, End: {} - user: {}, session: {}",
             context.carrier.method,
             context.carrier.requestURI,
             response?.status ?: "?",
             durationMs,
-            MDC.get(MDC_HTTP_START_TIME),
-            MDC.get(MDC_HTTP_END_TIME),
+            MDC.get(MdcKeys.HTTP_START_TIME),
+            MDC.get(MdcKeys.HTTP_END_TIME),
+            MDC.get(MdcKeys.USER_ID) ?: "-",
+            MDC.get(MdcKeys.SESSION_ID) ?: "-",
         )
 
         removeMdcKeys()
@@ -70,11 +75,15 @@ class HttpRequestObservationHandler : ObservationHandler<ServerRequestObservatio
     }
 
     private fun removeMdcKeys() {
-        MDC.remove(MDC_HTTP_METHOD)
-        MDC.remove(MDC_HTTP_PATH)
-        MDC.remove(MDC_HTTP_STATUS)
-        MDC.remove(MDC_HTTP_DURATION_MS)
-        MDC.remove(MDC_HTTP_START_TIME)
-        MDC.remove(MDC_HTTP_END_TIME)
+        MDC.remove(MdcKeys.HTTP_METHOD)
+        MDC.remove(MdcKeys.HTTP_PATH)
+        MDC.remove(MdcKeys.HTTP_STATUS)
+        MDC.remove(MdcKeys.HTTP_DURATION_MS)
+        MDC.remove(MdcKeys.HTTP_START_TIME)
+        MDC.remove(MdcKeys.HTTP_END_TIME)
+        MDC.remove(MdcKeys.CLIENT_IP)
+        MDC.remove(MdcKeys.USER_AGENT)
+        MDC.remove(MdcKeys.USER_ID)
+        MDC.remove(MdcKeys.SESSION_ID)
     }
 }
