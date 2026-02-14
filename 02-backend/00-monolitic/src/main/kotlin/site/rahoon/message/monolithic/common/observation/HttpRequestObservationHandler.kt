@@ -67,7 +67,7 @@ class HttpRequestObservationHandler : ObservationHandler<ServerRequestObservatio
             MDC.get(MdcKeys.HTTP_START_TIME),
             MDC.get(MdcKeys.HTTP_END_TIME),
             MDC.get(MdcKeys.USER_ID) ?: "-",
-            MDC.get(MdcKeys.SESSION_ID) ?: "-",
+            MDC.get(MdcKeys.AUTH_SESSION_ID) ?: "-",
         )
 
         removeMdcKeys()
@@ -84,6 +84,6 @@ class HttpRequestObservationHandler : ObservationHandler<ServerRequestObservatio
         MDC.remove(MdcKeys.CLIENT_IP)
         MDC.remove(MdcKeys.USER_AGENT)
         MDC.remove(MdcKeys.USER_ID)
-        MDC.remove(MdcKeys.SESSION_ID)
+        MDC.remove(MdcKeys.AUTH_SESSION_ID)
     }
 }

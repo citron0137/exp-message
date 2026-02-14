@@ -14,5 +14,5 @@ object MdcKeys {
     const val CLIENT_IP = "client_ip"
     const val USER_AGENT = "user_agent"
     const val USER_ID = "user_id"
-    const val SESSION_ID = "session_id"
+    const val AUTH_SESSION_ID = "auth_session_id"
 }

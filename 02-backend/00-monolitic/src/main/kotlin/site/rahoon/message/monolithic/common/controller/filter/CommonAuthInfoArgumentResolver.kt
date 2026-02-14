@@ -83,7 +83,7 @@ class CommonAuthInfoArgumentResolver(
             val authInfo = authTokenResolver.verify(authHeader)
             authInfo?.let {
                 MDC.put(MdcKeys.USER_ID, it.userId)
-                MDC.put(MdcKeys.SESSION_ID, it.sessionId)
+                MDC.put(MdcKeys.AUTH_SESSION_ID, it.sessionId)
             }
             return authInfo
         } catch (e: DomainException) {
