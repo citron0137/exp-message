@@ -32,6 +32,7 @@ dependencies {
     implementation("org.redisson:redisson-spring-boot-starter:3.37.0")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("io.micrometer:micrometer-tracing-bridge-brave")
     implementation("org.springframework.boot:spring-boot-starter-aop")
     implementation("org.springframework:spring-tx")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
