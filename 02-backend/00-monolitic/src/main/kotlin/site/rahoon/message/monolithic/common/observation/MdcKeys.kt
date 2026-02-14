@@ -15,4 +15,7 @@ object MdcKeys {
     const val USER_AGENT = "user_agent"
     const val USER_ID = "user_id"
     const val AUTH_SESSION_ID = "auth_session_id"
+    const val WEBSOCKET_SESSION_ID = "websocket_session_id"
+    const val WEBSOCKET_DESTINATION = "websocket_destination"
+    const val WEBSOCKET_COMMAND = "websocket_command"
 }
