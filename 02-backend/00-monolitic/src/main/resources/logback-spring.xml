@@ -16,9 +16,21 @@
             </appender>
         </then>
         <else>
-            <!-- 기본: JSON 출력 (logstash-logback-encoder). MDC의 traceId/spanId는 Micrometer가 HTTP 요청 시 자동 주입 -->
+            <!-- 기본: JSON 출력 (logstash-logback-encoder). MDC의 traceId/spanId는 Micrometer가 HTTP 요청 시 자동 주입. 민감 정보 마스킹 적용 -->
             <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-                <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+                <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                    <jsonGeneratorDecorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator">
+                        <path>password</path>
+                        <path>secret</path>
+                        <path>token</path>
+                        <path>accessToken</path>
+                        <path>refreshToken</path>
+                        <path>authorization</path>
+                        <path>cookie</path>
+                        <path>apiKey</path>
+                        <path>api_key</path>
+                    </jsonGeneratorDecorator>
+                </encoder>
             </appender>
         </else>
     </if>
