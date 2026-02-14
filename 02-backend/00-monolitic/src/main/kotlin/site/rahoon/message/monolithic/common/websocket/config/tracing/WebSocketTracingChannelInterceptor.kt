@@ -21,7 +21,7 @@ import java.time.OffsetDateTime
  *
  * 유저 요청(CONNECT, SUBSCRIBE, SEND)에 대해:
  * - traceId/spanId를 MDC에 설정
- * - websocket_command, websocket_session_id, websocket_destination, websocket_start_time, websocket_end_time, websocket_duration_ms, user_id, auth_session_id를 MDC에 설정
+ * - websocket.command, websocket.session_id, websocket.destination, websocket.start_time, websocket.end_time, websocket.duration_ms, user_id, auth_session_id를 MDC에 설정
  *
  * afterSendCompletion에서 scope·span·MDC를 정리한다.
  */
@@ -61,12 +61,12 @@ class WebSocketTracingChannelInterceptor(
             MDC.put(MdcKeys.WEBSOCKET_END_TIME, OffsetDateTime.now().toString())
             MDC.put(MdcKeys.WEBSOCKET_DURATION_MS, durationMs.toString())
             val completionLog =
-                "WebSocket message completed: websocket_command=${MDC.get(MdcKeys.WEBSOCKET_COMMAND) ?: "-"}, " +
-                    "websocket_session_id=${MDC.get(MdcKeys.WEBSOCKET_SESSION_ID) ?: "-"}, " +
-                    "websocket_destination=${MDC.get(MdcKeys.WEBSOCKET_DESTINATION) ?: "-"}, " +
-                    "websocket_duration_ms=$durationMs, " +
-                    "websocket_start_time=${MDC.get(MdcKeys.WEBSOCKET_START_TIME) ?: "-"}, " +
-                    "websocket_end_time=${MDC.get(MdcKeys.WEBSOCKET_END_TIME) ?: "-"}, " +
+                "WebSocket message completed: websocket.command=${MDC.get(MdcKeys.WEBSOCKET_COMMAND) ?: "-"}, " +
+                    "websocket.session_id=${MDC.get(MdcKeys.WEBSOCKET_SESSION_ID) ?: "-"}, " +
+                    "websocket.destination=${MDC.get(MdcKeys.WEBSOCKET_DESTINATION) ?: "-"}, " +
+                    "websocket.duration_ms=$durationMs, " +
+                    "websocket.start_time=${MDC.get(MdcKeys.WEBSOCKET_START_TIME) ?: "-"}, " +
+                    "websocket.end_time=${MDC.get(MdcKeys.WEBSOCKET_END_TIME) ?: "-"}, " +
                     "user_id=${MDC.get(MdcKeys.USER_ID) ?: "-"}, " +
                     "auth_session_id=${MDC.get(MdcKeys.AUTH_SESSION_ID) ?: "-"}"
             if (StompHeaderAccessor.wrap(message).command != null) {
