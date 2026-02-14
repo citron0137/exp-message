@@ -10,7 +10,6 @@ import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
 import site.rahoon.message.monolithic.common.websocket.auth.WebSocketAuthBody
 import site.rahoon.message.monolithic.common.websocket.auth.WebSocketAuthController
-import site.rahoon.message.monolithic.common.websocket.config.WebSocketTaskSchedulerConfig
 import site.rahoon.message.monolithic.common.websocket.exception.WebSocketExceptionBody
 import site.rahoon.message.monolithic.common.websocket.exception.WebSocketExceptionBodyBuilder
 import site.rahoon.message.monolithic.common.websocket.exception.WebSocketExceptionController
@@ -19,11 +18,11 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /**
- * Heartbeat 주기([HEARTBEAT_INTERVAL_MS])마다 등록된 세션의 TTL(만료)을 검사하고,
+ * Heartbeat 주기(websocket.heartbeat-interval-ms)마다 등록된 세션의 TTL(만료)을 검사하고,
  * 만료된 세션에 대해 ERROR 프레임을 보낸 뒤 레지스트리에서 제거한다.
  * 만료 임박 구간의 세션에는 갱신 유도 MESSAGE를 전송한다.
  *
- * - WebSocketTaskSchedulerConfig.HEARTBEAT_INTERVAL_MS와 동일 주기로 실행.
+ * - SimpleBroker heartbeat와 동일 주기로 실행.
  * - [WebSocketSessionAuthInfoRegistry]에 등록된 (sessionId, authInfo)만 검사.
  * - ScheduledSpanAspect로 traceId/spanId 생성, @Async로 taskExecutor에서 실행(스케줄러 스레드 비점유)
  */
@@ -37,7 +36,7 @@ class WebSocketSessionExpiryHeartbeatTask(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @Scheduled(fixedRate = WebSocketTaskSchedulerConfig.HEARTBEAT_INTERVAL_MS)
+    @Scheduled(fixedRateString = "\${websocket.heartbeat-interval-ms:10000}")
     fun checkExpiredSessions() {
         doCheckExpiredSessions()
     }

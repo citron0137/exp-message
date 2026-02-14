@@ -1,5 +1,6 @@
 package site.rahoon.message.monolithic.common.websocket.config
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.config.ChannelRegistration
 import org.springframework.scheduling.TaskScheduler
@@ -29,6 +30,7 @@ import site.rahoon.message.monolithic.common.websocket.config.tracing.WebSocketT
 @Configuration
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
+    @Value("\${websocket.heartbeat-interval-ms:10000}") private val heartbeatIntervalMs: Long,
     private val webSocketAuthHandshakeHandler: WebSocketAuthHandshakeHandler,
     private val webSocketConnectInterceptor: WebSocketConnectInterceptor,
     private val webSocketSessionExpiryInterceptor: WebSocketSessionExpiryInterceptor,
@@ -71,7 +73,7 @@ class WebSocketConfig(
 
         registry
             .enableSimpleBroker("/topic", "/queue")
-            .setHeartbeatValue(longArrayOf(WebSocketTaskSchedulerConfig.HEARTBEAT_INTERVAL_MS, WebSocketTaskSchedulerConfig.HEARTBEAT_INTERVAL_MS))
+            .setHeartbeatValue(longArrayOf(heartbeatIntervalMs, heartbeatIntervalMs))
             .setTaskScheduler(webSocketBrokerTaskScheduler)
     }
 }

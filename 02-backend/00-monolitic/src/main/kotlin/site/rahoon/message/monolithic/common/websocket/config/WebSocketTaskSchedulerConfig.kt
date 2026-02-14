@@ -12,10 +12,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 @Configuration
 class WebSocketTaskSchedulerConfig {
 
-    companion object {
-        const val HEARTBEAT_INTERVAL_MS = 10000L
-    }
-
     @Bean
     fun webSocketBrokerTaskScheduler(): ThreadPoolTaskScheduler =
         ThreadPoolTaskScheduler().apply {
