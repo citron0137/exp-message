@@ -22,3 +22,7 @@ exp-message는 여러 기술 스택을 활용하여 구축하는 **아주 튼튼
 - Swagger UI: [message.rahoon.site/api/swagger-ui.html](https://message.rahoon.site/api/swagger-ui.html)
 - AsyncAPI (WebSocket): [message.rahoon.site/api/websocket-docs](https://message.rahoon.site/api/websocket-docs/index.html)
 - 백엔드 개발 노트는 [00-docs/01-patch-rahoon](./00-docs/01-patch-rahoon)에서 확인하실 수 있습니다.
+
+## 개발 시 참고사항
+
+- 저장소를 clone한 뒤 **한 번** `npm install`을 실행해 주세요. pre-push 훅(detekt, ktlint 체크)이 적용됩니다.

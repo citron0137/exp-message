@@ -1,0 +1,11 @@
+{
+  "name": "exp-message",
+  "private": true,
+  "description": "Pre-push hook and tooling for exp-message repo",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
