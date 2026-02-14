@@ -2,8 +2,8 @@ package site.rahoon.message.monolithic.common.websocket.config
 
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.config.ChannelRegistration
+import org.springframework.scheduling.TaskScheduler
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer
@@ -13,6 +13,7 @@ import site.rahoon.message.monolithic.common.websocket.config.exception.WebSocke
 import site.rahoon.message.monolithic.common.websocket.config.outbound.WebSocketConnectedSessionHeaderInterceptor
 import site.rahoon.message.monolithic.common.websocket.config.session.WebSocketSessionExpiryInterceptor
 import site.rahoon.message.monolithic.common.websocket.config.subscribe.WebSocketTopicSubscribeInterceptor
+import site.rahoon.message.monolithic.common.websocket.config.tracing.WebSocketTracingChannelInterceptor
 
 /**
  * WebSocket(STOMP) 설정
@@ -32,15 +33,15 @@ class WebSocketConfig(
     private val webSocketConnectInterceptor: WebSocketConnectInterceptor,
     private val webSocketSessionExpiryInterceptor: WebSocketSessionExpiryInterceptor,
     private val webSocketTopicSubscribeInterceptor: WebSocketTopicSubscribeInterceptor,
+    private val webSocketTracingChannelInterceptor: WebSocketTracingChannelInterceptor,
     private val webSocketExceptionStompSubProtocolErrorHandler: WebSocketExceptionStompSubProtocolErrorHandler,
     private val webSocketConnectedSessionHeaderInterceptor: WebSocketConnectedSessionHeaderInterceptor,
+    private val webSocketBrokerTaskScheduler: TaskScheduler,
 ) : WebSocketMessageBrokerConfigurer {
-    companion object {
-        private const val HEARTBEAT_INTERVAL_MS = 10000L
-    }
 
     override fun configureClientInboundChannel(registration: ChannelRegistration) {
         registration.interceptors(
+            webSocketTracingChannelInterceptor,
             webSocketConnectInterceptor,
             webSocketSessionExpiryInterceptor,
             webSocketTopicSubscribeInterceptor,
@@ -68,14 +69,9 @@ class WebSocketConfig(
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
         registry.setApplicationDestinationPrefixes("/app")
 
-        val taskScheduler = ThreadPoolTaskScheduler()
-        taskScheduler.poolSize = 1
-        taskScheduler.setThreadNamePrefix("ws-hb-")
-        taskScheduler.initialize()
-
         registry
             .enableSimpleBroker("/topic", "/queue")
-            .setHeartbeatValue(longArrayOf(HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS))
-            .setTaskScheduler(taskScheduler)
+            .setHeartbeatValue(longArrayOf(WebSocketTaskSchedulerConfig.HEARTBEAT_INTERVAL_MS, WebSocketTaskSchedulerConfig.HEARTBEAT_INTERVAL_MS))
+            .setTaskScheduler(webSocketBrokerTaskScheduler)
     }
 }
