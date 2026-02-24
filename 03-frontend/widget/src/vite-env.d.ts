@@ -11,11 +11,27 @@ interface ImportMetaEnv {
     readonly DEV: boolean;
     readonly PROD: boolean;
     readonly SSR: boolean;
-    readonly VITE_ENV?: string;
-    readonly VITE_API_URL?: string;
-    readonly VITE_WS_URL?: string;
+    readonly WIDGET_API_BASE_URL?: string;
+    readonly WIDGET_API_WEBSOCKET_URL?: string;
 }
 
 interface ImportMeta {
     readonly env: ImportMetaEnv;
 }
+
+// Runtime configuration injected by Docker
+interface WidgetRuntimeConfig {
+    apiUrl: string;
+    wsUrl: string;
+    timeout: number;
+    containerId: string;
+    debug: boolean;
+}
+
+declare global {
+    interface Window {
+        __WIDGET_CONFIG__?: WidgetRuntimeConfig;
+    }
+}
+
+export { };

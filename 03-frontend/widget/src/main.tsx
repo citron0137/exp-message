@@ -44,13 +44,13 @@ window.ChatWidget = {
 if (import.meta.env.DEV) {
     const initDev = () => {
         const root = document.getElementById('root');
-        if (root) {
+        if (root && window.__WIDGET_CONFIG__) {
             ReactDOM.createRoot(root).render(
                 <React.StrictMode>
                     <Widget
                         config={{
-                            apiUrl: import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api',
-                            wsUrl: import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws',
+                            apiUrl: window.__WIDGET_CONFIG__.apiUrl,
+                            wsUrl: window.__WIDGET_CONFIG__.wsUrl,
                         }}
                     />
                 </React.StrictMode>
