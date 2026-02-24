@@ -40,16 +40,21 @@
       >
     </div>
 
+    <script src="config.js"></script>
     <script src="widget.iife.js"></script>
     <script>
       // Initialize the widget with runtime configuration
       console.log("[Widget] ChatWidget available:", !!window.ChatWidget);
-      if (window.ChatWidget) {
+      console.log("[Widget] Config loaded:", window.__WIDGET_CONFIG__);
+      if (window.ChatWidget && window.__WIDGET_CONFIG__) {
         window.ChatWidget.init({
-          apiUrl: "__WIDGET_API_BASE_URL__",
-          wsUrl: "__WIDGET_API_WEBSOCKET_URL__",
+          apiUrl: window.__WIDGET_CONFIG__.apiUrl,
+          wsUrl: window.__WIDGET_CONFIG__.wsUrl,
         });
-        console.log("[Widget] init called");
+        console.log(
+          "[Widget] init called with config:",
+          window.__WIDGET_CONFIG__,
+        );
       }
     </script>
   </body>
