@@ -2,6 +2,7 @@ package site.rahoon.message.monolithic.channeloperator.domain
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import site.rahoon.message.monolithic.channel.domain.ChannelDomainService
 import site.rahoon.message.monolithic.channeloperator.domain.component.ChannelOperatorCreateValidator
 import site.rahoon.message.monolithic.channeloperator.domain.component.ChannelOperatorUpdateValidator
 import site.rahoon.message.monolithic.common.domain.DomainException
@@ -12,10 +13,13 @@ class ChannelOperatorDomainService(
     private val channelOperatorRepository: ChannelOperatorRepository,
     private val channelOperatorCreateValidator: ChannelOperatorCreateValidator,
     private val channelOperatorUpdateValidator: ChannelOperatorUpdateValidator,
+    private val channelDomainService: ChannelDomainService,
 ) {
     @Transactional
     fun create(command: ChannelOperatorCommand.Create): ChannelOperatorInfo.Detail {
         channelOperatorCreateValidator.validate(command)
+
+        channelDomainService.getById(command.channelId)
 
         channelOperatorRepository.findByChannelIdAndUserId(command.channelId, command.userId)?.let {
             throw DomainException(

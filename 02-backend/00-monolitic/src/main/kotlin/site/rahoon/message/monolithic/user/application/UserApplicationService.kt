@@ -45,14 +45,13 @@ class UserApplicationService(
         val existingUser = userDomainService.findUserByEmail(criteria.email)
 
         if (existingUser != null) {
-            val (passwordToUse, wasRandom) = userPasswordCreator.resolve(criteria.password)
+            val (passwordToUse, _) = userPasswordCreator.resolve(criteria.password)
             userDomainService.updatePasswordAndRole(
                 userId = existingUser.id,
                 passwordHash = passwordHasher.hash(passwordToUse),
                 role = UserRole.ADMIN,
             )
-            val passwordLog = if (wasRandom) "password=$passwordToUse (printed only once)" else "password=(configured)"
-            logger.info("Default admin password reset complete (create-update): email=${criteria.email}, $passwordLog")
+            logger.info("Default admin password reset complete (create-update): email=${criteria.email}")
             return
         }
 

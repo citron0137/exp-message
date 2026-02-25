@@ -2,6 +2,7 @@ package site.rahoon.message.monolithic.channelconversation.application
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import site.rahoon.message.monolithic.channel.domain.ChannelDomainService
 import site.rahoon.message.monolithic.channelconversation.domain.ChannelConversationDomainService
 import site.rahoon.message.monolithic.channelconversation.domain.ChannelConversationInfo
 import site.rahoon.message.monolithic.chatroom.application.ChatRoomApplicationService
@@ -15,6 +16,7 @@ import site.rahoon.message.monolithic.chatroom.application.ChatRoomCriteria
 class ChannelConversationApplicationService(
     private val channelConversationDomainService: ChannelConversationDomainService,
     private val chatRoomApplicationService: ChatRoomApplicationService,
+    private val channelDomainService: ChannelDomainService,
 ) {
     /**
      * 상담 세션 생성
@@ -23,6 +25,8 @@ class ChannelConversationApplicationService(
      */
     @Transactional
     fun create(criteria: ChannelConversationCriteria.Create): ChannelConversationInfo.Detail {
+        channelDomainService.getById(criteria.channelId)
+
         val chatRoomCriteria =
             ChatRoomCriteria.Create(
                 name = criteria.name,

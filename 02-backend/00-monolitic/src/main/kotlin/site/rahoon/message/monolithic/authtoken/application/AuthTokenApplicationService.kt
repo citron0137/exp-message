@@ -87,7 +87,7 @@ class AuthTokenApplicationService(
                         details = mapOf("refreshToken" to refreshTokenString),
                     )
             val user = userDomainService.getById(refreshToken.userId)
-            authTokenDomainService.refresh(refreshTokenString, user.role.code)
+            authTokenDomainService.refresh(refreshToken, user.role.code)
         }
 
     // Logout

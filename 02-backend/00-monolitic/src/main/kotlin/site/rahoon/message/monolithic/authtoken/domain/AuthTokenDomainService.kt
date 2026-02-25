@@ -60,4 +60,18 @@ class AuthTokenDomainService(
         authTokenRepository.deleteRefreshToken(refreshToken.token)
         return issueToken(refreshToken.userId, role, refreshToken.sessionId)
     }
+
+    /**
+     * 이미 조회된 Refresh Token으로 새 토큰을 발급합니다.
+     *
+     * @param refreshToken 이미 조회된 Refresh Token 객체
+     * @param role 애플리케이션 레이어에서 전달받은 사용자 역할 (ADMIN, USER)
+     */
+    fun refresh(
+        refreshToken: RefreshToken,
+        role: String,
+    ): AuthToken {
+        authTokenRepository.deleteRefreshToken(refreshToken.token)
+        return issueToken(refreshToken.userId, role, refreshToken.sessionId)
+    }
 }
