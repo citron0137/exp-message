@@ -12,11 +12,8 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import site.rahoon.message.monolithic.channel.application.ChannelApplicationService
 import site.rahoon.message.monolithic.channel.application.ChannelCriteria
-import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
-import site.rahoon.message.monolithic.common.auth.CommonAuthRole
+import site.rahoon.message.monolithic.common.auth.CommonAdminAuthInfo
 import site.rahoon.message.monolithic.common.controller.CommonApiResponse
-import site.rahoon.message.monolithic.common.domain.CommonError
-import site.rahoon.message.monolithic.common.domain.DomainException
 
 /**
  * Admin Channel Controller
@@ -31,9 +28,8 @@ class AdminChannelController(
     @ResponseStatus(HttpStatus.CREATED)
     fun create(
         @Valid @RequestBody request: AdminChannelRequest.Create,
-        authInfo: CommonAuthInfo,
+        @Suppress("UnusedParameter") authInfo: CommonAdminAuthInfo,
     ): CommonApiResponse<AdminChannelResponse.Create> {
-        requireAdmin(authInfo)
         val criteria = request.toCriteria()
         val channelInfo = channelApplicationService.create(criteria)
         val response = AdminChannelResponse.Create.from(channelInfo)
@@ -44,9 +40,8 @@ class AdminChannelController(
     fun update(
         @PathVariable id: String,
         @Valid @RequestBody request: AdminChannelRequest.Update,
-        authInfo: CommonAuthInfo,
+        @Suppress("UnusedParameter") authInfo: CommonAdminAuthInfo,
     ): CommonApiResponse<AdminChannelResponse.Detail> {
-        requireAdmin(authInfo)
         val criteria = request.toCriteria(id)
         val channelInfo = channelApplicationService.update(criteria)
         val response = AdminChannelResponse.Detail.from(channelInfo)
@@ -56,21 +51,11 @@ class AdminChannelController(
     @DeleteMapping("/{id}")
     fun delete(
         @PathVariable id: String,
-        authInfo: CommonAuthInfo,
+        @Suppress("UnusedParameter") authInfo: CommonAdminAuthInfo,
     ): CommonApiResponse<AdminChannelResponse.Detail> {
-        requireAdmin(authInfo)
         val criteria = ChannelCriteria.Delete(channelId = id)
         val channelInfo = channelApplicationService.delete(criteria)
         val response = AdminChannelResponse.Detail.from(channelInfo)
         return CommonApiResponse.success(response)
-    }
-
-    private fun requireAdmin(authInfo: CommonAuthInfo) {
-        if (authInfo.role != CommonAuthRole.ADMIN) {
-            throw DomainException(
-                error = CommonError.FORBIDDEN,
-                details = mapOf("reason" to "Admin role required"),
-            )
-        }
     }
 }

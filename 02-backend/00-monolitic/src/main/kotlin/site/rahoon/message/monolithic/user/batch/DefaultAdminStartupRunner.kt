@@ -20,7 +20,6 @@ class DefaultAdminStartupRunner(
     @Value("\${default-admin.nickname:admin}") private val nickname: String,
     @Value("\${default-admin.method:default}") private val method: String,
 ) : ApplicationRunner {
-
     override fun run(args: ApplicationArguments) {
         when {
             method.equals("create-update", ignoreCase = true) ->

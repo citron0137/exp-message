@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import site.rahoon.message.monolithic.authtoken.application.AuthTokenApplicationService
+import site.rahoon.message.monolithic.common.auth.CommonAdminAuthInfo
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.controller.CommonApiResponse
 import site.rahoon.message.monolithic.common.controller.component.IpAddressUtils
@@ -63,7 +64,7 @@ class AdminAuthController(
      * POST /auth/logout
      */
     @PostMapping("/logout")
-    fun logout(authInfo: CommonAuthInfo): CommonApiResponse<AuthResponse.Logout> {
+    fun logout(authInfo: CommonAdminAuthInfo): CommonApiResponse<AuthResponse.Logout> {
         val sessionId =
             authInfo.sessionId
                 ?: throw IllegalStateException("세션 ID가 없습니다")

@@ -2,9 +2,9 @@ package site.rahoon.message.monolithic.user.application
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import site.rahoon.message.monolithic.user.application.component.UserPasswordCreator
 import site.rahoon.message.monolithic.user.domain.UserDomainService
 import site.rahoon.message.monolithic.user.domain.UserInfo
-import site.rahoon.message.monolithic.user.application.component.UserPasswordCreator
 import site.rahoon.message.monolithic.user.domain.UserRole
 import site.rahoon.message.monolithic.user.domain.component.UserPasswordHasher
 
@@ -36,8 +36,10 @@ class UserApplicationService(
     /**
      * 사용자 역할을 업데이트합니다.
      */
-    fun updateRole(userId: String, role: UserRole): UserInfo.Detail =
-        userDomainService.updateRole(userId, role)
+    fun updateRole(
+        userId: String,
+        role: UserRole,
+    ): UserInfo.Detail = userDomainService.updateRole(userId, role)
 
     fun createOrUpdateAdmin(criteria: UserCriteria.CreateOrUpdateAdmin) {
         val existingUser = userDomainService.findUserByEmail(criteria.email)
@@ -73,7 +75,11 @@ class UserApplicationService(
         createAdmin(criteria.email, criteria.password, criteria.nickname)
     }
 
-    private fun createAdmin(email: String, password: String, nickname: String) {
+    private fun createAdmin(
+        email: String,
+        password: String,
+        nickname: String,
+    ) {
         val (passwordToUse, _) = userPasswordCreator.resolve(password)
         val passwordHash = passwordHasher.hash(passwordToUse)
         userDomainService.createAdmin(

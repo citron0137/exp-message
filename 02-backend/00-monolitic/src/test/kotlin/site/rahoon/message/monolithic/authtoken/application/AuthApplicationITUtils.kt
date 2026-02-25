@@ -3,10 +3,10 @@ package site.rahoon.message.monolithic.authtoken.application
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
-import site.rahoon.message.monolithic.user.domain.UserRepository
-import site.rahoon.message.monolithic.user.domain.UserRole
 import site.rahoon.message.monolithic.user.application.UserApplicationITUtils
 import site.rahoon.message.monolithic.user.application.UserApplicationService
+import site.rahoon.message.monolithic.user.domain.UserRepository
+import site.rahoon.message.monolithic.user.domain.UserRole
 
 /**
  * Auth 관련 테스트 유틸리티

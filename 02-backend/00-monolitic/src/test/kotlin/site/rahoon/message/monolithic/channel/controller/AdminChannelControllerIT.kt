@@ -30,6 +30,7 @@ class AdminChannelControllerIT(
     override val logger = KotlinLogging.logger {}
 
     private fun adminBaseUrl(): String = "http://localhost:$port/admin/channels"
+
     private fun channelsUrl(): String = "http://localhost:$port/channels"
 
     /**

@@ -33,8 +33,7 @@ class UserRepositoryImpl(
             .map { toDomain(it) }
             .orElse(null)
 
-    override fun existsByRole(role: UserRole): Boolean =
-        jpaRepository.existsByRole(role.code)
+    override fun existsByRole(role: UserRole): Boolean = jpaRepository.existsByRole(role.code)
 
     @Transactional
     override fun delete(id: String) {

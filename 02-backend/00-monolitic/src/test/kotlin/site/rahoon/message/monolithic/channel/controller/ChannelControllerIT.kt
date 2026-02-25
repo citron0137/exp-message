@@ -12,7 +12,6 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import site.rahoon.message.monolithic.authtoken.application.AuthApplicationITUtils
 import site.rahoon.message.monolithic.common.test.IntegrationTestBase
 import site.rahoon.message.monolithic.common.test.assertError
@@ -31,6 +30,7 @@ class ChannelControllerIT(
     override val logger = KotlinLogging.logger {}
 
     private fun baseUrl(): String = "http://localhost:$port/channels"
+
     private fun adminBaseUrl(): String = "http://localhost:$port/admin/channels"
 
     /**

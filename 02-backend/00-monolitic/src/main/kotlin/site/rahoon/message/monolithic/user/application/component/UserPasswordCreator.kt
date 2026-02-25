@@ -28,7 +28,10 @@ class UserPasswordCreator {
     private fun generateRandomPassword(): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"
         val random = SecureRandom()
-        val length = 16
-        return (1..length).map { chars[random.nextInt(chars.length)] }.joinToString("")
+        return (1..DEFAULT_RANDOM_PASSWORD_LENGTH).map { chars[random.nextInt(chars.length)] }.joinToString("")
+    }
+
+    companion object {
+        private const val DEFAULT_RANDOM_PASSWORD_LENGTH = 16
     }
 }

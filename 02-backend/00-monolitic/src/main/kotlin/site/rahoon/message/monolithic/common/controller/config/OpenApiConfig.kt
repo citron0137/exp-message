@@ -7,14 +7,14 @@ import io.swagger.v3.oas.models.security.SecurityRequirement
 import io.swagger.v3.oas.models.security.SecurityScheme
 import io.swagger.v3.oas.models.servers.Server
 import io.swagger.v3.oas.models.tags.Tag
-import org.springdoc.core.models.GroupedOpenApi
 import org.springdoc.core.customizers.GlobalOpenApiCustomizer
 import org.springdoc.core.customizers.GlobalOperationCustomizer
+import org.springdoc.core.models.GroupedOpenApi
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.method.HandlerMethod
+import site.rahoon.message.monolithic.common.auth.CommonAdminAuthInfo
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 
 /**
@@ -88,7 +88,8 @@ class OpenApiConfig {
      */
     @Bean
     fun apiGroup(): GroupedOpenApi =
-        GroupedOpenApi.builder()
+        GroupedOpenApi
+            .builder()
             .group("api")
             .displayName("00. USER API")
             .pathsToExclude("/admin/**")
@@ -99,7 +100,8 @@ class OpenApiConfig {
      */
     @Bean
     fun adminApiGroup(): GroupedOpenApi =
-        GroupedOpenApi.builder()
+        GroupedOpenApi
+            .builder()
             .group("admin")
             .displayName("01. Admin API")
             .pathsToMatch("/admin/**")
@@ -113,7 +115,7 @@ class OpenApiConfig {
      */
     @Bean
     fun methodNameBasedSummaryCustomizer(): GlobalOperationCustomizer {
-        return GlobalOperationCustomizer customizer@ { operation, handlerMethod ->
+        return GlobalOperationCustomizer customizer@{ operation, handlerMethod ->
             val method = (handlerMethod as? HandlerMethod)?.method ?: return@customizer operation
 
             // summary가 비어있으면 메서드 이름 기반으로 생성
@@ -165,7 +167,6 @@ class OpenApiConfig {
                 "Channel" to TagOverride("Channel", "채널 정보 조회", 100),
                 "Channel Operator" to TagOverride("Channel Operator", "채널 관리자 관리", 110),
                 "Channel Conversation" to TagOverride("Channel Conversation", "채널 대화 관리", 120),
-
                 "Test" to TagOverride("Test", "테스트용", 900),
                 "Web Socket Doc Web" to TagOverride("WebSocket Doc Web", "WebSocket 문서 Web", 910),
                 "Web Socket Doc API" to TagOverride("WebSocket Doc API", "WebSocket 문서 API", 911),
@@ -196,7 +197,7 @@ class OpenApiConfig {
             }
         }
 
-        return GlobalOpenApiCustomizer customizer@ { openApi ->
+        return GlobalOpenApiCustomizer customizer@{ openApi ->
             val paths = openApi.paths ?: return@customizer
 
             // UI에 노출할 태그 정의(이름/설명/순서)도 같이 만들어준다.
@@ -274,7 +275,7 @@ class OpenApiConfig {
      */
     @Bean
     fun authInfoAffectOperationCustomizer(): GlobalOperationCustomizer {
-        return GlobalOperationCustomizer customizer@ { operation, handlerMethod ->
+        return GlobalOperationCustomizer customizer@{ operation, handlerMethod ->
             val handlerMethodObj = handlerMethod as? HandlerMethod ?: return@customizer operation
 
 //            val method = handlerMethodObj.method
@@ -292,38 +293,30 @@ class OpenApiConfig {
             val authInfoMethodParams = methodParameters
                 .asSequence()
                 .filter { methodParam ->
-                    methodParam.parameterType == CommonAuthInfo::class.java ||
-                        methodParam.parameterType == CommonAuthInfo::class.javaObjectType
+                    val type = methodParam.parameterType
+                    type == CommonAuthInfo::class.java ||
+                        type == CommonAuthInfo::class.javaObjectType ||
+                        type == CommonAdminAuthInfo::class.java ||
+                        type == CommonAdminAuthInfo::class.javaObjectType
                 }.toList()
             val authInfoParamNames = authInfoMethodParams.asSequence().mapNotNull { it.parameterName }.toSet()
             val swaggerParamNamesToRemove = authInfoParamNames.ifEmpty { setOf("authInfo") }
             val filteredParameters = parameters.filterNot { it.name in swaggerParamNamesToRemove }
             operation.parameters = filteredParameters
 
-            // 파라미터 개수가 변경되었으면 Security 추가 (경로 prefix에 따라 scheme 선택)
+            // 파라미터 개수가 변경되었으면 Security 추가 (파라미터 타입에 따라 scheme 선택)
             if (filteredParameters.size != parameters.size) {
-                val securityScheme =
-                    if (isAdminPath(handlerMethodObj)) "bearerAuthAdmin" else "bearerAuth"
+                val hasCommonAdminAuthInfo =
+                    authInfoMethodParams.any { param ->
+                        val type = param.parameterType
+                        type == CommonAdminAuthInfo::class.java ||
+                            type == CommonAdminAuthInfo::class.javaObjectType
+                    }
+                val securityScheme = if (hasCommonAdminAuthInfo) "bearerAuthAdmin" else "bearerAuth"
                 operation.addSecurityItem(SecurityRequirement().addList(securityScheme))
             }
             operation
         }
-    }
-
-    private fun isAdminPath(handlerMethod: HandlerMethod): Boolean {
-        var clazz: Class<*>? = handlerMethod.beanType
-        while (clazz != null) {
-            val requestMapping = clazz.getAnnotation(RequestMapping::class.java) ?: run {
-                clazz = clazz.superclass
-                continue
-            }
-            val path =
-                requestMapping.value.firstOrNull()?.takeIf { it.isNotBlank() }
-                    ?: requestMapping.path.firstOrNull()?.takeIf { it.isNotBlank() }
-                    ?: ""
-            if (path.startsWith("/admin")) return true
-            clazz = clazz.superclass
-        }
-        return false
+        
     }
 }

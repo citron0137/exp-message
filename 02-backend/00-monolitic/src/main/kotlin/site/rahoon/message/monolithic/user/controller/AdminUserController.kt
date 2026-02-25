@@ -6,11 +6,8 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
-import site.rahoon.message.monolithic.common.auth.CommonAuthRole
+import site.rahoon.message.monolithic.common.auth.CommonAdminAuthInfo
 import site.rahoon.message.monolithic.common.controller.CommonApiResponse
-import site.rahoon.message.monolithic.common.domain.CommonError
-import site.rahoon.message.monolithic.common.domain.DomainException
 import site.rahoon.message.monolithic.user.application.UserApplicationService
 
 /**
@@ -30,20 +27,10 @@ class AdminUserController(
     fun updateRole(
         @PathVariable userId: String,
         @Valid @RequestBody request: AdminUserRequest.UpdateRole,
-        authInfo: CommonAuthInfo,
+        @Suppress("UnusedParameter") authInfo: CommonAdminAuthInfo,
     ): CommonApiResponse<AdminUserResponse.Detail> {
-        requireAdmin(authInfo)
         val userInfo = userApplicationService.updateRole(userId, request.toUserRole())
         val response = AdminUserResponse.Detail.from(userInfo)
         return CommonApiResponse.success(response)
-    }
-
-    private fun requireAdmin(authInfo: CommonAuthInfo) {
-        if (authInfo.role != CommonAuthRole.ADMIN) {
-            throw DomainException(
-                error = CommonError.FORBIDDEN,
-                details = mapOf("reason" to "Admin role required"),
-            )
-        }
     }
 }

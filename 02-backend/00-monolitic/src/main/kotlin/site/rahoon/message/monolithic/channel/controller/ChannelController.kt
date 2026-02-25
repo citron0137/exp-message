@@ -34,5 +34,4 @@ class ChannelController(
         val response = listOf(ChannelResponse.Detail.from(channelInfo))
         return CommonApiResponse.success(response)
     }
-
 }

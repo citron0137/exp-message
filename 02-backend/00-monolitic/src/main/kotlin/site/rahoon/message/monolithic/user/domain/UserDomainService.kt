@@ -156,7 +156,10 @@ class UserDomainService(
     }
 
     @Transactional
-    fun updateRole(userId: String, role: UserRole): UserInfo.Detail {
+    fun updateRole(
+        userId: String,
+        role: UserRole,
+    ): UserInfo.Detail {
         val user =
             userRepository.findById(userId)
                 ?: throw DomainException(
