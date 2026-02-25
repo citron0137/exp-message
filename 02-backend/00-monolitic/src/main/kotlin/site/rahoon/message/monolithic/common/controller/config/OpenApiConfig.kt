@@ -317,6 +317,5 @@ class OpenApiConfig {
             }
             operation
         }
-        
     }
 }
