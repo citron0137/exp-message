@@ -5,9 +5,9 @@ import jakarta.validation.constraints.Size
 import site.rahoon.message.monolithic.channel.application.ChannelCriteria
 
 /**
- * Channel Controller 요청 DTO
+ * Admin Channel Controller 요청 DTO
  */
-object ChannelRequest {
+object AdminChannelRequest {
     data class Create(
         @field:NotBlank(message = "채널 이름은 필수입니다")
         @field:Size(min = 1, max = 100, message = "채널 이름은 1자 이상 100자 이하여야 합니다")

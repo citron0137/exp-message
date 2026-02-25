@@ -14,8 +14,8 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import site.rahoon.message.monolithic.authtoken.application.AuthApplicationITUtils
-import site.rahoon.message.monolithic.channel.controller.ChannelRequest
-import site.rahoon.message.monolithic.channel.controller.ChannelResponse
+import site.rahoon.message.monolithic.channel.controller.AdminChannelRequest
+import site.rahoon.message.monolithic.channel.controller.AdminChannelResponse
 import site.rahoon.message.monolithic.common.test.IntegrationTestBase
 import site.rahoon.message.monolithic.common.test.assertError
 import site.rahoon.message.monolithic.common.test.assertSuccess
@@ -32,35 +32,35 @@ class ChannelConversationControllerIT(
 ) : IntegrationTestBase() {
     override val logger = KotlinLogging.logger {}
 
-    private fun channelsUrl(): String = "http://localhost:$port/channels"
+    private fun adminChannelsUrl(): String = "http://localhost:$port/admin/channels"
 
     private fun conversationsUrl(channelId: String): String = "http://localhost:$port/channels/$channelId/conversations"
 
     /**
-     * 채널을 생성하고 ID를 반환합니다.
+     * 채널을 생성하고 ID를 반환합니다. (Admin API 사용)
      */
     private fun createChannel(
-        accessToken: String,
+        adminAccessToken: String,
         name: String,
     ): String {
-        val request = ChannelRequest.Create(name = name)
+        val request = AdminChannelRequest.Create(name = name)
         val headers =
             HttpHeaders().apply {
-                set("Authorization", "Bearer $accessToken")
+                set("Authorization", "Bearer $adminAccessToken")
                 contentType = MediaType.APPLICATION_JSON
             }
         val entity = HttpEntity(objectMapper.writeValueAsString(request), headers)
 
         val response =
             restTemplate.exchange(
-                channelsUrl(),
+                adminChannelsUrl(),
                 HttpMethod.POST,
                 entity,
                 String::class.java,
             )
 
         return response
-            .assertSuccess<ChannelResponse.Create>(objectMapper, HttpStatus.CREATED) { data ->
+            .assertSuccess<AdminChannelResponse.Create>(objectMapper, HttpStatus.CREATED) { data ->
                 data.name shouldBe name
             }.id
     }
@@ -104,7 +104,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `상담 세션 생성 성공`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "상담 세션 테스트 채널")
         val request = ChannelConversationRequest.Create(name = "상담 세션1")
         val entity = HttpEntity(objectMapper.writeValueAsString(request), authResult.headers)
@@ -132,7 +132,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `상담 세션 생성 실패 - 인증 없음`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val request = ChannelConversationRequest.Create(name = "상담 세션1")
         val headers =
@@ -157,7 +157,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `상담 세션 생성 실패 - 이름 누락`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val request = mapOf<String, Any>()
         val entity = HttpEntity(objectMapper.writeValueAsString(request), authResult.headers)
@@ -182,7 +182,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `상담 세션 ID로 조회 성공`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "조회 테스트 채널")
         val conversationId = createConversation(authResult.accessToken, channelId, "조회 테스트 상담 세션")
         val entity = HttpEntity<Nothing?>(null, authResult.headers)
@@ -207,7 +207,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `상담 세션 ID로 조회 실패 - 존재하지 않는 상담 세션`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val entity = HttpEntity<Nothing?>(null, authResult.headers)
 
@@ -231,7 +231,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `채널별 상담 세션 목록 조회 성공`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "목록 테스트 채널")
         createConversation(authResult.accessToken, channelId, "상담 세션1")
         createConversation(authResult.accessToken, channelId, "상담 세션2")
@@ -261,7 +261,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `채널별 상담 세션 목록 조회 - 상담 세션이 없을 때`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "빈 채널")
         val entity = HttpEntity<Nothing?>(null, authResult.headers)
 
@@ -287,7 +287,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `상담 세션 수정 성공`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "수정 테스트 채널")
         val conversationId = createConversation(authResult.accessToken, channelId, "원래 이름")
 
@@ -313,7 +313,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `상담 세션 수정 실패 - 인증 없음`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val conversationId = createConversation(authResult.accessToken, channelId, "원래 이름")
 
@@ -340,7 +340,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `상담 세션 수정 실패 - 존재하지 않는 상담 세션`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val updateRequest = ChannelConversationRequest.Update(name = "수정 시도")
         val entity = HttpEntity(objectMapper.writeValueAsString(updateRequest), authResult.headers)
@@ -365,7 +365,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `상담 세션 삭제 성공`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "삭제 테스트 채널")
         val conversationId = createConversation(authResult.accessToken, channelId, "삭제될 상담 세션")
         val entity = HttpEntity<Nothing?>(null, authResult.headers)
@@ -398,7 +398,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `상담 세션 삭제 실패 - 인증 없음`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val conversationId = createConversation(authResult.accessToken, channelId, "삭제될 상담 세션")
         val entity = HttpEntity<Nothing?>(null, HttpHeaders())
@@ -430,7 +430,7 @@ class ChannelConversationControllerIT(
     @Test
     fun `상담 세션 삭제 실패 - 존재하지 않는 상담 세션`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val entity = HttpEntity<Nothing?>(null, authResult.headers)
 

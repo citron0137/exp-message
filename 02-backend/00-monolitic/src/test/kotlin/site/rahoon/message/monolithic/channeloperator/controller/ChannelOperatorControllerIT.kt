@@ -14,8 +14,8 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import site.rahoon.message.monolithic.authtoken.application.AuthApplicationITUtils
-import site.rahoon.message.monolithic.channel.controller.ChannelRequest
-import site.rahoon.message.monolithic.channel.controller.ChannelResponse
+import site.rahoon.message.monolithic.channel.controller.AdminChannelRequest
+import site.rahoon.message.monolithic.channel.controller.AdminChannelResponse
 import site.rahoon.message.monolithic.common.test.IntegrationTestBase
 import site.rahoon.message.monolithic.common.test.assertError
 import site.rahoon.message.monolithic.common.test.assertSuccess
@@ -32,35 +32,35 @@ class ChannelOperatorControllerIT(
 ) : IntegrationTestBase() {
     override val logger = KotlinLogging.logger {}
 
-    private fun channelsUrl(): String = "http://localhost:$port/channels"
+    private fun adminChannelsUrl(): String = "http://localhost:$port/admin/channels"
 
     private fun operatorsUrl(channelId: String): String = "http://localhost:$port/channels/$channelId/operators"
 
     /**
-     * 채널을 생성하고 ID를 반환합니다.
+     * 채널을 생성하고 ID를 반환합니다. (Admin API 사용)
      */
     private fun createChannel(
-        accessToken: String,
+        adminAccessToken: String,
         name: String,
     ): String {
-        val request = ChannelRequest.Create(name = name)
+        val request = AdminChannelRequest.Create(name = name)
         val headers =
             HttpHeaders().apply {
-                set("Authorization", "Bearer $accessToken")
+                set("Authorization", "Bearer $adminAccessToken")
                 contentType = MediaType.APPLICATION_JSON
             }
         val entity = HttpEntity(objectMapper.writeValueAsString(request), headers)
 
         val response =
             restTemplate.exchange(
-                channelsUrl(),
+                adminChannelsUrl(),
                 HttpMethod.POST,
                 entity,
                 String::class.java,
             )
 
         return response
-            .assertSuccess<ChannelResponse.Create>(objectMapper, HttpStatus.CREATED) { data ->
+            .assertSuccess<AdminChannelResponse.Create>(objectMapper, HttpStatus.CREATED) { data ->
                 data.name shouldBe name
             }.id
     }
@@ -104,7 +104,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 등록 성공`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "상담원 테스트 채널")
         val request = ChannelOperatorRequest.Create(userId = authResult.userId, nickname = "상담원1")
         val entity = HttpEntity(objectMapper.writeValueAsString(request), authResult.headers)
@@ -132,7 +132,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 등록 실패 - 인증 없음`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val request = ChannelOperatorRequest.Create(userId = authResult.userId, nickname = "상담원1")
         val headers =
@@ -157,7 +157,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 등록 실패 - 닉네임 누락`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val request = mapOf("userId" to authResult.userId)
         val entity = HttpEntity(objectMapper.writeValueAsString(request), authResult.headers)
@@ -178,7 +178,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 등록 실패 - 이미 등록된 사용자`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         createOperator(authResult.accessToken, channelId, authResult.userId, "상담원1")
 
@@ -205,7 +205,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 ID로 조회 성공`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "조회 테스트 채널")
         val operatorId = createOperator(authResult.accessToken, channelId, authResult.userId, "조회 테스트 상담원")
         val entity = HttpEntity<Nothing?>(null, authResult.headers)
@@ -230,7 +230,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 ID로 조회 실패 - 존재하지 않는 상담원`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val entity = HttpEntity<Nothing?>(null, authResult.headers)
 
@@ -254,7 +254,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `채널별 상담원 목록 조회 성공`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "목록 테스트 채널")
         createOperator(authResult.accessToken, channelId, authResult.userId, "상담원1")
 
@@ -283,7 +283,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `채널별 상담원 목록 조회 - 상담원이 없을 때`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "빈 채널")
         val entity = HttpEntity<Nothing?>(null, authResult.headers)
 
@@ -309,7 +309,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 수정 성공`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "수정 테스트 채널")
         val operatorId = createOperator(authResult.accessToken, channelId, authResult.userId, "원래 닉네임")
 
@@ -335,7 +335,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 수정 실패 - 인증 없음`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val operatorId = createOperator(authResult.accessToken, channelId, authResult.userId, "원래 닉네임")
 
@@ -362,7 +362,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 수정 실패 - 존재하지 않는 상담원`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val updateRequest = ChannelOperatorRequest.Update(nickname = "수정 시도")
         val entity = HttpEntity(objectMapper.writeValueAsString(updateRequest), authResult.headers)
@@ -387,7 +387,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 삭제 성공`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "삭제 테스트 채널")
         val operatorId = createOperator(authResult.accessToken, channelId, authResult.userId, "삭제될 상담원")
         val entity = HttpEntity<Nothing?>(null, authResult.headers)
@@ -420,7 +420,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 삭제 실패 - 인증 없음`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val operatorId = createOperator(authResult.accessToken, channelId, authResult.userId, "삭제될 상담원")
         val entity = HttpEntity<Nothing?>(null, HttpHeaders())
@@ -452,7 +452,7 @@ class ChannelOperatorControllerIT(
     @Test
     fun `상담원 삭제 실패 - 존재하지 않는 상담원`() {
         // given
-        val authResult = authApplicationITUtils.signUpAndLogin()
+        val authResult = authApplicationITUtils.signUpAdminAndLogin()
         val channelId = createChannel(authResult.accessToken, "테스트 채널")
         val entity = HttpEntity<Nothing?>(null, authResult.headers)
 

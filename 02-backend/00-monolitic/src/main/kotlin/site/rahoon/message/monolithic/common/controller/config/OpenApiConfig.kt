@@ -7,11 +7,13 @@ import io.swagger.v3.oas.models.security.SecurityRequirement
 import io.swagger.v3.oas.models.security.SecurityScheme
 import io.swagger.v3.oas.models.servers.Server
 import io.swagger.v3.oas.models.tags.Tag
-import org.springdoc.core.customizers.OpenApiCustomizer
-import org.springdoc.core.customizers.OperationCustomizer
+import org.springdoc.core.models.GroupedOpenApi
+import org.springdoc.core.customizers.GlobalOpenApiCustomizer
+import org.springdoc.core.customizers.GlobalOperationCustomizer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.method.HandlerMethod
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 
@@ -49,7 +51,15 @@ class OpenApiConfig {
                             .type(SecurityScheme.Type.HTTP)
                             .scheme("bearer")
                             .bearerFormat("JWT")
-                            .description("JWT 토큰을 사용한 인증. 'Bearer ' 접두사를 포함하여 토큰을 입력하세요."),
+                            .description("일반 사용자 JWT (USER 역할). 토큰만 입력하면 됩니다. (Bearer는 자동 추가)"),
+                    )
+                    addSecuritySchemes(
+                        "bearerAuthAdmin",
+                        SecurityScheme()
+                            .type(SecurityScheme.Type.HTTP)
+                            .scheme("bearer")
+                            .bearerFormat("JWT")
+                            .description("관리자 JWT (ADMIN 역할). 토큰만 입력하면 됩니다. (Bearer는 자동 추가)"),
                     )
                 }
 
@@ -74,15 +84,37 @@ class OpenApiConfig {
         }
 
     /**
+     * API 문서 그룹: 일반 API (Admin 제외)
+     */
+    @Bean
+    fun apiGroup(): GroupedOpenApi =
+        GroupedOpenApi.builder()
+            .group("api")
+            .displayName("00. USER API")
+            .pathsToExclude("/admin/**")
+            .build()
+
+    /**
+     * API 문서 그룹: Admin 전용 API
+     */
+    @Bean
+    fun adminApiGroup(): GroupedOpenApi =
+        GroupedOpenApi.builder()
+            .group("admin")
+            .displayName("01. Admin API")
+            .pathsToMatch("/admin/**")
+            .build()
+
+    /**
      * 메서드 이름 기반으로 Swagger Operation의 summary를 자동 생성하는 Customizer
      *
      * 현재는 메서드 이름을 기반으로 summary를 생성하지만,
      * 추후 KDoc 주석의 내용을 읽어서 반영하는 것을 목표로 한다.
      */
     @Bean
-    fun methodNameBasedSummaryCustomizer(): OperationCustomizer {
-        return OperationCustomizer { operation, handlerMethod ->
-            val method = (handlerMethod as? HandlerMethod)?.method ?: return@OperationCustomizer operation
+    fun methodNameBasedSummaryCustomizer(): GlobalOperationCustomizer {
+        return GlobalOperationCustomizer customizer@ { operation, handlerMethod ->
+            val method = (handlerMethod as? HandlerMethod)?.method ?: return@customizer operation
 
             // summary가 비어있으면 메서드 이름 기반으로 생성
             if (operation.summary.isNullOrBlank()) {
@@ -111,7 +143,7 @@ class OpenApiConfig {
      */
     @Bean
     @Suppress("MagicNumber", "LongMethod")
-    fun swaggerTagAliasCustomizer(): OpenApiCustomizer {
+    fun swaggerTagAliasCustomizer(): GlobalOpenApiCustomizer {
         data class TagOverride(
             val name: String,
             val description: String? = null,
@@ -130,7 +162,13 @@ class OpenApiConfig {
                 "Chat Room" to TagOverride("Chat Room", "채팅방 관리", 30),
                 "Chat Room Member" to TagOverride("Chat Room Member", "채팅방 멤버 관리", 40),
                 "Message" to TagOverride("Message", "메시징", 50),
-                "Test" to TagOverride("Test", "테스트용", 50),
+                "Channel" to TagOverride("Channel", "채널 정보 조회", 100),
+                "Channel Operator" to TagOverride("Channel Operator", "채널 관리자 관리", 110),
+                "Channel Conversation" to TagOverride("Channel Conversation", "채널 대화 관리", 120),
+
+                "Test" to TagOverride("Test", "테스트용", 900),
+                "Web Socket Doc Web" to TagOverride("WebSocket Doc Web", "WebSocket 문서 Web", 910),
+                "Web Socket Doc API" to TagOverride("WebSocket Doc API", "WebSocket 문서 API", 911),
             )
 
         fun normalizeTag(raw: String): String {
@@ -158,8 +196,8 @@ class OpenApiConfig {
             }
         }
 
-        return OpenApiCustomizer { openApi ->
-            val paths = openApi.paths ?: return@OpenApiCustomizer
+        return GlobalOpenApiCustomizer customizer@ { openApi ->
+            val paths = openApi.paths ?: return@customizer
 
             // UI에 노출할 태그 정의(이름/설명/순서)도 같이 만들어준다.
             data class ResolvedTagMeta(
@@ -235,18 +273,18 @@ class OpenApiConfig {
      * AuthInfo 파라미터를 문서에서 제거하는 Customizer
      */
     @Bean
-    fun authInfoAffectOperationCustomizer(): OperationCustomizer {
-        return OperationCustomizer { operation, handlerMethod ->
-            val handlerMethodObj = handlerMethod as? HandlerMethod ?: return@OperationCustomizer operation
+    fun authInfoAffectOperationCustomizer(): GlobalOperationCustomizer {
+        return GlobalOperationCustomizer customizer@ { operation, handlerMethod ->
+            val handlerMethodObj = handlerMethod as? HandlerMethod ?: return@customizer operation
 
 //            val method = handlerMethodObj.method
 //            val hasAuthInfoAffect =
 //                method.isAnnotationPresent(AuthInfoAffect::class.java) ||
 //                    method.declaringClass.isAnnotationPresent(AuthInfoAffect::class.java)
-//            if (!hasAuthInfoAffect) return@OperationCustomizer operation
+//            if (!hasAuthInfoAffect) return@customizer operation
 
-            val parameters = operation.parameters ?: return@OperationCustomizer operation
-            if (parameters.isEmpty()) return@OperationCustomizer operation
+            val parameters = operation.parameters ?: return@customizer operation
+            if (parameters.isEmpty()) return@customizer operation
 
             // AuthInfo 타입의 파라미터 제거
             // authInfo 파라미터 제거 (이름 기반 + 이름이 없는 경우 삭제)
@@ -262,11 +300,30 @@ class OpenApiConfig {
             val filteredParameters = parameters.filterNot { it.name in swaggerParamNamesToRemove }
             operation.parameters = filteredParameters
 
-            // 파라미터 개수가 변경되었으면 Security 추가
+            // 파라미터 개수가 변경되었으면 Security 추가 (경로 prefix에 따라 scheme 선택)
             if (filteredParameters.size != parameters.size) {
-                operation.addSecurityItem(SecurityRequirement().addList("bearerAuth"))
+                val securityScheme =
+                    if (isAdminPath(handlerMethodObj)) "bearerAuthAdmin" else "bearerAuth"
+                operation.addSecurityItem(SecurityRequirement().addList(securityScheme))
             }
             operation
         }
+    }
+
+    private fun isAdminPath(handlerMethod: HandlerMethod): Boolean {
+        var clazz: Class<*>? = handlerMethod.beanType
+        while (clazz != null) {
+            val requestMapping = clazz.getAnnotation(RequestMapping::class.java) ?: run {
+                clazz = clazz.superclass
+                continue
+            }
+            val path =
+                requestMapping.value.firstOrNull()?.takeIf { it.isNotBlank() }
+                    ?: requestMapping.path.firstOrNull()?.takeIf { it.isNotBlank() }
+                    ?: ""
+            if (path.startsWith("/admin")) return true
+            clazz = clazz.superclass
+        }
+        return false
     }
 }
