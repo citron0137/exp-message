@@ -43,4 +43,22 @@ data class User(
             nickname = newNickname,
             updatedAt = LocalDateTime.now(),
         )
+
+    /**
+     * 비밀번호를 업데이트합니다.
+     */
+    fun updatePassword(newPasswordHash: String): User =
+        this.copy(
+            passwordHash = newPasswordHash,
+            updatedAt = LocalDateTime.now(),
+        )
+
+    /**
+     * 역할을 업데이트합니다.
+     */
+    fun updateRole(newRole: UserRole): User =
+        this.copy(
+            role = newRole,
+            updatedAt = LocalDateTime.now(),
+        )
 }
