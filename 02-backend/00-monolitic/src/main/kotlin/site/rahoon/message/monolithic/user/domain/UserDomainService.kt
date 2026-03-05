@@ -108,6 +108,14 @@ class UserDomainService(
     }
 
     /**
+     * ID 목록으로 사용자들을 한 번에 조회합니다.
+     */
+    fun getByIds(userIds: Collection<String>): List<User> {
+        if (userIds.isEmpty()) return emptyList()
+        return userRepository.findByIdIn(userIds.toSet())
+    }
+
+    /**
      * 이메일로 사용자를 조회합니다. (없으면 null)
      */
     fun findUserByEmail(email: String): User? = userRepository.findByEmail(email)
