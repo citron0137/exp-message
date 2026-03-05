@@ -1,5 +1,9 @@
 # R-Message Notification System Design
 
+> **⚠️ DEPRECATED**  
+> 본 문서는 deprecated 되었습니다.  
+> 추후 **Notification 도메인 성능 개선** 작업으로 진행할 예정입니다.
+
 ## 0. Overview 
 
 R-Message는 실시간 메시징 시스템이며, 메시지 이벤트를 기반으로 다양한 알림을 전달할 수 있는 알림 시스템을 구축하는 것을 목표로 한다.

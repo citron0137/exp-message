@@ -4,6 +4,10 @@ tags: [개인 프로젝트, 알림, exp-message]
 date: 2026-03-04
 ---
 
+> **⚠️ DEPRECATED**  
+> 본 문서는 deprecated 되었습니다.  
+> 추후 **Notification 도메인 성능 개선** 작업으로 진행할 예정입니다.
+
 ## 프로젝트 요약
 
 - **한 줄 요약**:
