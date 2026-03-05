@@ -144,6 +144,13 @@ services:
       DB_SHOW_SQL: ${DB_SHOW_SQL:-true}
       DB_FORMAT_SQL: ${DB_FORMAT_SQL:-true}
       DB_USE_SQL_COMMENTS: ${DB_USE_SQL_COMMENTS:-true}
+      MAIL_HOST: ${MAIL_HOST:-localhost}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-false}
+      NOTIFICATION_EMAIL_FROM: ${NOTIFICATION_EMAIL_FROM:-no-reply@example.com}
     depends_on:
       mysql:
         condition: service_healthy

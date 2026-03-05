@@ -107,6 +107,19 @@ app-monolitic:
     nickname: admin
     method: default
 
+  # Mail
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ""
+    password: ""
+    smtpAuth: true
+    smtpStarttls: true
+
+  # Notification
+  notification:
+    emailFrom: "no-reply@example.com"
+
 # ============================================================================
 # Ingress Configuration (for Helm chart)
 # ============================================================================

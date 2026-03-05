@@ -52,6 +52,19 @@ redis:
   port: 6379
   password: ""  # Will be overridden by parent chart values
 
+# Mail (Notification STEP1)
+mail:
+  host: smtp.gmail.com
+  port: 587
+  username: ""
+  password: ""
+  smtpAuth: true
+  smtpStarttls: true
+
+# Notification
+notification:
+  emailFrom: "no-reply@example.com"
+
 # Resource Configuration
 resources:
   requests:
