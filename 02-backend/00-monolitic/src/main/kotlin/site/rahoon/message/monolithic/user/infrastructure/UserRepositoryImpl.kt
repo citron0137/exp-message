@@ -27,6 +27,13 @@ class UserRepositoryImpl(
             .map { toDomain(it) }
             .orElse(null)
 
+    override fun findByIdIn(ids: Collection<String>): List<User> =
+        if (ids.isEmpty()) {
+            emptyList()
+        } else {
+            jpaRepository.findAllByIdIn(ids.toSet()).map { toDomain(it) }
+        }
+
     override fun findByEmail(email: String): User? =
         jpaRepository
             .findByEmail(email)

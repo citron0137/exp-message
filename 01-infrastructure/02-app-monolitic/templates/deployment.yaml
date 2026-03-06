@@ -75,6 +75,20 @@ spec:
           value: {{ .Values.redis.port | quote }}
         - name: REDIS_PASSWORD
           value: {{ .Values.redis.password | quote }}
+        - name: MAIL_HOST
+          value: {{ .Values.mail.host | quote }}
+        - name: MAIL_PORT
+          value: {{ .Values.mail.port | quote }}
+        - name: MAIL_USERNAME
+          value: {{ .Values.mail.username | quote }}
+        - name: MAIL_PASSWORD
+          value: {{ .Values.mail.password | quote }}
+        - name: MAIL_SMTP_AUTH
+          value: {{ .Values.mail.smtpAuth | quote }}
+        - name: MAIL_SMTP_STARTTLS
+          value: {{ .Values.mail.smtpStarttls | quote }}
+        - name: NOTIFICATION_EMAIL_FROM
+          value: {{ .Values.notification.emailFrom | quote }}
         - name: DEFAULT_ADMIN_EMAIL
           value: {{ .Values.defaultAdmin.email | default "admin@example.com" | quote }}
         - name: DEFAULT_ADMIN_PASSWORD

@@ -10,4 +10,6 @@ interface UserJpaRepository : JpaSoftDeleteRepository<UserEntity, String> {
     fun findByEmail(email: String): Optional<UserEntity>
 
     fun existsByRole(role: String): Boolean
+
+    fun findAllByIdIn(ids: Collection<String>): List<UserEntity>
 }

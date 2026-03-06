@@ -5,6 +5,8 @@ interface UserRepository {
 
     fun findById(id: String): User?
 
+    fun findByIdIn(ids: Collection<String>): List<User>
+
     fun findByEmail(email: String): User?
 
     fun existsByRole(role: UserRole): Boolean
