@@ -1,5 +1,6 @@
 package site.rahoon.message.monolithic.common.controller.config
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -11,11 +12,16 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 /**
  * Spring Security 설정
- * 개발 환경에서는 모든 요청을 허용합니다.
+ * Cookie auth는 엄격한 CORS 정책을 전제로 합니다.
  */
 @Configuration
 @EnableWebSecurity
-class SecurityConfig {
+class SecurityConfig(
+    @param:Value("\${security.cors.allowed-origin-patterns}")
+    private val allowedOriginPatternsProperty: String,
+    @param:Value("\${security.cors.allow-credentials:true}")
+    private val allowCredentials: Boolean,
+) {
     companion object {
         private const val CORS_MAX_AGE_SECONDS = 3600L
     }
@@ -33,16 +39,18 @@ class SecurityConfig {
 
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
+        val allowedOriginPatterns =
+            allowedOriginPatternsProperty
+                .split(",")
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+
         val configuration = CorsConfiguration().apply {
-            allowedOriginPatterns = listOf(
-                "http://localhost:*",
-                "http://127.0.0.1:*",
-                "https://message.rahoon.site",
-            )
+            this.allowedOriginPatterns = allowedOriginPatterns
             allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             allowedHeaders = listOf("*")
             exposedHeaders = listOf("Authorization")
-            allowCredentials = false
+            this.allowCredentials = this@SecurityConfig.allowCredentials
             maxAge = CORS_MAX_AGE_SECONDS
         }
 
