@@ -37,7 +37,8 @@ class AdminWebRefreshTokenCookieManager(
     ) {
         val maxAgeSeconds = Duration.between(LocalDateTime.now(), refreshToken.expiresAt).seconds.coerceAtLeast(0)
         val cookie =
-            ResponseCookie.from(cookieName, refreshToken.token)
+            ResponseCookie
+                .from(cookieName, refreshToken.token)
                 .httpOnly(true)
                 .secure(resolveSecure(request))
                 .path(cookiePath)
@@ -53,7 +54,8 @@ class AdminWebRefreshTokenCookieManager(
         request: HttpServletRequest,
     ) {
         val cookie =
-            ResponseCookie.from(cookieName, "")
+            ResponseCookie
+                .from(cookieName, "")
                 .httpOnly(true)
                 .secure(resolveSecure(request))
                 .path(cookiePath)
