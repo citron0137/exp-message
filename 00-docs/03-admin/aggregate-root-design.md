@@ -5,8 +5,8 @@
 This document defines the aggregate-root-oriented domain design for the admin and messaging domain.  
 이 문서는 어드민 및 메시징 도메인을 위한 AR(Aggregate Root) 중심 도메인 설계를 정의합니다.
 
-The design is centered on three actors: Platform Admin, Channel User, and EndUser.  
-이 설계는 Platform Admin, Channel User, EndUser의 세 가지 존재를 중심으로 합니다.
+The design is centered on three actors: Platform Admin, Channel User, and ChannelEndUser.  
+이 설계는 Platform Admin, Channel User, ChannelEndUser의 세 가지 존재를 중심으로 합니다.
 
 ## ⚙️ Common Considerations / 공통 고려사항
 
@@ -16,8 +16,8 @@ The design is centered on three actors: Platform Admin, Channel User, and EndUse
   각 테이블 그룹은 하나의 Aggregate Root와 그 내부 소유 엔티티를 기준으로 구성합니다.
 - **Role split / 역할 분리**: global role(for `Platform Admin`, `Channel User`) and channel role(for `Channel User`) must be separated.  
   전역 역할(`Platform Admin`, `Channel User`)과 채널 역할(`Channel User`)은 분리되어야 합니다.
-- **Identity split / 식별 분리**: backoffice users and end users must not share the same identity model.  
-  백오피스 사용자와 엔드유저는 동일한 식별 모델을 공유하지 않습니다.
+- **Identity split / 식별 분리**: backoffice users and channel end users must not share the same identity model.  
+  백오피스 사용자와 채널 엔드유저는 동일한 식별 모델을 공유하지 않습니다.
 - **Enum fields / Enum 필드**: role and status values are modeled as enum in the domain and should be documented with explicit allowed values.  
   role 및 status 값은 도메인에서 enum으로 모델링하며, 문서에도 허용 값을 명시합니다.
 - **Audit fields / 감사 필드**: all tables include `created_at` and `updated_at`.  
@@ -90,7 +90,7 @@ erDiagram
   내부 행위자는 모두 `User`를 통해 로그인합니다.
 - **Membership-owned belonging / 멤버십 중심 소속 관리**: a user may be a platform admin without belonging to any channel, so channel ownership must not be mandatory in `User`.  
   운영 어드민은 어떤 채널에도 속하지 않을 수 있으므로, `User`에 채널 소속을 필수로 두면 안 됩니다.
-- **No EndUser mixing / EndUser 분리**: widget customers have a different lifecycle and must be separated.  
+- **No ChannelEndUser mixing / ChannelEndUser 분리**: widget customers have a different lifecycle and must be separated.  
   위젯 고객은 생명주기가 다르므로 분리해야 합니다.
 
 ## 🏢 Channel Aggregate / 채널 AR
@@ -99,8 +99,8 @@ erDiagram
 
 - `Channel` is the tenant root (customer company).  
   `Channel`은 테넌트 루트(고객사)입니다.
-- It owns channel configuration, channel-scoped users, end users, conversations, and tickets.  
-  채널 설정, 채널 소속 사용자, 엔드유저, 대화, 티켓의 상위 경계를 형성합니다.
+- It owns channel configuration, channel-scoped users, end users, and conversations.  
+  채널 설정, 채널 소속 사용자, 엔드유저, 대화의 상위 경계를 형성합니다.
 - It owns tenant-level configuration and lifecycle state.  
   테넌트 레벨 설정과 수명주기 상태를 소유합니다.
 
@@ -188,7 +188,7 @@ erDiagram
 | `channel_membership_id` | string      | Membership identifier / 멤버십 식별자                         |
 | `channel_id`            | string      | Channel reference / 채널 참조                                 |
 | `user_id`               | string      | Backoffice user reference / 백오피스 사용자 참조              |
-| `membership_role`       | Enum        | Channel role: `CHANNEL_ADMIN`, `AGENT` / 채널 역할            |
+| `membership_role`       | Enum        | Channel role: `ADMIN`, `AGENT` / 채널 역할                    |
 | `agent_status`          | Enum        | Agent state such as `ONLINE`, `AWAY`, `OFFLINE` / 상담원 상태 |
 | `invited_at`            | DateTime    | Invitation time / 초대 시각                                   |
 | `joined_at`             | DateTime    | Join completion time / 가입 완료 시각                         |
@@ -198,7 +198,7 @@ erDiagram
 ### Special Field Notes / 특수 필드 설명
 
 - **`membership_role`** has the following values / **`membership_role`** 은 아래 값을 가집니다:
-  - `CHANNEL_ADMIN`
+  - `ADMIN`
   - `AGENT`
 - **`agent_status`** has the following values / **`agent_status`** 은 아래 값을 가집니다:
   - `ONLINE`
@@ -262,7 +262,7 @@ erDiagram
 ### Special Field Notes / 특수 필드 설명
 
 - **`target_role`** has the following values / **`target_role`** 은 아래 값을 가집니다:
-  - `CHANNEL_ADMIN`
+  - `ADMIN`
   - `AGENT`
 - **`invitation_status`** has the following values / **`invitation_status`** 은 아래 값을 가집니다:
   - `PENDING`
@@ -277,23 +277,23 @@ erDiagram
 - **Separate invitation lifecycle / 초대 생명주기 분리**: invitation state should not be mixed into membership state.  
   초대 상태는 membership 상태와 분리해야 합니다.
 
-## 🙋 EndUser Aggregate / 엔드유저 AR
+## 🙋 ChannelEndUser Aggregate / 채널 엔드유저 AR
 
 ### Aggregate Responsibility / AR 책임
 
-- `EndUser` is the identity root for widget customers.  
-  `EndUser`는 위젯 고객의 식별 루트입니다.
+- `ChannelEndUser` is the identity root for widget customers.  
+  `ChannelEndUser`는 위젯 고객의 식별 루트입니다.
 - It is channel-scoped and identified by email.  
   채널 단위로 존재하며 이메일로 식별합니다.
-- A user can have multiple `EndUser` records across different channels but only one per channel.  
-  한 사용자는 여러 채널을 통틀어 여러 `EndUser` 레코드를 가질 수 있지만, 채널당 하나만 가질 수 있습니다.
+- A user can have multiple `ChannelEndUser` records across different channels but only one per channel.  
+  한 사용자는 여러 채널을 통틀어 여러 `ChannelEndUser` 레코드를 가질 수 있지만, 채널당 하나만 가질 수 있습니다.
 - It owns customer identity and customer-level lifecycle state inside a channel.  
   채널 내부에서 고객 식별과 고객 레벨 수명주기 상태를 소유합니다.
 
 ```mermaid
 erDiagram
-    T_END_USER {
-        string end_user_id
+    T_CHANNEL_END_USER {
+        string channel_end_user_id
         string channel_id
         string email
         string name
@@ -304,14 +304,14 @@ erDiagram
         DateTime updated_at
     }
 
-    T_END_USER }o..|| T_CHANNEL: channel_id
+    T_CHANNEL_END_USER }o..|| T_CHANNEL: channel_id
 ```
 
-### T_END_USER
+### T_CHANNEL_END_USER
 
 | Field / 필드명  | Type / 타입 | Description / 설명                                                |
 | --------------- | ----------- | ----------------------------------------------------------------- |
-| `end_user_id`   | string      | End-user identifier / 엔드유저 식별자                             |
+| `channel_end_user_id` | string | Channel end-user identifier / 채널 엔드유저 식별자               |
 | `channel_id`    | string      | Owning channel / 소속 채널                                        |
 | `email`         | string      | Required unique email within channel / 채널 내 유일한 필수 이메일 |
 | `name`          | string      | Display name / 표시 이름                                          |
@@ -330,12 +330,12 @@ erDiagram
 
 ### Design Rationale / 설계 이유
 
-- **Dedicated customer identity / 고객 전용 식별자**: end users are not employees and must not share `User`.  
-  엔드유저는 직원이 아니므로 `User`와 분리해야 합니다.
+- **Dedicated customer identity / 고객 전용 식별자**: channel end users are not employees and must not share `User`.  
+  채널 엔드유저는 직원이 아니므로 `User`와 분리해야 합니다.
 - **Email-based identity / 이메일 기반 식별**: product policy requires email before a real conversation starts.  
   본격 대화 전에 이메일을 받아야 하므로 이메일 기반 식별이 적합합니다.
-- **Channel-local identity / 채널 지역 식별**: the same email in another channel is a different tenant-local end user.  
-  다른 채널의 같은 이메일은 다른 테넌트 로컬 엔드유저입니다.
+- **Channel-local identity / 채널 지역 식별**: the same email in another channel is a different tenant-local channel end user.  
+  다른 채널의 같은 이메일은 다른 테넌트 로컬 채널 엔드유저입니다.
 
 ## 💬 Conversation Aggregate / 대화 AR
 
@@ -357,7 +357,7 @@ erDiagram
     T_CONVERSATION {
         string conversation_id
         string channel_id
-        string end_user_id
+        string channel_end_user_id
         enum status
         DateTime last_message_at
         DateTime dormant_at
@@ -370,15 +370,13 @@ erDiagram
         string conversation_id
         enum sender_type
         string sender_id
-        enum message_type
-        string body
-        string metadata_json
+        string content
         DateTime created_at
         DateTime updated_at
     }
 
     T_CONVERSATION ||..|| T_CHANNEL: channel_id
-    T_CONVERSATION ||..|| T_END_USER: end_user_id
+    T_CONVERSATION ||..|| T_CHANNEL_END_USER: channel_end_user_id
     T_CONVERSATION ||--|{ T_CONVERSATION_MESSAGE: conversation_id
 ```
 
@@ -388,7 +386,7 @@ erDiagram
 | ----------------- | ----------- | ------------------------------------------ |
 | `conversation_id` | string      | Conversation identifier / 대화 식별자      |
 | `channel_id`      | string      | Channel reference / 채널 참조              |
-| `end_user_id`     | string      | End-user reference / 엔드유저 참조         |
+| `channel_end_user_id` | string  | Channel end-user reference / 채널 엔드유저 참조 |
 | `status`          | Enum        | `ACTIVE`, `DORMANT` / 대화 상태            |
 | `last_message_at` | DateTime    | Last message time / 마지막 메시지 시각     |
 | `dormant_at`      | DateTime    | Dormant transition time / 휴지기 진입 시각 |
@@ -409,9 +407,7 @@ erDiagram
 | `conversation_id`         | string      | Conversation reference / 대화 참조                        |
 | `sender_type`             | Enum        | Sender type / 발신자 유형                                 |
 | `sender_id`               | string      | Sender identifier / 발신자 식별자                         |
-| `message_type`            | Enum        | Message type / 메시지 종류                                |
-| `body`                    | string      | Message body / 메시지 본문                                |
-| `metadata_json`           | string      | Structured metadata / 구조화 메타데이터                   |
+| `content`                 | string      | Message content / 메시지 내용                             |
 | `created_at`              | DateTime    | Created time / 생성 일시                                  |
 | `updated_at`              | DateTime    | Updated time / 수정 일시                                  |
 
@@ -420,11 +416,6 @@ erDiagram
 - **`sender_type`** has the following values / **`sender_type`** 은 아래 값을 가집니다:
   - `CHANNEL_USER`
   - `END_USER`
-  - `SYSTEM`
-- **`message_type`** has the following values / **`message_type`** 은 아래 값을 가집니다:
-  - `TEXT`
-  - `SYSTEM_NOTE`
-  - `TICKET_MARKER`
 
 ### Design Rationale / 설계 이유
 
@@ -434,67 +425,24 @@ erDiagram
   7일 무응답 이후에는 종료가 아니라 휴지기로 전환합니다.
 - **UI-level restart hint / UI 레벨 재시작 표시**: after dormancy, the admin panel should show that a new interaction has started, while keeping the same conversation boundary in the domain.  
   휴지기 이후에는 도메인 경계는 같은 conversation을 유지하되, 관리자 UI에서는 새로운 상호작용이 시작되었음을 표시해야 합니다.
-- **Timeline extensibility / 타임라인 확장성**: system notes and ticket markers can be stored as timeline messages.  
-  시스템 노트와 티켓 마커를 타임라인 메시지로 표현할 수 있습니다.
+- **Simple timeline model / 단순 타임라인 모델**: the first version keeps conversation messages as simple chat messages and postpones richer timeline event modeling.  
+  1차 버전에서는 conversation message를 단순 채팅 메시지로 유지하고, 더 풍부한 타임라인 이벤트 모델링은 추후로 미룹니다.
 
-## 🎫 Ticket Aggregate / 티켓 AR
+## 🎫 Ticket Aggregate (Future Plan) / 티켓 AR (미래 계획)
 
 ### Aggregate Responsibility / AR 책임
 
-- `Ticket` is an internal operational root inside a conversation.  
-  `Ticket`은 대화 내부의 운영용 루트입니다.
-- It is visible only to channel staff.  
-  채널 직원에게만 보입니다.
-- It owns the internal issue lifecycle inside one conversation.  
-  하나의 conversation 내부에서 내부 이슈 수명주기를 소유합니다.
-- In the admin panel, ticket lifecycle should be visible as a dedicated section or timeline signal.  
-  관리자 패널에서는 티켓 수명주기가 별도 섹션 또는 타임라인 신호로 보여야 합니다.
-
-```mermaid
-erDiagram
-    T_TICKET {
-        string ticket_id
-        string conversation_id
-        string created_by_membership_id
-        enum status
-        string title
-        string description
-        DateTime created_at
-        DateTime updated_at
-    }
-
-    T_TICKET }o..|| T_CONVERSATION: conversation_id
-    T_TICKET }o..|| T_CHANNEL_MEMBERSHIP: created_by_membership_id
-```
-
-### T_TICKET
-
-| Field / 필드명             | Type / 타입 | Description / 설명                                |
-| -------------------------- | ----------- | ------------------------------------------------- |
-| `ticket_id`                | string      | Ticket identifier / 티켓 식별자                   |
-| `conversation_id`          | string      | Parent conversation / 소속 대화                   |
-| `created_by_membership_id` | string      | Staff creator reference / 생성한 직원 멤버십 참조 |
-| `status`                   | Enum        | Ticket state / 티켓 상태                          |
-| `title`                    | string      | Ticket title / 티켓 제목                          |
-| `description`              | string      | Internal description / 내부 설명                  |
-| `created_at`               | DateTime    | Created time / 생성 일시                          |
-| `updated_at`               | DateTime    | Updated time / 수정 일시                          |
-
-### Special Field Notes / 특수 필드 설명
-
-- **`status`** has the following values / **`status`** 은 아래 값을 가집니다:
-  - `OPEN`
-  - `RESOLVED`
-  - `CLOSED`
+- `Ticket` is a candidate aggregate for a future phase.  
+  `Ticket`은 추후 단계에서 도입할 후보 aggregate입니다.
+- It may be introduced when issue-level tracking becomes necessary inside a conversation.  
+  conversation 내부에서 이슈 단위 추적이 필요해질 때 도입할 수 있습니다.
 
 ### Design Rationale / 설계 이유
 
-- **Internal-only object / 내부 전용 객체**: end users must not see tickets.  
-  엔드유저는 티켓을 볼 수 없습니다.
-- **Multiple tickets per conversation / 대화당 다중 티켓 허용**: one conversation may contain multiple internal issue boundaries.  
-  하나의 대화는 여러 내부 이슈 경계를 가질 수 있습니다.
-- **Any channel staff may create / 모든 채널 직원 생성 가능**: ticket creation is allowed for both customer admins and agents.  
-  고객사 관리자와 상담원 모두 티켓을 생성할 수 있습니다.
+- **Issue-level clarity / 이슈 단위 가시성**: ticket can help summarize issue context and post-analysis when conversation-level tracking becomes insufficient.  
+  conversation 수준 추적만으로 부족해질 때 ticket은 이슈 맥락과 사후 분석에 도움을 줄 수 있습니다.
+- **Separated rollout / 분리된 도입 가능성**: ticket can be introduced later without changing the current one-conversation-per-user policy.  
+  ticket은 현재의 1유저-1대화 정책을 바꾸지 않고도 나중에 도입할 수 있습니다.
 
 ## 🔁 Current Resource Migration / 현재 리소스 전환 방향
 
@@ -504,8 +452,8 @@ erDiagram
 | `UserRole.USER`                  | `UserRole.CHANNEL_USER`                                        |
 | `CommonAuthRole.ADMIN/USER`      | align to global role semantics / 전역 역할 의미에 맞게 정렬    |
 | `ChannelOperator`                | evolve into `ChannelMembership` / `ChannelMembership`으로 전환 |
-| `ChannelConversation.customerId` | replace with `end_user_id` / `end_user_id`로 전환              |
-| generic widget identity          | introduce dedicated `EndUser` / 전용 `EndUser` 도입            |
+| `ChannelConversation.customerId` | replace with `channel_end_user_id` / `channel_end_user_id`로 전환 |
+| generic widget identity          | introduce dedicated `ChannelEndUser` / 전용 `ChannelEndUser` 도입 |
 
 ## ✅ Summary / 정리
 
@@ -513,9 +461,9 @@ erDiagram
   `User`는 백오피스 식별 AR입니다.
 - `ChannelMembership` is the AR for channel-scoped authorization.  
   `ChannelMembership`는 채널 권한 AR입니다.
-- `EndUser` is the AR for widget customer identity.  
-  `EndUser`는 위젯 고객 식별 AR입니다.
+- `ChannelEndUser` is the AR for widget customer identity.  
+  `ChannelEndUser`는 위젯 고객 식별 AR입니다.
 - `Conversation` is the AR for long-lived customer interaction.  
   `Conversation`은 장기 고객 상호작용 AR입니다.
-- `Ticket` is the AR for internal operational segmentation.  
-  `Ticket`은 내부 운영 구분 AR입니다.
+- `Ticket` is a future candidate aggregate for issue-level tracking.  
+  `Ticket`은 이슈 단위 추적을 위한 추후 후보 aggregate입니다.

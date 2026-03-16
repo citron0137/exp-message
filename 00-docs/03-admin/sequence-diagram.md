@@ -10,12 +10,14 @@
   저수준 인프라보다 aggregate/application 레벨 참여자를 사용합니다.
 - Application layer handles coordination(Orchestration); aggregate handles invariants.  
   Application 레이어가 중심에서 Orchestration을 담당하고, aggregate가 불변식을 처리합니다.
-- Center the document around Platform Admin, Channel User, and EndUser.  
-  문서는 Platform Admin, Channel User, EndUser를 중심으로 구성합니다.
+- Center the document around Platform Admin, Channel User, and ChannelEndUser.  
+  문서는 Platform Admin, Channel User, ChannelEndUser를 중심으로 구성합니다.
 - Follow the aggregate boundaries defined in `aggregate-root-design.md`.  
   `aggregate-root-design.md`에서 정의한 aggregate 경계를 따릅니다.
 - Distinguish between aggregate state changes and timeline/event recording.  
   aggregate 상태 변경과 타임라인/이벤트 기록을 구분합니다.
+- Ticket-related flows are excluded from the current scope and reserved for a future phase.  
+  Ticket 관련 흐름은 현재 범위에서 제외하며 추후 단계로 남겨둡니다.
 
 ## 1. Channel Creation / 채널 생성
 
@@ -36,7 +38,7 @@ sequenceDiagram
     channel_app ->> user: create initial customer admin user / 초기 고객사 관리자 사용자 생성
     user ->> channel_app:
 
-    channel_app ->> membership: create CHANNEL_ADMIN membership / CHANNEL_ADMIN 멤버십 생성
+    channel_app ->> membership: create ADMIN membership / ADMIN 멤버십 생성
     membership ->> channel_app:
 
     channel_app ->> platform_admin: return created channel / 생성 결과 반환
@@ -82,9 +84,9 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    actor end_user as EndUser / 엔드유저
+    actor end_user as ChannelEndUser / 채널 엔드유저
     participant widget_app as Widget Application / 위젯 어플리케이션
-    participant enduser as EndUser AR / 엔드유저 AR
+    participant enduser as ChannelEndUser AR / 채널 엔드유저 AR
     participant conversation as Conversation AR / 대화 AR
 
     end_user ->> widget_app: open widget / 위젯 진입
@@ -98,8 +100,6 @@ sequenceDiagram
 
     alt conversation exists / 기존 대화 존재
         conversation ->> widget_app: return existing conversation / 기존 대화 반환
-        widget_app ->> conversation: append system note if dormant / dormant이면 시스템 노트 추가
-        conversation ->> widget_app:
     else conversation does not exist / 기존 대화 없음
         conversation ->> widget_app:
         widget_app ->> conversation: create conversation / 대화 생성
@@ -115,9 +115,9 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    actor end_user as EndUser / 엔드유저
+    actor end_user as ChannelEndUser / 채널 엔드유저
     participant widget_app as Widget Application / 위젯 어플리케이션
-    participant enduser as EndUser AR / 엔드유저 AR
+    participant enduser as ChannelEndUser AR / 채널 엔드유저 AR
     participant conversation as Conversation AR / 대화 AR
 
     end_user ->> widget_app: re-enter widget with same email / 같은 이메일로 재진입
@@ -127,51 +127,19 @@ sequenceDiagram
     widget_app ->> conversation: load ongoing conversation / ongoing conversation 조회
     conversation ->> widget_app: existing conversation / 기존 대화 반환
 
-    widget_app ->> conversation: append resume system note if dormant / dormant였으면 재개 시스템 노트 추가
-    conversation ->> widget_app:
-
     widget_app ->> conversation: append new message / 새 메시지 추가
     conversation ->> widget_app:
 
     widget_app ->> end_user: return continued timeline / 이어진 타임라인 반환
 ```
 
-## 5. Create Internal Ticket / 내부 티켓 생성
-
-```mermaid
-sequenceDiagram
-    actor channel_user as Channel User / 고객사 사용자
-    participant ticket_app as Ticket Application / 티켓 어플리케이션
-    participant membership as ChannelMembership AR / 채널 멤버십 AR
-    participant conversation as Conversation AR / 대화 AR
-    participant ticket as Ticket AR / 티켓 AR
-
-    channel_user ->> ticket_app: create internal ticket / 내부 티켓 생성
-    note over channel_user,ticket_app: conversation id, title, description / 대화 ID, 제목, 설명
-
-    ticket_app ->> membership: validate channel staff membership / 채널 직원 권한 검증
-    membership ->> ticket_app:
-
-    ticket_app ->> conversation: validate conversation ownership / 대화 소속 채널 검증
-    conversation ->> ticket_app:
-
-    ticket_app ->> ticket: create ticket / 티켓 생성
-    ticket ->> ticket_app:
-
-    ticket_app ->> conversation: append ticket marker message / 티켓 마커 메시지 추가
-    conversation ->> ticket_app:
-
-    ticket_app ->> channel_user: return updated timeline / 갱신된 타임라인 반환
-```
-
-## 6. Move to Dormant / 휴지기 전환
+## 5. Move to Dormant / 휴지기 전환
 
 ```mermaid
 sequenceDiagram
     participant scheduler as Dormant Scheduler / 휴지기 스케줄러
     participant conversation_app as Conversation Application / 대화 어플리케이션
     participant conversation as Conversation AR / 대화 AR
-    participant timeline as Conversation Timeline / 대화 타임라인
 
     scheduler ->> conversation_app: find inactive conversations / 비활성 대화 조회
     note over scheduler,conversation_app: last message older than 7 days / 마지막 메시지가 7일 초과
@@ -179,13 +147,10 @@ sequenceDiagram
     conversation_app ->> conversation: mark dormant / dormant 처리
     conversation ->> conversation_app:
 
-    conversation_app ->> timeline: append dormant system note / 휴지기 시스템 노트 추가
-    timeline ->> conversation_app:
-
     conversation_app ->> scheduler: return dormant count / 처리 건수 반환
 ```
 
-## 7. Platform Admin Accesses Channel Data / 운영 어드민의 고객사 데이터 접근
+## 6. Platform Admin Accesses Channel Data / 운영 어드민의 고객사 데이터 접근
 
 ```mermaid
 sequenceDiagram
@@ -194,7 +159,6 @@ sequenceDiagram
     participant user as User AR / 사용자 AR
     participant channel as Channel AR / 채널 AR
     participant conversation as Conversation AR / 대화 AR
-    participant ticket as Ticket AR / 티켓 AR
 
     platform_admin ->> admin_app: open customer channel dashboard / 고객사 채널 대시보드 접근
     note over platform_admin,admin_app: platform-wide support or operation use case / 운영 또는 지원 목적으로 접근
@@ -207,9 +171,6 @@ sequenceDiagram
 
     admin_app ->> conversation: load channel conversations / 채널 대화 조회
     conversation ->> admin_app:
-
-    admin_app ->> ticket: load channel tickets / 채널 티켓 조회
-    ticket ->> admin_app:
 
     admin_app ->> platform_admin: return channel operational view / 채널 운영 화면 반환
 ```
