@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
-    "01-widget"
+    "01-widget",
+    "03-admin"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=01-widget",
+    "dev:admin": "npm run dev --workspace=03-admin",
     "build": "npm run build --workspace=01-widget",
-    "preview": "npm run preview --workspace=01-widget"
+    "build:admin": "npm run build --workspace=03-admin",
+    "preview": "npm run preview --workspace=01-widget",
+    "preview:admin": "npm run preview --workspace=03-admin"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
