@@ -9,6 +9,11 @@ interface ChannelConversationRepository {
     fun save(conversation: ChannelConversation): ChannelConversation
 
     /**
+     * Finds a channel conversation by id.
+     */
+    fun findById(id: String): ChannelConversation?
+
+    /**
      * Finds a reusable conversation for a channel and visitor.
      */
     fun findReusableByChannelIdAndVisitorId(

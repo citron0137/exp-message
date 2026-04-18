@@ -20,7 +20,22 @@ class ChannelConversationUT {
         conversation.channelId shouldBe channelId
         conversation.visitorId shouldBe visitorId
         conversation.status shouldBe ChannelConversationStatus.PENDING
+        conversation.lastMessageSequence shouldBe 0
         conversation.closedAt.shouldBeNull()
+    }
+
+    @Test
+    fun `issueNextMessageSequence increments conversation scoped sequence`() {
+        // Arrange: Prepare a new conversation without messages. / 준비: message가 없는 새 conversation을 준비한다.
+        val conversation = ChannelConversation.start("channel-1", "visitor-1")
+
+        // Act: Issue the next message sequence. / 실행: 다음 message sequence를 발급한다.
+        val issue = conversation.issueNextMessageSequence()
+
+        // Assert: Verify sequence starts from one and updates conversation state. / 검증: sequence가 1부터 시작하고 conversation 상태가 갱신되는지 검증한다.
+        issue.sequence shouldBe 1
+        issue.conversation.lastMessageSequence shouldBe 1
+        issue.conversation.id shouldBe conversation.id
     }
 
     @Test

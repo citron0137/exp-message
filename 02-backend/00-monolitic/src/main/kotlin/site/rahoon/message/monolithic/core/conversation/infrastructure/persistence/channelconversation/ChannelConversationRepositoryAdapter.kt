@@ -15,6 +15,11 @@ class ChannelConversationRepositoryAdapter(
     override fun save(conversation: ChannelConversation): ChannelConversation = jpaRepository.save(conversation.toEntity()).toDomain()
 
     /**
+     * Finds a channel conversation by id through JPA.
+     */
+    override fun findById(id: String): ChannelConversation? = jpaRepository.findById(id).orElse(null)?.toDomain()
+
+    /**
      * Finds a reusable conversation for a channel and visitor through JPA.
      */
     override fun findReusableByChannelIdAndVisitorId(
@@ -44,6 +49,7 @@ class ChannelConversationRepositoryAdapter(
             channelId = channelId,
             visitorId = visitorId,
             status = status.name,
+            lastMessageSequence = lastMessageSequence,
             createdAt = createdAt,
             updatedAt = updatedAt,
             closedAt = closedAt,
@@ -58,6 +64,7 @@ class ChannelConversationRepositoryAdapter(
             channelId = channelId,
             visitorId = visitorId,
             status = ChannelConversationStatus.valueOf(status),
+            lastMessageSequence = lastMessageSequence,
             createdAt = createdAt,
             updatedAt = updatedAt,
             closedAt = closedAt,

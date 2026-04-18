@@ -635,6 +635,12 @@ Add `last_message_sequence` to `cv_channel_conversations`.
 Use conversation-scoped message sequence numbers.
 Conversation 단위 message sequence number를 사용한다.
 
+Start `last_message_sequence` from `0`.
+`last_message_sequence`는 `0`부터 시작한다.
+
+Use `1` as the first stored message sequence.
+첫 저장 message sequence는 `1`을 사용한다.
+
 Create `cv_conversation_messages`.
 `cv_conversation_messages`를 만든다.
 
@@ -643,6 +649,15 @@ Visitor message append에는 `clientMessageId`를 필수로 요구한다.
 
 Use `conversation_id`, `sender_type`, `sender_id`, and `client_message_id` for idempotency.
 Idempotency에는 `conversation_id`, `sender_type`, `sender_id`, `client_message_id`를 사용한다.
+
+Return the existing message when the same idempotency key is appended again.
+같은 idempotency key로 다시 append하면 기존 message를 반환한다.
+
+Trim message content before persistence.
+Message content는 저장 전에 trim한다.
+
+Reject blank message content and content longer than 4000 characters.
+빈 message content와 4000자를 초과하는 content는 거부한다.
 
 Expose widget message HTTP endpoints.
 Widget message HTTP endpoint를 노출한다.
@@ -654,6 +669,9 @@ GET /widget/conversations/{conversationId}/messages
 
 Use cursor-style message reads with `afterSequence` and `limit`.
 Message read는 `afterSequence`와 `limit` 기반 cursor style을 사용한다.
+
+Use a default message read limit of 50 and a maximum limit of 100.
+Message read limit 기본값은 50, 최대값은 100을 사용한다.
 
 Use `X-Visitor-Session` for visitor session token on GET requests.
 GET 요청의 visitor session token에는 `X-Visitor-Session`을 사용한다.

@@ -8,6 +8,7 @@ import site.rahoon.message.monolithic.core.conversation.application.port.Visitor
 import site.rahoon.message.monolithic.core.conversation.application.port.VisitorSessionRepository
 import site.rahoon.message.monolithic.core.conversation.application.port.VisitorSessionTokenGenerator
 import site.rahoon.message.monolithic.core.conversation.application.port.VisitorSessionTokenHasher
+import site.rahoon.message.monolithic.core.conversation.application.service.VisitorSessionPolicy
 import site.rahoon.message.monolithic.core.conversation.application.service.WidgetAccessPolicy
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelConversation
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelConversationStatus
@@ -30,6 +31,7 @@ class WidgetEntryFacade(
     private val channelConversationRepository: ChannelConversationRepository,
     private val visitorSessionTokenGenerator: VisitorSessionTokenGenerator,
     private val visitorSessionTokenHasher: VisitorSessionTokenHasher,
+    private val visitorSessionPolicy: VisitorSessionPolicy,
     private val visitorSessionProperties: VisitorSessionProperties,
 ) {
     /**
@@ -75,7 +77,7 @@ class WidgetEntryFacade(
     @Transactional
     fun enterConversation(command: EnterWidgetConversationCommand): WidgetConversationEntryResult {
         val access = widgetAccessPolicy.requireAccessibleWidget(command.publicKey, command.origin)
-        val session = requireValidVisitorSession(command.visitorSessionToken, access.channel.id)
+        val session = visitorSessionPolicy.requireValidSession(command.visitorSessionToken, access.channel.id)
         val visitor =
             visitorRepository.findById(session.visitorId)
                 ?: throw ConversationException(
@@ -105,29 +107,6 @@ class WidgetEntryFacade(
             visitor = VisitorResult.from(visitor),
             conversation = ChannelConversationResult.from(conversation),
         )
-    }
-
-    /**
-     * Requires a non-expired visitor session for the requested channel.
-     */
-    private fun requireValidVisitorSession(
-        rawToken: String,
-        channelId: String,
-    ): VisitorSession {
-        val tokenHash = visitorSessionTokenHasher.hash(rawToken)
-        val session =
-            visitorSessionRepository.findByTokenHash(tokenHash)
-                ?: throw ConversationException(ConversationError.VISITOR_SESSION_NOT_FOUND)
-        if (session.channelId != channelId) {
-            throw ConversationException(ConversationError.VISITOR_SESSION_NOT_FOUND)
-        }
-        if (session.isExpired(LocalDateTime.now())) {
-            throw ConversationException(
-                error = ConversationError.VISITOR_SESSION_EXPIRED,
-                details = mapOf("sessionId" to session.id),
-            )
-        }
-        return session
     }
 }
 

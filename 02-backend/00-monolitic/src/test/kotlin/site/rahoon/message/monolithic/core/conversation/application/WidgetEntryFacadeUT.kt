@@ -16,6 +16,7 @@ import site.rahoon.message.monolithic.core.conversation.application.port.Visitor
 import site.rahoon.message.monolithic.core.conversation.application.port.VisitorSessionRepository
 import site.rahoon.message.monolithic.core.conversation.application.port.VisitorSessionTokenGenerator
 import site.rahoon.message.monolithic.core.conversation.application.port.VisitorSessionTokenHasher
+import site.rahoon.message.monolithic.core.conversation.application.service.VisitorSessionPolicy
 import site.rahoon.message.monolithic.core.conversation.application.service.WidgetAccess
 import site.rahoon.message.monolithic.core.conversation.application.service.WidgetAccessPolicy
 import site.rahoon.message.monolithic.core.conversation.domain.AllowedOrigins
@@ -38,6 +39,7 @@ class WidgetEntryFacadeUT {
     private lateinit var channelConversationRepository: ChannelConversationRepository
     private lateinit var visitorSessionTokenGenerator: VisitorSessionTokenGenerator
     private lateinit var visitorSessionTokenHasher: VisitorSessionTokenHasher
+    private lateinit var visitorSessionPolicy: VisitorSessionPolicy
     private lateinit var facade: WidgetEntryFacade
 
     @BeforeEach
@@ -48,6 +50,7 @@ class WidgetEntryFacadeUT {
         channelConversationRepository = mockk()
         visitorSessionTokenGenerator = mockk()
         visitorSessionTokenHasher = mockk()
+        visitorSessionPolicy = mockk()
         facade =
             WidgetEntryFacade(
                 widgetAccessPolicy = widgetAccessPolicy,
@@ -56,6 +59,7 @@ class WidgetEntryFacadeUT {
                 channelConversationRepository = channelConversationRepository,
                 visitorSessionTokenGenerator = visitorSessionTokenGenerator,
                 visitorSessionTokenHasher = visitorSessionTokenHasher,
+                visitorSessionPolicy = visitorSessionPolicy,
                 visitorSessionProperties = VisitorSessionProperties(ttlSeconds = 604800),
             )
     }
@@ -97,8 +101,7 @@ class WidgetEntryFacadeUT {
         val session = visitorSession(visitorId = visitor.id, expiresAt = LocalDateTime.now().plusDays(1))
         val existingConversation = ChannelConversation.start("channel-1", visitor.id).markOpen()
         every { widgetAccessPolicy.requireAccessibleWidget("wpk_public", "https://acme.com") } returns widgetAccess()
-        every { visitorSessionTokenHasher.hash("wvs_raw") } returns "hashed-token"
-        every { visitorSessionRepository.findByTokenHash("hashed-token") } returns session
+        every { visitorSessionPolicy.requireValidSession("wvs_raw", "channel-1") } returns session
         every { visitorRepository.findById(visitor.id) } returns visitor
         every { channelConversationRepository.findReusableByChannelIdAndVisitorId("channel-1", visitor.id) } returns existingConversation
         every { visitorSessionRepository.save(any()) } answers { firstArg() }
@@ -125,8 +128,7 @@ class WidgetEntryFacadeUT {
         val visitor = visitor()
         val session = visitorSession(visitorId = visitor.id, expiresAt = LocalDateTime.now().plusDays(1))
         every { widgetAccessPolicy.requireAccessibleWidget("wpk_public", "https://acme.com") } returns widgetAccess()
-        every { visitorSessionTokenHasher.hash("wvs_raw") } returns "hashed-token"
-        every { visitorSessionRepository.findByTokenHash("hashed-token") } returns session
+        every { visitorSessionPolicy.requireValidSession("wvs_raw", "channel-1") } returns session
         every { visitorRepository.findById(visitor.id) } returns visitor
         every { channelConversationRepository.findReusableByChannelIdAndVisitorId("channel-1", visitor.id) } returns null
         every { channelConversationRepository.save(any()) } answers { firstArg() }
@@ -160,8 +162,7 @@ class WidgetEntryFacadeUT {
         val session = visitorSession(visitorId = visitor.id, expiresAt = LocalDateTime.now().plusDays(1))
         val dormantConversation = ChannelConversation.start("channel-1", visitor.id).markDormant()
         every { widgetAccessPolicy.requireAccessibleWidget("wpk_public", "https://acme.com") } returns widgetAccess()
-        every { visitorSessionTokenHasher.hash("wvs_raw") } returns "hashed-token"
-        every { visitorSessionRepository.findByTokenHash("hashed-token") } returns session
+        every { visitorSessionPolicy.requireValidSession("wvs_raw", "channel-1") } returns session
         every { visitorRepository.findById(visitor.id) } returns visitor
         every { channelConversationRepository.findReusableByChannelIdAndVisitorId("channel-1", visitor.id) } returns dormantConversation
         every { channelConversationRepository.save(any()) } answers { firstArg() }
@@ -193,10 +194,9 @@ class WidgetEntryFacadeUT {
     @Test
     fun `enterConversation throws when visitor session is expired`() {
         // Arrange: Prepare an expired visitor session. / 준비: 만료된 visitor session을 준비한다.
-        val session = visitorSession(visitorId = "visitor-1", expiresAt = LocalDateTime.now().minusSeconds(1))
         every { widgetAccessPolicy.requireAccessibleWidget("wpk_public", "https://acme.com") } returns widgetAccess()
-        every { visitorSessionTokenHasher.hash("wvs_raw") } returns "hashed-token"
-        every { visitorSessionRepository.findByTokenHash("hashed-token") } returns session
+        every { visitorSessionPolicy.requireValidSession("wvs_raw", "channel-1") } throws
+            ConversationException(ConversationError.VISITOR_SESSION_EXPIRED)
 
         // Act: Try to enter a conversation with the expired session. / 실행: 만료된 session으로 conversation 진입을 시도한다.
         val exception =

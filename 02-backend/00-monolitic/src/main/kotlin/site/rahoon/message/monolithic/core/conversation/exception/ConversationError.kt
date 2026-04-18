@@ -70,6 +70,30 @@ enum class ConversationError(
         developerMessage = "The visitor was not found.",
         category = ErrorCategory.NOT_FOUND,
     ),
+    CHANNEL_CONVERSATION_NOT_FOUND(
+        code = "CONVERSATION_CHANNEL_CONVERSATION_NOT_FOUND",
+        userMessage = "대화를 찾을 수 없습니다.",
+        developerMessage = "The channel conversation was not found.",
+        category = ErrorCategory.NOT_FOUND,
+    ),
+    CHANNEL_CONVERSATION_NOT_APPENDABLE(
+        code = "CONVERSATION_CHANNEL_CONVERSATION_NOT_APPENDABLE",
+        userMessage = "현재 대화에 메시지를 보낼 수 없습니다.",
+        developerMessage = "The channel conversation cannot accept a visitor message.",
+        category = ErrorCategory.CONFLICT,
+    ),
+    CHANNEL_CONVERSATION_NOT_VIEWABLE(
+        code = "CONVERSATION_CHANNEL_CONVERSATION_NOT_VIEWABLE",
+        userMessage = "현재 대화를 조회할 수 없습니다.",
+        developerMessage = "The channel conversation cannot be viewed by the visitor.",
+        category = ErrorCategory.FORBIDDEN,
+    ),
+    INVALID_MESSAGE_CONTENT(
+        code = "CONVERSATION_INVALID_MESSAGE_CONTENT",
+        userMessage = "메시지 내용을 확인해주세요.",
+        developerMessage = "The message content is blank or exceeds the allowed length.",
+        category = ErrorCategory.BAD_REQUEST,
+    ),
     PLATFORM_ADMIN_REQUIRED(
         code = "CONVERSATION_PLATFORM_ADMIN_REQUIRED",
         userMessage = "운영 관리자 권한이 필요합니다.",

@@ -8,6 +8,7 @@ data class ChannelConversation(
     val channelId: String,
     val visitorId: String,
     val status: ChannelConversationStatus,
+    val lastMessageSequence: Long,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
     val closedAt: LocalDateTime?,
@@ -31,6 +32,17 @@ data class ChannelConversation(
      * Returns true when the visitor can view this conversation.
      */
     fun canBeViewedByVisitor(): Boolean = status != ChannelConversationStatus.CLOSED
+
+    /**
+     * Returns the next message sequence and an updated conversation copy.
+     */
+    fun issueNextMessageSequence(now: LocalDateTime = LocalDateTime.now()): MessageSequenceIssue {
+        val nextSequence = lastMessageSequence + 1
+        return MessageSequenceIssue(
+            conversation = copy(lastMessageSequence = nextSequence, updatedAt = now),
+            sequence = nextSequence,
+        )
+    }
 
     /**
      * Returns an open conversation copy.
@@ -74,6 +86,7 @@ data class ChannelConversation(
                 channelId = channelId,
                 visitorId = visitorId,
                 status = ChannelConversationStatus.PENDING,
+                lastMessageSequence = 0,
                 createdAt = now,
                 updatedAt = now,
                 closedAt = null,
@@ -81,3 +94,8 @@ data class ChannelConversation(
         }
     }
 }
+
+data class MessageSequenceIssue(
+    val conversation: ChannelConversation,
+    val sequence: Long,
+)

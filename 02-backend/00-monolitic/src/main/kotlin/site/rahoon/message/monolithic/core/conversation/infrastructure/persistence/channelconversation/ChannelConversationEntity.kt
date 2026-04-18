@@ -27,6 +27,8 @@ class ChannelConversationEntity(
     var visitorId: String,
     @Column(name = "status", nullable = false, length = 40)
     var status: String,
+    @Column(name = "last_message_sequence", nullable = false)
+    var lastMessageSequence: Long,
     @Column(name = "created_at", nullable = false)
     var createdAt: LocalDateTime,
     @Column(name = "updated_at", nullable = false)
@@ -34,5 +36,5 @@ class ChannelConversationEntity(
     @Column(name = "closed_at")
     var closedAt: LocalDateTime?,
 ) {
-    constructor() : this("", "", "", "", LocalDateTime.now(), LocalDateTime.now(), null)
+    constructor() : this("", "", "", "", 0, LocalDateTime.now(), LocalDateTime.now(), null)
 }
