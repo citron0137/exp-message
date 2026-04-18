@@ -49,7 +49,7 @@ cv_channels
 
 ## Non-Ownership
 
-- Widget integration credentials are not stored on Channel in Phase 0.
+- Widget integration credentials are owned by ChannelIntegration.
 - Channel-scoped user role is owned by ChannelMembership.
 - Backoffice identity is owned by IAM.
 

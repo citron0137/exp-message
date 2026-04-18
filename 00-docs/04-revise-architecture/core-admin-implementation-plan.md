@@ -353,50 +353,121 @@ Legacy response wrapper에 의존하지 말고 새 presentation response wrapper
 Reason: this proves the new architecture line works end to end.
 이유: 새 architecture 라인이 end-to-end로 동작한다는 것을 증명하기 때문이다.
 
-## 5. Phase 1: Access Policy Hardening / Phase 1: 접근 정책 강화
+## 5. Phase 1A: Admin Channel Integration Management / Phase 1A: Admin Channel Integration 관리
 
-Goal: protect tenant data before expanding admin features.
-목표: admin 기능을 확장하기 전에 tenant data를 보호한다.
+Goal: allow platform admins to manage widget integrations for a customer channel.
+목표: platform admin이 고객사 channel의 widget integration을 관리할 수 있게 한다.
 
-Introduce a channel access policy in `core/conversation/application`.
-`core/conversation/application`에 channel access policy를 도입한다.
+Add a `ChannelIntegration` aggregate root under `core/conversation/domain`.
+`core/conversation/domain` 아래에 `ChannelIntegration` aggregate root를 추가한다.
 
-Start with the smallest useful policy surface.
-가장 작지만 유용한 policy surface부터 시작한다.
+Add an `AllowedOrigins` value object for widget origin policy.
+Widget origin 정책을 위해 `AllowedOrigins` value object를 추가한다.
 
 Recommended files:
 추천 파일:
 
 ```text
-core/conversation/application/service/ChannelAccessPolicy.kt
-core/conversation/application/service/ConversationAccessPolicy.kt
-core/conversation/application/port/ChannelMembershipRepository.kt
-core/conversation/domain/ConversationActor.kt
-core/conversation/domain/ChannelMembershipRole.kt
-core/conversation/domain/ChannelPermission.kt
-core/conversation/infrastructure/ChannelMembershipRepositoryAdapter.kt
+core/conversation/domain/ChannelIntegration.kt
+core/conversation/domain/AllowedOrigins.kt
+core/conversation/application/facade/AdminChannelIntegrationFacade.kt
+core/conversation/application/query/AdminChannelIntegrationQueryService.kt
+core/conversation/application/port/ChannelIntegrationRepository.kt
+core/conversation/application/port/IntegrationKeyGenerator.kt
+core/conversation/application/port/IntegrationSecretHasher.kt
+core/conversation/infrastructure/persistence/integration/
+core/conversation/infrastructure/security/
+presentation/http/admin/AdminChannelIntegrationController.kt
 ```
 
-The policy should allow platform admins to access all tenant data.
-Policy는 platform admin이 모든 tenant data에 접근할 수 있게 해야 한다.
+Use `cv_channel_integrations` for persistence.
+Persistence에는 `cv_channel_integrations`를 사용한다.
 
-The policy should allow channel users to access only their own channel.
-Policy는 channel user가 자기 channel에만 접근할 수 있게 해야 한다.
+Keep `public_key` unique at the database level.
+`public_key`는 database level에서 unique로 유지한다.
 
-The policy should distinguish `CHANNEL_ADMIN` from `AGENT`.
-Policy는 `CHANNEL_ADMIN`과 `AGENT`를 구분해야 한다.
+Do not add a unique constraint on `channel_id` and `type`.
+`channel_id`와 `type`에는 unique constraint를 추가하지 않는다.
 
-Add path `channelId` validation to new membership and conversation endpoints.
-새 membership 및 conversation endpoint에 path `channelId` 검증을 추가한다.
+Enforce one active `WIDGET` integration per channel in application policy for now.
+현재는 application policy에서 channel당 하나의 active `WIDGET` integration만 허용한다.
 
-Add message read authorization before building admin inbox screens.
-Admin inbox 화면을 만들기 전에 message read authorization을 추가한다.
+Return the raw secret only once when the widget integration is created.
+Widget integration이 생성될 때 raw secret은 한 번만 반환한다.
 
-Reason: channel-scoped data isolation must be enforced before inbox and reply features expand tenant data access.
-이유: inbox와 reply 기능이 tenant data 접근을 확장하기 전에 channel 단위 data isolation을 강제해야 하기 때문이다.
+Store only the hashed secret.
+Secret은 hash만 저장한다.
 
-Reason: fixing authorization after frontend integration will create expensive API and UI churn.
-이유: frontend 연동 이후 authorization을 수정하면 API와 UI 변경 비용이 커지기 때문이다.
+Allow `*` in `AllowedOrigins`.
+`AllowedOrigins`에서 `*`를 허용한다.
+
+Treat an empty origin list as deny all.
+빈 origin 목록은 deny all로 처리한다.
+
+Expose admin integration endpoints.
+Admin integration endpoint를 노출한다.
+
+```text
+POST /admin/channels/{channelId}/integrations/widget
+GET /admin/channels/{channelId}/integrations
+PATCH /admin/channels/{channelId}/integrations/{integrationId}/enable
+PATCH /admin/channels/{channelId}/integrations/{integrationId}/disable
+PATCH /admin/channels/{channelId}/integrations/{integrationId}/allowed-origins
+```
+
+Use facades for write use cases and query services for read use cases.
+Write use case에는 facade를 사용하고 read use case에는 query service를 사용한다.
+
+Reason: channel integration lifecycle and channel lifecycle are different enough to keep integration as its own aggregate root.
+이유: channel integration lifecycle과 channel lifecycle은 충분히 달라서 integration을 별도 aggregate root로 두는 것이 적절하다.
+
+Reason: avoiding a `(channel_id, type)` unique constraint keeps future multiple-widget support cheaper.
+이유: `(channel_id, type)` unique constraint를 피하면 future multiple-widget 지원 비용이 낮아진다.
+
+## 5B. Phase 1B: Public Widget Bootstrap / Phase 1B: Public Widget Bootstrap
+
+Goal: allow widget clients to resolve bootstrap data from a public key.
+목표: widget client가 public key로 bootstrap data를 조회할 수 있게 한다.
+
+Add a public widget bootstrap query service.
+Public widget bootstrap query service를 추가한다.
+
+Recommended files:
+추천 파일:
+
+```text
+core/conversation/domain/Origin.kt
+core/conversation/application/query/WidgetBootstrapQueryService.kt
+presentation/http/widget/WidgetBootstrapController.kt
+```
+
+Expose a public widget bootstrap endpoint.
+Public widget bootstrap endpoint를 노출한다.
+
+```text
+POST /widget/bootstrap
+```
+
+Prefer the `Origin` header over request body origin.
+Request body origin보다 `Origin` header를 우선 사용한다.
+
+Use request body origin only as a fallback for development and test flows.
+Request body origin은 development 및 test flow를 위한 fallback으로만 사용한다.
+
+Normalize origin input to scheme, host, and optional port.
+Origin input은 scheme, host, optional port로 normalize한다.
+
+The bootstrap flow should require an active integration.
+Bootstrap flow는 active integration을 요구해야 한다.
+
+The bootstrap flow should require an active channel.
+Bootstrap flow는 active channel을 요구해야 한다.
+
+The bootstrap flow should validate the request origin through `AllowedOrigins`.
+Bootstrap flow는 `AllowedOrigins`를 통해 request origin을 검증해야 한다.
+
+Reason: public widget access should not bypass channel and integration lifecycle policy.
+이유: public widget 접근이 channel 및 integration lifecycle policy를 우회하면 안 되기 때문이다.
 
 ## 6. Phase 2: ChannelMembership Model / Phase 2: ChannelMembership 모델
 

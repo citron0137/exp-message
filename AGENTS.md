@@ -187,8 +187,10 @@ Ideal:
 - Application services own transaction boundaries for write flows.
 - Application services coordinate repositories, domain services, ports, events, and aggregates.
 - Application facades are the public mutation entry points for presentation and other delivery adapters.
-- Public application services callable from presentation or other delivery adapters should be named and packaged as facades, typically under `application/facade`.
+- Public write services callable from presentation or other delivery adapters should be named and packaged as facades, typically under `application/facade`.
+- Public read services callable from presentation or other delivery adapters may be named and packaged as query services under `application/query`.
 - `@Transactional` belongs on facade-level application entry points. Lower-level application/domain services should participate in the facade transaction rather than opening their own transaction boundary.
+- Query service public methods should usually use `@Transactional(readOnly = true)` when they read through repositories.
 - Query services handle read-only query models and may bypass domain models when performance or shape requires it.
 - Ports define dependencies on repositories, external systems, and other bounded contexts in the caller's language.
 - Application services may parse transport-level formats into domain-friendly values.
