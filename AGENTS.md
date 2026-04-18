@@ -35,29 +35,40 @@ site.rahoon.message.monolithic
     shared/
 
   core/
-    identity/
+    iam/
       application/
+        facade/
+        service/
+        port/
       domain/
       infrastructure/
+        persistence/
+        security/
+      exception/
       shared/
-
-    access/
-      application/
-      domain/
-      infrastructure/
-      shared/
+      docs/
 
     conversation/
       application/
+        facade/
+        service/
+        port/
       domain/
       infrastructure/
+        persistence/
+        messaging/
+        integration/
+      exception/
       shared/
+      docs/
 
     notification/
       application/
       domain/
       infrastructure/
+      exception/
       shared/
+      docs/
 
     shared/
 
@@ -84,31 +95,34 @@ The current backend layout uses feature-level top packages such as `user`, `auth
 
 Ideal bounded contexts are:
 
-- `identity`: user lifecycle, user profile, group, membership, role, account status, password hash storage.
-- `access`: login, credential verification flow, token issuing, refresh token, session policy, login failure lockout, token revocation.
+- `iam`: user lifecycle, credential storage, login, token issuing, refresh token, session policy, login failure lockout, token revocation, account status, and global role.
 - `conversation`: channel, channel operator, channel conversation, chat room, chat room member, message, real-time conversation delivery contracts.
 - `notification`: notification, message notification, email notification job, notification templates, recipient routing.
 
 Do not treat every top-level package as an independent bounded context. Most current packages under `conversation` are aggregates, feature modules, or subdomains within the same larger context.
 
-### Identity and Access
+### IAM Internal Modules
+
+`iam` is one bounded context, but it may keep internal modules such as `identity` and `access` when that keeps roles clear.
 
 `identity` owns user lifecycle and credential storage, including password hashes.
 
 `access` owns authentication and authorization-session behavior such as login, token issuing, refresh token rotation, session expiry, and login failure policy.
 
-- `access` must not depend on the full `identity` domain model.
-- `access` should use an application port that returns an access-specific snapshot such as `LoginPrincipal`.
+- `access` should not depend on the full `identity` domain model.
+- `access` should use an internal application port that returns an access-specific snapshot such as `LoginPrincipal`.
 - The snapshot should speak the `access` language and contain only what access needs, such as user ID, email, password hash, role, and account status.
+- Because `identity` and `access` are internal modules of `iam`, direct internal adapters are acceptable when they remain inside `core/iam`.
 
 ### Current Transitional Compromise
 
 Current packages still group `user`, `authtoken`, and `loginfailure` separately.
 
 - Do not move all identity/access code immediately.
-- New login/token/session flows should be designed as `access`.
-- New user/group/profile/lifecycle flows should be designed as `identity`.
-- Existing direct service calls may remain for small edits, but new cross-context flows should prefer ports or events.
+- New login/token/session flows should be designed under `core/iam/access`.
+- New user/group/profile/lifecycle flows should be designed under `core/iam/identity`.
+- Existing direct service calls may remain for small edits, but new cross-BC flows should prefer ports or events.
+- Legacy auth code that is actively refactored should move into `core/iam`; core code should depend on core-owned contracts, not legacy feature services.
 
 ## Layering
 
@@ -116,8 +130,10 @@ Ideal layer responsibilities inside `core/{boundedContext}`:
 
 - `application`: use-case orchestration, transaction boundaries, facades, query services, ports, application events.
 - `domain`: aggregate roots, entities, value objects, domain services, domain events, commands, errors, domain repository contracts when locally consistent.
-- `infrastructure`: JPA entities, Spring Data repositories, Redis implementations, external adapters, persistence mapping, technical integrations.
+- `infrastructure`: technical adapters grouped by adapter type. Use `infrastructure/persistence/{aggregate}` for JPA entities, Spring Data repositories, and persistence mappers; use sibling adapter groups such as `messaging`, `security`, `integration`, or `token` when needed.
+- `exception`: BC-specific error enums and exception classes.
 - `shared`: code shared only inside this bounded context.
+- `docs`: concise BC-local documentation for significant aggregate roots and domain concepts.
 
 Ideal dependency direction:
 
@@ -131,6 +147,16 @@ common -> no presentation or core/{bc} dependency
 ```
 
 Domain code must not depend on presentation, infrastructure, Spring, JPA, Redis, Web, WebSocket, Security, or serialization frameworks.
+
+### Database Naming
+
+New tables should use a short bounded-context prefix so future service extraction is easier to identify and detach at the database level.
+
+- `iam_`: IAM tables.
+- `cv_`: Conversation tables.
+- Add new BC prefixes only when introducing a real bounded context.
+- Do not rename or drop legacy tables unless the user explicitly asks for a data migration.
+- New core flows may create and use new tables instead of reusing legacy tables when the implementation intentionally leaves legacy behavior in place.
 
 ## Presentation Layer
 
@@ -161,6 +187,8 @@ Ideal:
 - Application services own transaction boundaries for write flows.
 - Application services coordinate repositories, domain services, ports, events, and aggregates.
 - Application facades are the public mutation entry points for presentation and other delivery adapters.
+- Public application services callable from presentation or other delivery adapters should be named and packaged as facades, typically under `application/facade`.
+- `@Transactional` belongs on facade-level application entry points. Lower-level application/domain services should participate in the facade transaction rather than opening their own transaction boundary.
 - Query services handle read-only query models and may bypass domain models when performance or shape requires it.
 - Ports define dependencies on repositories, external systems, and other bounded contexts in the caller's language.
 - Application services may parse transport-level formats into domain-friendly values.
@@ -202,6 +230,8 @@ Some existing `*DomainService` classes are Spring beans and currently own transa
 Ideal:
 
 - JPA entities, Spring Data repositories, Redis implementations, and persistence mappers live in `infrastructure`.
+- New persistence adapters should live under `infrastructure/persistence/{aggregate}`.
+- The `{aggregate}` folder should be named after the aggregate root or persistence owner, such as `channel`, `membership`, `user`, or `refreshtoken`.
 - Domain models must not reference JPA entities or Redis data structures.
 - Repository implementations do not own transaction boundaries.
 - Repositories should not hide unrelated commits or external side effects.
@@ -299,7 +329,7 @@ Ideal:
 This is currently a monolith prototype, and some package services call each other directly.
 
 - Direct calls within the larger `conversation` context are acceptable for now.
-- New flows crossing `identity`, `access`, `conversation`, and `notification` should prefer events or ports.
+- New flows crossing `iam`, `conversation`, and `notification` should prefer events or ports.
 - Domain code must not import another bounded context's concrete infrastructure, presentation, or controller types.
 - If a direct cross-context call is retained for local consistency, keep it in application code and mention the boundary tradeoff when relevant.
 
@@ -324,6 +354,9 @@ Existing Spring application events may live in application packages.
 Ideal:
 
 - Domain/application errors should use project-specific domain error types and exceptions.
+- BC-specific errors and exceptions live under `core/{bc}/exception`.
+- Shared error contracts live in `core/shared/error` only when multiple bounded contexts need the same shape.
+- BC exceptions should expose a consistent shape: bounded context, application error code, user-facing message, developer-facing message, HTTP status, and optional structured detail map.
 - Error codes should be stable and specific enough for clients to react to.
 - User-facing messages should avoid leaking technical internals.
 - Developer details should include enough context for logs and debugging.
@@ -368,11 +401,19 @@ Ideal:
 - Never hardcode secrets, connection strings, API keys, tokens, or passwords.
 - Use Spring configuration, environment variables, secret managers, or local-only ignored files for environment-specific values.
 - Keep authentication and authorization checks explicit at presentation/application boundaries.
-- Password hashes are owned by `identity`; token and session policies are owned by `access`.
+- Password hashes are owned by `core/iam/identity`; token and session policies are owned by `core/iam/access`.
+- Cookie, header, and request body extraction are presentation concerns. Core IAM facades should receive normalized command values instead of transport-specific objects.
+- Invitation workflows should be modeled explicitly. Until then, server-generated temporary passwords are acceptable for channel admin bootstrap flows.
 - Do not expose internal exception details to clients.
 
 ## Documentation
 
 - When adding or reshaping a bounded context, update architecture documentation if present.
-- For significant domain concepts, add short documentation that explains the aggregate, core invariants, and key workflows.
+- Each bounded context may have `core/{bc}/docs`.
+- For each significant aggregate root in a bounded context, add one short Markdown file under `core/{bc}/docs`.
+- Aggregate docs should stay simple but useful: include a package tree, aggregate responsibility, owned state, key methods/factories, invariants, repository/persistence mapping, and important workflows.
+- Do not document every entity or value object separately unless it has enough independent domain weight.
+- Update the matching aggregate doc when a change modifies aggregate responsibility, invariants, public methods/factories, or persistence ownership.
 - Keep comments focused on non-obvious business rules or technical constraints.
+- New comments should be written in English.
+- Avoid comment noise. Function-level comments are useful when introducing new public facades, ports, domain factories, or non-obvious workflows, but trivial private helpers do not need comments.

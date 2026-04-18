@@ -20,7 +20,7 @@ import site.rahoon.message.monolithic.common.controller.CommonApiResponse
  * 채널 생성, 수정, 삭제 API (ADMIN 전용)
  */
 @RestController
-@RequestMapping("/admin/channels")
+@RequestMapping("/legacy/admin/channels")
 class AdminChannelController(
     private val channelApplicationService: ChannelApplicationService,
 ) {
