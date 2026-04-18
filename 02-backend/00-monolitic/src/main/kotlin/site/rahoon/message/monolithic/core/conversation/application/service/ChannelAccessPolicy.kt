@@ -2,6 +2,7 @@ package site.rahoon.message.monolithic.core.conversation.application.service
 
 import org.springframework.stereotype.Service
 import site.rahoon.message.monolithic.core.conversation.application.port.ChannelMembershipRepository
+import site.rahoon.message.monolithic.core.conversation.domain.ChannelMembership
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelMembershipRole
 import site.rahoon.message.monolithic.core.conversation.exception.ConversationError
 import site.rahoon.message.monolithic.core.conversation.exception.ConversationException
@@ -49,6 +50,16 @@ class ChannelAccessPolicy(
         if (principal.isPlatformAdmin()) {
             return
         }
+        requireChannelAdminMembership(principal, channelId)
+    }
+
+    /**
+     * Requires the principal to be a channel admin member and returns that membership.
+     */
+    fun requireChannelAdminMembership(
+        principal: AuthenticatedPrincipal,
+        channelId: String,
+    ): ChannelMembership {
         val membership = channelMembershipRepository.findByChannelIdAndUserId(channelId, principal.userId)
         if (membership?.role != ChannelMembershipRole.CHANNEL_ADMIN) {
             throw ConversationException(
@@ -56,5 +67,6 @@ class ChannelAccessPolicy(
                 details = mapOf("channelId" to channelId, "userId" to principal.userId),
             )
         }
+        return membership
     }
 }

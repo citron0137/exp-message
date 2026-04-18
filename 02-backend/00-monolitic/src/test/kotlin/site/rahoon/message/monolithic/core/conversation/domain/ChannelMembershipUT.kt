@@ -24,6 +24,28 @@ class ChannelMembershipUT {
         membership.userId shouldBe userId
         membership.role shouldBe ChannelMembershipRole.CHANNEL_ADMIN
         membership.agentStatus shouldBe AgentStatus.OFFLINE
+        membership.status shouldBe ChannelMembershipStatus.ACTIVE
+        membership.canBeAssigned() shouldBe true
         membership.createdAt shouldBe membership.updatedAt
+    }
+
+    @Test
+    fun `create creates active membership for requested role`() {
+        // Arrange: Prepare channel, user, and role identifiers. / 준비: channel, user, role identifier를 준비한다.
+        val channelId = "channel-1"
+        val userId = "user-1"
+
+        // Act: Create an agent membership. / 실행: agent membership을 생성한다.
+        val membership =
+            ChannelMembership.create(
+                channelId = channelId,
+                userId = userId,
+                role = ChannelMembershipRole.AGENT,
+            )
+
+        // Assert: Verify requested role and active status. / 검증: 요청한 role과 active status를 검증한다.
+        membership.role shouldBe ChannelMembershipRole.AGENT
+        membership.status shouldBe ChannelMembershipStatus.ACTIVE
+        membership.agentStatus shouldBe AgentStatus.OFFLINE
     }
 }

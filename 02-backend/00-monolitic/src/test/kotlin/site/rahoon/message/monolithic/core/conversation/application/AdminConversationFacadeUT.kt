@@ -18,6 +18,7 @@ import site.rahoon.message.monolithic.core.conversation.domain.ChannelConversati
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelConversationStatus
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelMembership
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelMembershipRole
+import site.rahoon.message.monolithic.core.conversation.domain.ChannelMembershipStatus
 import site.rahoon.message.monolithic.core.conversation.exception.ConversationError
 import site.rahoon.message.monolithic.core.conversation.exception.ConversationException
 import site.rahoon.message.monolithic.core.iam.access.application.model.AuthenticatedPrincipal
@@ -143,6 +144,36 @@ class AdminConversationFacadeUT {
         exception.error shouldBe ConversationError.CHANNEL_MEMBERSHIP_NOT_ASSIGNABLE
     }
 
+    @Test
+    fun `changeAssignee rejects disabled membership`() {
+        // Arrange: Prepare a disabled membership in the same channel. / 준비: 같은 channel의 disabled membership을 준비한다.
+        val actor = principal(PrincipalGlobalRole.PLATFORM_ADMIN)
+        every { channelConversationRepository.findById("conversation-1") } returns
+            ChannelConversation.start("channel-1", "visitor-1").copy(id = "conversation-1")
+        every { channelMembershipRepository.findById("membership-disabled") } returns
+            membership(
+                id = "membership-disabled",
+                role = ChannelMembershipRole.AGENT,
+                status = ChannelMembershipStatus.DISABLED,
+            )
+
+        // Act: Try to assign the disabled membership. / 실행: disabled membership 할당을 시도한다.
+        val exception =
+            shouldThrow<ConversationException> {
+                facade.changeAssignee(
+                    ChangeConversationAssigneeCommand(
+                        actor = actor,
+                        channelId = "channel-1",
+                        conversationId = "conversation-1",
+                        assigneeMembershipId = "membership-disabled",
+                    ),
+                )
+            }
+
+        // Assert: Verify disabled memberships are not assignable. / 검증: disabled membership은 할당할 수 없는지 검증한다.
+        exception.error shouldBe ConversationError.CHANNEL_MEMBERSHIP_NOT_ASSIGNABLE
+    }
+
     private fun principal(globalRole: PrincipalGlobalRole): AuthenticatedPrincipal =
         AuthenticatedPrincipal(
             userId = "user-1",
@@ -155,6 +186,7 @@ class AdminConversationFacadeUT {
         id: String,
         role: ChannelMembershipRole,
         channelId: String = "channel-1",
+        status: ChannelMembershipStatus = ChannelMembershipStatus.ACTIVE,
     ): ChannelMembership =
         ChannelMembership(
             id = id,
@@ -162,6 +194,7 @@ class AdminConversationFacadeUT {
             userId = "agent-1",
             role = role,
             agentStatus = AgentStatus.ONLINE,
+            status = status,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now(),
         )

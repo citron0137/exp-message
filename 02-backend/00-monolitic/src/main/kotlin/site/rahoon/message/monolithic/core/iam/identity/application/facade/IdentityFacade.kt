@@ -40,9 +40,30 @@ class IdentityFacade(
      */
     @Transactional
     fun createOrLoadCustomerAdmin(command: CreateOrLoadCustomerAdminCommand): CustomerAdminIdentityResult {
+        val result =
+            createOrLoadChannelUser(
+                CreateOrLoadChannelUserCommand(
+                    email = command.email,
+                    nickname = command.nickname,
+                ),
+            )
+        return CustomerAdminIdentityResult(
+            userId = result.userId,
+            email = result.email,
+            nickname = result.nickname,
+            temporaryPassword = result.temporaryPassword,
+            created = result.created,
+        )
+    }
+
+    /**
+     * Creates a channel user or loads an existing user by email.
+     */
+    @Transactional
+    fun createOrLoadChannelUser(command: CreateOrLoadChannelUserCommand): ChannelUserIdentityResult {
         val existing = identityUserRepository.findByEmail(command.email)
         if (existing != null) {
-            return CustomerAdminIdentityResult(
+            return ChannelUserIdentityResult(
                 userId = existing.id,
                 email = existing.email,
                 nickname = existing.nickname,
@@ -60,7 +81,7 @@ class IdentityFacade(
                 globalRole = GlobalRole.CHANNEL_USER,
             )
         val saved = identityUserRepository.save(user)
-        return CustomerAdminIdentityResult(
+        return ChannelUserIdentityResult(
             userId = saved.id,
             email = saved.email,
             nickname = saved.nickname,
@@ -86,7 +107,20 @@ data class CreateOrLoadCustomerAdminCommand(
     val nickname: String,
 )
 
+data class CreateOrLoadChannelUserCommand(
+    val email: String,
+    val nickname: String,
+)
+
 data class CustomerAdminIdentityResult(
+    val userId: String,
+    val email: String,
+    val nickname: String,
+    val temporaryPassword: String?,
+    val created: Boolean,
+)
+
+data class ChannelUserIdentityResult(
     val userId: String,
     val email: String,
     val nickname: String,

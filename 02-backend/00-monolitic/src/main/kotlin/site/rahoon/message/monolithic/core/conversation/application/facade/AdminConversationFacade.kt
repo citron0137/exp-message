@@ -87,7 +87,7 @@ class AdminConversationFacade(
                     error = ConversationError.CHANNEL_MEMBERSHIP_NOT_FOUND,
                     details = mapOf("membershipId" to membershipId),
                 )
-        if (membership.channelId != channelId || membership.role !in ASSIGNABLE_ROLES) {
+        if (membership.channelId != channelId || membership.role !in ASSIGNABLE_ROLES || !membership.canBeAssigned()) {
             throw ConversationException(
                 error = ConversationError.CHANNEL_MEMBERSHIP_NOT_ASSIGNABLE,
                 details = mapOf("membershipId" to membershipId, "channelId" to channelId),

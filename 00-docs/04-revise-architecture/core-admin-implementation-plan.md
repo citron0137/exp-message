@@ -965,10 +965,10 @@ Reason: offset pagination is unstable for an inbox whose ordering changes when m
 Reason: using activity timestamp avoids nullable cursor complexity and keeps empty-message conversations visible.
 이유: activity timestamp를 사용하면 nullable cursor 복잡도를 줄이고 message 없는 conversation도 자연스럽게 노출할 수 있기 때문이다.
 
-## 11. Phase 6: ChannelMembership Management / Phase 6: ChannelMembership 관리
+## 11. Phase 6A: ChannelMembership Creation and Listing / Phase 6A: ChannelMembership 생성 및 조회
 
-Goal: complete member management for agents and channel admins.
-목표: agent와 channel admin을 위한 member management를 완성한다.
+Goal: create the first channel member management slice.
+목표: 첫 channel member management slice를 만든다.
 
 Do not extend the legacy `ChannelOperator` model for the new admin line.
 새 admin 라인을 위해 legacy `ChannelOperator` 모델을 확장하지 않는다.
@@ -978,6 +978,104 @@ Domain, application, infrastructure, presentation naming에서 `ChannelMembershi
 
 Only `PLATFORM_ADMIN` and `CHANNEL_ADMIN` should manage channel members.
 `PLATFORM_ADMIN`과 `CHANNEL_ADMIN`만 channel member를 관리할 수 있어야 한다.
+
+Add `ChannelMembershipStatus`.
+`ChannelMembershipStatus`를 추가한다.
+
+```text
+ACTIVE
+DISABLED
+```
+
+New memberships start as `ACTIVE`.
+새 membership은 `ACTIVE`로 시작한다.
+
+Create or load the backing IAM channel user when creating a membership.
+Membership 생성 시 backing IAM channel user를 create-or-load한다.
+
+Return a temporary password only when a new IAM user is created.
+새 IAM user가 생성된 경우에만 temporary password를 반환한다.
+
+Prevent duplicate memberships for the same channel and user.
+같은 channel과 user의 중복 membership을 방지한다.
+
+Use the existing `(channel_id, user_id)` unique constraint as the database invariant.
+기존 `(channel_id, user_id)` unique constraint를 database invariant로 사용한다.
+
+Policy:
+정책:
+
+```text
+PLATFORM_ADMIN can create CHANNEL_ADMIN and AGENT memberships.
+CHANNEL_ADMIN can create AGENT memberships in their own channel.
+AGENT cannot manage memberships in Phase 6A.
+```
+
+API:
+API:
+
+```text
+GET /admin/channels/{channelId}/memberships
+POST /admin/channels/{channelId}/memberships
+```
+
+Do not add role change, enable, or disable APIs in Phase 6A.
+Phase 6A에서는 role 변경, enable, disable API를 추가하지 않는다.
+
+Reason: create/list closes the operational gap introduced by assignee membership references without taking on lifecycle edge cases yet.
+이유: create/list는 lifecycle edge case까지 다루지 않으면서 assignee membership 참조로 생긴 운영 공백을 닫기 때문이다.
+
+## 11B. Phase 6B: ChannelMembership Lifecycle / Phase 6B: ChannelMembership Lifecycle
+
+Goal: add membership lifecycle management after create/list is stable.
+목표: create/list가 안정된 뒤 membership lifecycle 관리를 추가한다.
+
+Add role and status filters to membership list.
+Membership list에 role 및 status filter를 추가한다.
+
+```text
+GET /admin/channels/{channelId}/memberships?role=AGENT&status=ACTIVE
+```
+
+Add lifecycle APIs.
+Lifecycle API를 추가한다.
+
+```text
+PATCH /admin/channels/{channelId}/memberships/{membershipId}/role
+PATCH /admin/channels/{channelId}/memberships/{membershipId}/enable
+PATCH /admin/channels/{channelId}/memberships/{membershipId}/disable
+```
+
+Role change policy:
+Role 변경 정책:
+
+```text
+PLATFORM_ADMIN can change CHANNEL_ADMIN and AGENT roles.
+CHANNEL_ADMIN cannot change roles.
+AGENT cannot change roles.
+```
+
+Status change policy:
+Status 변경 정책:
+
+```text
+PLATFORM_ADMIN can enable and disable all memberships.
+CHANNEL_ADMIN can enable and disable AGENT memberships in their own channel.
+CHANNEL_ADMIN cannot enable or disable CHANNEL_ADMIN memberships.
+AGENT cannot enable or disable memberships.
+```
+
+Protect the last active `CHANNEL_ADMIN`.
+마지막 active `CHANNEL_ADMIN`을 보호한다.
+
+Prevent self-demotion and self-disable for `CHANNEL_ADMIN`.
+`CHANNEL_ADMIN`의 자기 자신 강등 및 비활성화를 방지한다.
+
+Keep existing conversation assignees when a membership is disabled.
+Membership이 비활성화되어도 기존 conversation assignee는 유지한다.
+
+Reason: existing assignees are operational history, and bulk reassignment should be an explicit later workflow.
+이유: 기존 assignee는 운영 이력이기도 하며 bulk reassignment는 명시적인 이후 workflow여야 하기 때문이다.
 
 Reason: assignment, inbox access, and operator management all depend on membership semantics.
 이유: assignee, inbox access, operator management가 모두 membership 의미론에 의존하기 때문이다.

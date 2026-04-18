@@ -31,10 +31,12 @@ class ChannelMembershipEntity(
     var role: String,
     @Column(name = "agent_status", nullable = false, length = 40)
     var agentStatus: String,
+    @Column(name = "status", nullable = false, length = 40)
+    var status: String,
     @Column(name = "created_at", nullable = false)
     var createdAt: LocalDateTime,
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime,
 ) {
-    constructor() : this("", "", "", "", "", LocalDateTime.now(), LocalDateTime.now())
+    constructor() : this("", "", "", "", "", "", LocalDateTime.now(), LocalDateTime.now())
 }

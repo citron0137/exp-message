@@ -5,6 +5,7 @@ import site.rahoon.message.monolithic.core.conversation.application.port.Channel
 import site.rahoon.message.monolithic.core.conversation.domain.AgentStatus
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelMembership
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelMembershipRole
+import site.rahoon.message.monolithic.core.conversation.domain.ChannelMembershipStatus
 
 @Repository
 class ChannelMembershipRepositoryAdapter(
@@ -27,12 +28,51 @@ class ChannelMembershipRepositoryAdapter(
         jpaRepository.findByChannelId(channelId).map { it.toDomain() }
 
     /**
+     * Finds memberships by optional role and status filters through JPA.
+     */
+    override fun findByChannelIdAndFilters(
+        channelId: String,
+        role: ChannelMembershipRole?,
+        status: ChannelMembershipStatus?,
+    ): List<ChannelMembership> {
+        val entities =
+            jpaRepository.findByChannelIdAndFilters(
+                channelId = channelId,
+                role = role?.name,
+                status = status?.name,
+            )
+        return entities.map { it.toDomain() }
+    }
+
+    /**
      * Finds a channel membership by channel and user through JPA.
      */
     override fun findByChannelIdAndUserId(
         channelId: String,
         userId: String,
     ): ChannelMembership? = jpaRepository.findByChannelIdAndUserId(channelId, userId)?.toDomain()
+
+    /**
+     * Returns true when a membership already exists for the channel and user through JPA.
+     */
+    override fun existsByChannelIdAndUserId(
+        channelId: String,
+        userId: String,
+    ): Boolean = jpaRepository.existsByChannelIdAndUserId(channelId, userId)
+
+    /**
+     * Counts memberships by channel, role, and status through JPA.
+     */
+    override fun countByChannelIdAndRoleAndStatus(
+        channelId: String,
+        role: ChannelMembershipRole,
+        status: ChannelMembershipStatus,
+    ): Long =
+        jpaRepository.countByChannelIdAndRoleAndStatus(
+            channelId = channelId,
+            role = role.name,
+            status = status.name,
+        )
 
     /**
      * Maps a channel membership domain object to a JPA entity.
@@ -44,6 +84,7 @@ class ChannelMembershipRepositoryAdapter(
             userId = userId,
             role = role.name,
             agentStatus = agentStatus.name,
+            status = status.name,
             createdAt = createdAt,
             updatedAt = updatedAt,
         )
@@ -58,6 +99,7 @@ class ChannelMembershipRepositoryAdapter(
             userId = userId,
             role = ChannelMembershipRole.valueOf(role),
             agentStatus = AgentStatus.valueOf(agentStatus),
+            status = ChannelMembershipStatus.valueOf(status),
             createdAt = createdAt,
             updatedAt = updatedAt,
         )

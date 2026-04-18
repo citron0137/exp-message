@@ -22,6 +22,7 @@ import site.rahoon.message.monolithic.core.conversation.domain.AgentStatus
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelConversationStatus
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelMembership
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelMembershipRole
+import site.rahoon.message.monolithic.core.conversation.domain.ChannelMembershipStatus
 import site.rahoon.message.monolithic.core.conversation.domain.ConversationMessage
 import site.rahoon.message.monolithic.core.conversation.domain.MessageContent
 import site.rahoon.message.monolithic.core.conversation.exception.ConversationError
@@ -295,6 +296,7 @@ class AdminConversationQueryServiceUT {
             userId = "agent-1",
             role = ChannelMembershipRole.AGENT,
             agentStatus = AgentStatus.ONLINE,
+            status = ChannelMembershipStatus.ACTIVE,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now(),
         )

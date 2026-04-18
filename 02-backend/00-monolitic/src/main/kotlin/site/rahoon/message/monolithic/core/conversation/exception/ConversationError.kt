@@ -124,6 +124,42 @@ enum class ConversationError(
         developerMessage = "The channel membership cannot be assigned to the conversation.",
         category = ErrorCategory.CONFLICT,
     ),
+    CHANNEL_MEMBERSHIP_ALREADY_EXISTS(
+        code = "CONVERSATION_CHANNEL_MEMBERSHIP_ALREADY_EXISTS",
+        userMessage = "이미 채널 멤버로 등록된 사용자입니다.",
+        developerMessage = "A channel membership already exists for the user.",
+        category = ErrorCategory.CONFLICT,
+    ),
+    CHANNEL_MEMBERSHIP_ROLE_NOT_ALLOWED(
+        code = "CONVERSATION_CHANNEL_MEMBERSHIP_ROLE_NOT_ALLOWED",
+        userMessage = "요청한 채널 멤버 권한을 부여할 수 없습니다.",
+        developerMessage = "The requested channel membership role is not allowed for the actor.",
+        category = ErrorCategory.FORBIDDEN,
+    ),
+    CHANNEL_MEMBERSHIP_STATUS_CHANGE_NOT_ALLOWED(
+        code = "CONVERSATION_CHANNEL_MEMBERSHIP_STATUS_CHANGE_NOT_ALLOWED",
+        userMessage = "채널 멤버 상태를 변경할 수 없습니다.",
+        developerMessage = "The channel membership status change is not allowed.",
+        category = ErrorCategory.FORBIDDEN,
+    ),
+    CHANNEL_MEMBERSHIP_ROLE_CHANGE_NOT_ALLOWED(
+        code = "CONVERSATION_CHANNEL_MEMBERSHIP_ROLE_CHANGE_NOT_ALLOWED",
+        userMessage = "채널 멤버 권한을 변경할 수 없습니다.",
+        developerMessage = "The channel membership role change is not allowed.",
+        category = ErrorCategory.FORBIDDEN,
+    ),
+    CHANNEL_MEMBERSHIP_LAST_ADMIN_REQUIRED(
+        code = "CONVERSATION_CHANNEL_MEMBERSHIP_LAST_ADMIN_REQUIRED",
+        userMessage = "채널에는 최소 한 명의 활성 관리자가 필요합니다.",
+        developerMessage = "At least one active CHANNEL_ADMIN membership must remain in the channel.",
+        category = ErrorCategory.CONFLICT,
+    ),
+    CHANNEL_MEMBERSHIP_SELF_CHANGE_NOT_ALLOWED(
+        code = "CONVERSATION_CHANNEL_MEMBERSHIP_SELF_CHANGE_NOT_ALLOWED",
+        userMessage = "자기 자신의 채널 멤버 권한 또는 상태는 변경할 수 없습니다.",
+        developerMessage = "A channel admin cannot change their own channel membership role or status.",
+        category = ErrorCategory.CONFLICT,
+    ),
     CHANNEL_CONVERSATION_STATUS_CHANGE_NOT_ALLOWED(
         code = "CONVERSATION_CHANNEL_CONVERSATION_STATUS_CHANGE_NOT_ALLOWED",
         userMessage = "대화 상태를 변경할 수 없습니다.",
