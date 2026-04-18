@@ -14,6 +14,7 @@ import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
+import site.rahoon.message.monolithic.common.websocket.config.session.WebSocketSessionAttributeNames
 import site.rahoon.message.monolithic.common.websocket.config.session.WebSocketSessionAuthInfoRegistry
 import java.security.Principal
 
@@ -44,6 +45,9 @@ class WebSocketConnectInterceptor(
     ): Message<*>? {
         val accessor = StompHeaderAccessor.wrap(message)
         if (accessor.command != StompCommand.CONNECT) return message
+        if (accessor.sessionAttributes?.containsKey(WebSocketSessionAttributeNames.WIDGET_SESSION) == true) {
+            return message
+        }
 
         val tokenFromHeader = accessor.getFirstNativeHeader("Authorization")?.takeIf { it.isNotBlank() }
         val tokenFromSession = accessor.sessionAttributes

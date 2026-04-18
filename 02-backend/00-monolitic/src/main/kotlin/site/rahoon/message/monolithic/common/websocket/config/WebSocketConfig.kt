@@ -1,5 +1,6 @@
 package site.rahoon.message.monolithic.common.websocket.config
 
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.config.ChannelRegistration
@@ -30,7 +31,7 @@ import site.rahoon.message.monolithic.common.websocket.config.tracing.WebSocketT
 @Configuration
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
-    @Value("\${websocket.heartbeat-interval-ms:10000}") private val heartbeatIntervalMs: Long,
+    @param:Value("\${websocket.heartbeat-interval-ms:10000}") private val heartbeatIntervalMs: Long,
     private val webSocketAuthHandshakeHandler: WebSocketAuthHandshakeHandler,
     private val webSocketConnectInterceptor: WebSocketConnectInterceptor,
     private val webSocketSessionExpiryInterceptor: WebSocketSessionExpiryInterceptor,
@@ -39,13 +40,24 @@ class WebSocketConfig(
     private val webSocketExceptionStompSubProtocolErrorHandler: WebSocketExceptionStompSubProtocolErrorHandler,
     private val webSocketConnectedSessionHeaderInterceptor: WebSocketConnectedSessionHeaderInterceptor,
     private val webSocketBrokerTaskScheduler: TaskScheduler,
+    private val inboundInterceptorContributors: ObjectProvider<WebSocketInboundInterceptorContributor>,
 ) : WebSocketMessageBrokerConfigurer {
     override fun configureClientInboundChannel(registration: ChannelRegistration) {
+        val contributedInterceptors =
+            inboundInterceptorContributors
+                .orderedStream()
+                .flatMap { it.interceptors().stream() }
+                .toList()
+        val interceptors =
+            listOf(webSocketTracingChannelInterceptor) +
+                contributedInterceptors +
+                listOf(
+                    webSocketConnectInterceptor,
+                    webSocketSessionExpiryInterceptor,
+                    webSocketTopicSubscribeInterceptor,
+                )
         registration.interceptors(
-            webSocketTracingChannelInterceptor,
-            webSocketConnectInterceptor,
-            webSocketSessionExpiryInterceptor,
-            webSocketTopicSubscribeInterceptor,
+            *interceptors.toTypedArray(),
         )
     }
 

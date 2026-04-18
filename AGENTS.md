@@ -157,6 +157,10 @@ New tables should use a short bounded-context prefix so future service extractio
 - Add new BC prefixes only when introducing a real bounded context.
 - Do not rename or drop legacy tables unless the user explicitly asks for a data migration.
 - New core flows may create and use new tables instead of reusing legacy tables when the implementation intentionally leaves legacy behavior in place.
+- Core schema changes should be managed through Flyway migrations under `02-backend/01-db-migrations/src/main/resources/db/migration`.
+- Keep Hibernate `ddl-auto=validate`; JPA validates schema shape but should not own schema mutation.
+- Migration files are the database source of truth. Keep entity mappings, indexes, unique constraints, and migrations synchronized.
+- `00-monolitic` should not run Flyway migrations; the existing `01-db-migrations` module and migration container own schema changes.
 
 ## Presentation Layer
 

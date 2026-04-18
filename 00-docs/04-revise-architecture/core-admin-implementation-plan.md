@@ -694,7 +694,59 @@ WebSocket delivery should reuse the same message facade in a later phase.
 Reason: DB messages are the source of truth for history, reconnect recovery, admin inbox, and later WebSocket broadcast.
 이유: DB message는 history, reconnect 복구, admin inbox, 이후 WebSocket broadcast의 source of truth이기 때문이다.
 
-## 8. Phase 4: Realtime Delivery / Phase 4: Realtime Delivery
+## 8. Phase 3.5: Flyway Migration Foundation / Phase 3.5: Flyway Migration 기반
+
+Goal: make database schema changes versioned and reproducible before realtime delivery depends on message tables.
+목표: realtime delivery가 message table에 의존하기 전에 database schema 변경을 version 관리하고 재현 가능하게 만든다.
+
+Use the existing `01-db-migrations` module as the Flyway runner.
+기존 `01-db-migrations` module을 Flyway runner로 사용한다.
+
+Keep Hibernate `ddl-auto` as `validate`.
+Hibernate `ddl-auto`는 `validate`로 유지한다.
+
+Do not run Flyway from `00-monolitic`.
+`00-monolitic`에서는 Flyway를 실행하지 않는다.
+
+Make Flyway migration files the schema source of truth.
+Flyway migration file을 schema source of truth로 둔다.
+
+Use the existing migration directory.
+기존 migration directory를 사용한다.
+
+```text
+02-backend/01-db-migrations/src/main/resources/db/migration
+```
+
+Keep existing Phase 0 to Phase 2 core migrations.
+기존 Phase 0부터 Phase 2까지의 core migration을 유지한다.
+
+```text
+V20260418_01__core_phase0_admin_foundation.sql
+V20260418_02__core_phase1a_channel_integrations.sql
+V20260418_03__core_phase2_visitor_conversation_entry.sql
+```
+
+Add Phase 3 schema as the next migration.
+Phase 3 schema는 다음 migration으로 추가한다.
+
+```text
+V20260418_04__core_phase3_message_persistence.sql
+```
+
+Do not squash existing applied migrations into a new V1 file.
+이미 적용된 기존 migration을 새 V1 file로 합치지 않는다.
+
+Reason: Flyway tracks applied migration versions and checksums.
+이유: Flyway는 적용된 migration version과 checksum을 추적하기 때문이다.
+
+Reason: the project now has multiple core tables and JPA validates but does not mutate schema.
+이유: 이제 프로젝트에는 여러 core table이 있으며 JPA는 schema를 검증하지만 변경하지 않기 때문이다.
+
+Reason: migration history must be committed with code before WebSocket and inbox features rely on message persistence.
+이유: WebSocket 및 inbox 기능이 message persistence에 의존하기 전에 migration history가 code와 함께 commit되어야 하기 때문이다.
+
+## 9. Phase 4: Realtime Delivery / Phase 4: Realtime Delivery
 
 Goal: deliver stored conversation messages over WebSocket.
 목표: 저장된 conversation message를 WebSocket으로 전달한다.
@@ -711,13 +763,48 @@ Review legacy WebSocket handshake, auth, and subscription patterns before implem
 Use visitor session authentication for widget WebSocket connections.
 Widget WebSocket connection에는 visitor session authentication을 사용한다.
 
-Define conversation-scoped or channel-scoped topics for message delivery.
-Message delivery에는 conversation 단위 또는 channel 단위 topic을 정의한다.
+Use the existing `/ws` STOMP endpoint.
+기존 `/ws` STOMP endpoint를 사용한다.
+
+Support widget credentials from WebSocket query parameters and STOMP CONNECT headers.
+Widget credential은 WebSocket query parameter와 STOMP CONNECT header에서 지원한다.
+
+Use handshake `Origin` as the primary origin value.
+Handshake `Origin`을 primary origin 값으로 사용한다.
+
+Store an authenticated widget session snapshot in WebSocket session attributes.
+인증된 widget session snapshot을 WebSocket session attribute에 저장한다.
+
+Use conversation-scoped widget topics for message delivery.
+Message delivery에는 conversation 단위 widget topic을 사용한다.
+
+```text
+/topic/widget/conversations/{conversationId}/messages
+```
+
+Use this application destination for visitor message send.
+Visitor message send에는 다음 application destination을 사용한다.
+
+```text
+/app/widget/conversations/{conversationId}/messages
+```
+
+WebSocket message send must call `WidgetMessageFacade.sendVisitorMessage`.
+WebSocket message send는 `WidgetMessageFacade.sendVisitorMessage`를 호출해야 한다.
+
+Broadcast only after message persistence succeeds.
+Message persistence가 성공한 뒤에만 broadcast한다.
+
+Use the Phase 3 HTTP message list API for reconnect recovery.
+Reconnect recovery에는 Phase 3 HTTP message list API를 사용한다.
+
+Do not add admin inbox realtime, agent replies, read receipts, delivery receipts, typing indicators, or presence in Phase 4.
+Phase 4에는 admin inbox realtime, agent reply, read receipt, delivery receipt, typing indicator, presence를 추가하지 않는다.
 
 Reason: WebSocket is a delivery adapter, while message persistence remains the canonical write path.
 이유: WebSocket은 delivery adapter이고 message persistence가 canonical write path이기 때문이다.
 
-## 9. Phase 5: Conversation Operations and Admin Inbox / Phase 5: Conversation 운영 및 Admin Inbox
+## 10. Phase 5: Conversation Operations and Admin Inbox / Phase 5: Conversation 운영 및 Admin Inbox
 
 Goal: make conversations usable as an operational inbox.
 목표: conversation을 운영 inbox로 사용할 수 있게 만든다.
@@ -761,7 +848,7 @@ Reason: an inbox needs workflow state, assignment, and activity ordering.
 Reason: status lifecycle already exists, so this phase should focus on assignment, filtering, and operational reads.
 이유: status lifecycle은 이미 있으므로 이 phase는 assignment, filtering, operational read에 집중해야 한다.
 
-## 10. Phase 6: ChannelMembership Management / Phase 6: ChannelMembership 관리
+## 11. Phase 6: ChannelMembership Management / Phase 6: ChannelMembership 관리
 
 Goal: complete member management for agents and channel admins.
 목표: agent와 channel admin을 위한 member management를 완성한다.
@@ -778,7 +865,7 @@ Only `PLATFORM_ADMIN` and `CHANNEL_ADMIN` should manage channel members.
 Reason: assignment, inbox access, and operator management all depend on membership semantics.
 이유: assignee, inbox access, operator management가 모두 membership 의미론에 의존하기 때문이다.
 
-## 11. Phase 7: Admin Frontend Integration / Phase 7: Admin Frontend 연동
+## 12. Phase 7: Admin Frontend Integration / Phase 7: Admin Frontend 연동
 
 Goal: connect the admin frontend to stable backend use cases.
 목표: 안정된 backend use case에 admin frontend를 연결한다.
@@ -810,7 +897,7 @@ Reason: frontend integration should not lock the backend into temporary API shap
 Reason: backend authorization must be the source of truth.
 이유: backend authorization이 source of truth여야 하기 때문이다.
 
-## 12. Phase 8: Audit Log / Phase 8: Audit Log
+## 13. Phase 8: Audit Log / Phase 8: Audit Log
 
 Goal: add traceability for admin and channel operations.
 목표: admin 및 channel 운영 작업의 추적성을 추가한다.
@@ -859,7 +946,7 @@ Reason: audit logs become expensive to change once data is written.
 Reason: adding audit after membership, end user, and conversation models stabilize avoids rewriting audit semantics.
 이유: membership, end user, conversation 모델이 안정된 뒤 audit을 추가하면 audit 의미를 다시 작성하는 일을 피할 수 있기 때문이다.
 
-## 13. Phase 9: Stabilization and Release Readiness / Phase 9: 안정화 및 출시 준비
+## 14. Phase 9: Stabilization and Release Readiness / Phase 9: 안정화 및 출시 준비
 
 Goal: make the admin system safe to deploy and operate.
 목표: admin system을 배포 및 운영 가능한 상태로 만든다.

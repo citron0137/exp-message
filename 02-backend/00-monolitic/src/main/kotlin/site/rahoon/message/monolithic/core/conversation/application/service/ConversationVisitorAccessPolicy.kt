@@ -17,8 +17,17 @@ class ConversationVisitorAccessPolicy(
     fun requireAppendableConversation(
         conversationId: String,
         session: VisitorSession,
+    ): ChannelConversation = requireAppendableConversation(conversationId, session.channelId, session.visitorId)
+
+    /**
+     * Requires a conversation that can accept a visitor message for a channel and visitor.
+     */
+    fun requireAppendableConversation(
+        conversationId: String,
+        channelId: String,
+        visitorId: String,
     ): ChannelConversation {
-        val conversation = requireOwnedConversation(conversationId, session)
+        val conversation = requireOwnedConversation(conversationId, channelId, visitorId)
         if (!conversation.canAcceptVisitorMessage()) {
             throw ConversationException(
                 error = ConversationError.CHANNEL_CONVERSATION_NOT_APPENDABLE,
@@ -34,8 +43,17 @@ class ConversationVisitorAccessPolicy(
     fun requireReadableConversation(
         conversationId: String,
         session: VisitorSession,
+    ): ChannelConversation = requireReadableConversation(conversationId, session.channelId, session.visitorId)
+
+    /**
+     * Requires a conversation that can be viewed by a visitor for a channel and visitor.
+     */
+    fun requireReadableConversation(
+        conversationId: String,
+        channelId: String,
+        visitorId: String,
     ): ChannelConversation {
-        val conversation = requireOwnedConversation(conversationId, session)
+        val conversation = requireOwnedConversation(conversationId, channelId, visitorId)
         if (!conversation.canBeViewedByVisitor()) {
             throw ConversationException(
                 error = ConversationError.CHANNEL_CONVERSATION_NOT_VIEWABLE,
@@ -50,7 +68,8 @@ class ConversationVisitorAccessPolicy(
      */
     private fun requireOwnedConversation(
         conversationId: String,
-        session: VisitorSession,
+        channelId: String,
+        visitorId: String,
     ): ChannelConversation {
         val conversation =
             channelConversationRepository.findById(conversationId)
@@ -58,7 +77,7 @@ class ConversationVisitorAccessPolicy(
                     error = ConversationError.CHANNEL_CONVERSATION_NOT_FOUND,
                     details = mapOf("conversationId" to conversationId),
                 )
-        if (conversation.channelId != session.channelId || conversation.visitorId != session.visitorId) {
+        if (conversation.channelId != channelId || conversation.visitorId != visitorId) {
             throw ConversationException(
                 error = ConversationError.CHANNEL_CONVERSATION_NOT_FOUND,
                 details = mapOf("conversationId" to conversationId),
