@@ -21,18 +21,31 @@ class VisitorSessionPolicy(
         channelId: String,
     ): VisitorSession {
         val tokenHash = visitorSessionTokenHasher.hash(rawToken)
-        val session =
-            visitorSessionRepository.findByTokenHash(tokenHash)
-                ?: throw ConversationException(ConversationError.VISITOR_SESSION_NOT_FOUND)
+        val session = requireExistingSession(tokenHash)
+        requireSessionChannel(session, channelId)
+        requireNotExpired(session)
+        return session
+    }
+
+    private fun requireExistingSession(tokenHash: String): VisitorSession =
+        visitorSessionRepository.findByTokenHash(tokenHash)
+            ?: throw ConversationException(ConversationError.VISITOR_SESSION_NOT_FOUND)
+
+    private fun requireSessionChannel(
+        session: VisitorSession,
+        channelId: String,
+    ) {
         if (session.channelId != channelId) {
             throw ConversationException(ConversationError.VISITOR_SESSION_NOT_FOUND)
         }
+    }
+
+    private fun requireNotExpired(session: VisitorSession) {
         if (session.isExpired(LocalDateTime.now())) {
             throw ConversationException(
                 error = ConversationError.VISITOR_SESSION_EXPIRED,
                 details = mapOf("sessionId" to session.id),
             )
         }
-        return session
     }
 }

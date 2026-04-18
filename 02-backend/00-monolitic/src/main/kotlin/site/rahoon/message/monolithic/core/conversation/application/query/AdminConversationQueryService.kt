@@ -112,19 +112,26 @@ class AdminConversationQueryService(
                 details = mapOf("reason" to "assigneeMembershipId and unassigned cannot be used together"),
             )
         }
-        query.assigneeMembershipId?.let {
-            val membership =
-                channelMembershipRepository.findById(it)
-                    ?: throw ConversationException(
-                        error = ConversationError.CHANNEL_MEMBERSHIP_NOT_FOUND,
-                        details = mapOf("membershipId" to it),
-                    )
-            if (membership.channelId != query.channelId) {
-                throw ConversationException(
-                    error = ConversationError.CHANNEL_MEMBERSHIP_NOT_ASSIGNABLE,
-                    details = mapOf("membershipId" to it, "channelId" to query.channelId),
+        query.assigneeMembershipId?.let { membershipId ->
+            validateAssignableMembership(query, membershipId)
+        }
+    }
+
+    private fun validateAssignableMembership(
+        query: AdminConversationListQuery,
+        membershipId: String,
+    ) {
+        val membership =
+            channelMembershipRepository.findById(membershipId)
+                ?: throw ConversationException(
+                    error = ConversationError.CHANNEL_MEMBERSHIP_NOT_FOUND,
+                    details = mapOf("membershipId" to membershipId),
                 )
-            }
+        if (membership.channelId != query.channelId) {
+            throw ConversationException(
+                error = ConversationError.CHANNEL_MEMBERSHIP_NOT_ASSIGNABLE,
+                details = mapOf("membershipId" to membershipId, "channelId" to query.channelId),
+            )
         }
     }
 }

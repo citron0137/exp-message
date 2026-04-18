@@ -10,6 +10,7 @@ import site.rahoon.message.monolithic.core.conversation.application.port.AdminCo
 import site.rahoon.message.monolithic.core.conversation.application.service.ChannelAccessPolicy
 import site.rahoon.message.monolithic.core.conversation.exception.ConversationError
 import site.rahoon.message.monolithic.core.conversation.exception.ConversationException
+import site.rahoon.message.monolithic.core.iam.access.application.model.AuthenticatedPrincipal
 
 @Component
 class AdminWebSocketSubscribeInterceptor(
@@ -24,29 +25,35 @@ class AdminWebSocketSubscribeInterceptor(
         channel: MessageChannel,
     ): Message<*>? {
         val accessor = StompHeaderAccessor.wrap(message)
-        if (accessor.command != StompCommand.SUBSCRIBE) return message
-        val destination = accessor.destination ?: return message
-        val principal = AdminWebSocketSession.require(accessor)
-
-        val inboxMatch = ADMIN_CHANNEL_CONVERSATIONS_TOPIC.find(destination)
-        if (inboxMatch != null) {
-            channelAccessPolicy.requireChannelRead(principal, inboxMatch.groupValues[1])
-            return message
-        }
-
-        val messageMatch = ADMIN_CONVERSATION_MESSAGES_TOPIC.find(destination)
-        if (messageMatch != null) {
-            val channelId = messageMatch.groupValues[1]
-            val conversationId = messageMatch.groupValues[2]
-            channelAccessPolicy.requireChannelRead(principal, channelId)
-            if (!adminConversationReader.existsConversation(channelId, conversationId)) {
-                throw ConversationException(
-                    error = ConversationError.CHANNEL_CONVERSATION_NOT_FOUND,
-                    details = mapOf("channelId" to channelId, "conversationId" to conversationId),
-                )
-            }
+        if (accessor.command == StompCommand.SUBSCRIBE) {
+            validateSubscription(accessor)
         }
         return message
+    }
+
+    private fun validateSubscription(accessor: StompHeaderAccessor) {
+        val destination = accessor.destination ?: return
+        val principal = AdminWebSocketSession.require(accessor)
+
+        ADMIN_CHANNEL_CONVERSATIONS_TOPIC.find(destination)?.let {
+            channelAccessPolicy.requireChannelRead(principal, it.groupValues[1])
+        } ?: ADMIN_CONVERSATION_MESSAGES_TOPIC.find(destination)?.let {
+            validateConversationMessageSubscription(principal, it.groupValues[1], it.groupValues[2])
+        }
+    }
+
+    private fun validateConversationMessageSubscription(
+        principal: AuthenticatedPrincipal,
+        channelId: String,
+        conversationId: String,
+    ) {
+        channelAccessPolicy.requireChannelRead(principal, channelId)
+        if (!adminConversationReader.existsConversation(channelId, conversationId)) {
+            throw ConversationException(
+                error = ConversationError.CHANNEL_CONVERSATION_NOT_FOUND,
+                details = mapOf("channelId" to channelId, "conversationId" to conversationId),
+            )
+        }
     }
 
     companion object {

@@ -106,7 +106,7 @@ class ChannelConversationUT {
         val messageAcceptable = listOf(pending, open, dormant, closed).map { it.canAcceptVisitorMessage() }
         val viewable = listOf(pending, open, dormant, closed).map { it.canBeViewedByVisitor() }
 
-        // Assert: Verify closed is excluded and dormant needs reactivation before messages. / 검증: closed 제외와 dormant message 전 재활성화 필요성을 검증한다.
+        // Assert: Closed is excluded and dormant needs reactivation before messages.
         reusable shouldBe listOf(true, true, true, false)
         messageAcceptable shouldBe listOf(true, true, false, false)
         viewable shouldBe listOf(true, true, true, false)

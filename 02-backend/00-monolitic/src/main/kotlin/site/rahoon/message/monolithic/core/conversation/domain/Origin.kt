@@ -9,26 +9,22 @@ data class Origin(
         /**
          * Parses and normalizes an origin string to scheme, host, and optional port.
          */
-        fun parse(rawOrigin: String): Origin? {
-            val trimmed = rawOrigin.trim()
-            if (trimmed.isBlank()) {
-                return null
-            }
-            val uri =
-                runCatching { URI(trimmed) }
-                    .getOrNull()
-                    ?: return null
-            val scheme = uri.scheme?.lowercase() ?: return null
-            val host = uri.host?.lowercase() ?: return null
-            if (scheme != "http" && scheme != "https") {
-                return null
-            }
-            val port =
-                uri.port
-                    .takeIf { it >= 0 }
-                    ?.let { ":$it" }
-                    .orEmpty()
-            return Origin("$scheme://$host$port")
-        }
+        fun parse(rawOrigin: String): Origin? =
+            runCatching {
+                val trimmed = rawOrigin.trim()
+                require(trimmed.isNotBlank())
+
+                val uri = URI(trimmed)
+                val scheme = requireNotNull(uri.scheme).lowercase()
+                val host = requireNotNull(uri.host).lowercase()
+                require(scheme == "http" || scheme == "https")
+
+                val port =
+                    uri.port
+                        .takeIf { it >= 0 }
+                        ?.let { ":$it" }
+                        .orEmpty()
+                Origin("$scheme://$host$port")
+            }.getOrNull()
     }
 }

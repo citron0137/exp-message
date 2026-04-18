@@ -25,9 +25,16 @@ class WidgetWebSocketConnectInterceptor(
         channel: MessageChannel,
     ): Message<*>? {
         val accessor = StompHeaderAccessor.wrap(message)
-        if (accessor.command != StompCommand.CONNECT) return message
+        if (accessor.command == StompCommand.CONNECT) {
+            resolveCredentials(accessor)?.let { connectWidgetSession(accessor, it) }
+        }
+        return message
+    }
 
-        val credentials = resolveCredentials(accessor) ?: return message
+    private fun connectWidgetSession(
+        accessor: StompHeaderAccessor,
+        credentials: WidgetWebSocketCredentials,
+    ) {
         val access = widgetAccessPolicy.requireAccessibleWidget(credentials.publicKey, credentials.origin)
         val session = visitorSessionPolicy.requireValidSession(credentials.visitorSessionToken, access.channel.id)
         val widgetSession =
@@ -42,7 +49,6 @@ class WidgetWebSocketConnectInterceptor(
             )
         (accessor.sessionAttributes as? MutableMap<String, Any>)
             ?.set(WebSocketSessionAttributeNames.WIDGET_SESSION, widgetSession)
-        return message
     }
 
     /**

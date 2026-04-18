@@ -20,14 +20,18 @@ class WidgetWebSocketSessionExpiryInterceptor : ChannelInterceptor {
         channel: MessageChannel,
     ): Message<*>? {
         val accessor = StompHeaderAccessor.wrap(message)
-        if (accessor.command == StompCommand.CONNECT) return message
-        val session = WidgetWebSocketSessionAccessor.get(accessor) ?: return message
+        if (accessor.command != StompCommand.CONNECT) {
+            WidgetWebSocketSessionAccessor.get(accessor)?.let { requireNotExpired(it) }
+        }
+        return message
+    }
+
+    private fun requireNotExpired(session: WidgetWebSocketSession) {
         if (!session.expiresAt.isAfter(LocalDateTime.now())) {
             throw ConversationException(
                 error = ConversationError.VISITOR_SESSION_EXPIRED,
                 details = mapOf("visitorSessionId" to session.visitorSessionId),
             )
         }
-        return message
     }
 }

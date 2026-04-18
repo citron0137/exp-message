@@ -44,14 +44,18 @@ class WebSocketConnectInterceptor(
         channel: MessageChannel,
     ): Message<*>? {
         val accessor = StompHeaderAccessor.wrap(message)
-        if (accessor.command != StompCommand.CONNECT) return message
-        if (accessor.sessionAttributes?.containsKey(WebSocketSessionAttributeNames.WIDGET_SESSION) == true) {
-            return message
+        if (shouldAuthenticate(accessor)) {
+            authenticate(accessor)
         }
-        if (accessor.sessionAttributes?.containsKey(WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO) == true) {
-            return message
-        }
+        return message
+    }
 
+    private fun shouldAuthenticate(accessor: StompHeaderAccessor): Boolean =
+        accessor.command == StompCommand.CONNECT &&
+            accessor.sessionAttributes?.containsKey(WebSocketSessionAttributeNames.WIDGET_SESSION) != true &&
+            accessor.sessionAttributes?.containsKey(WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO) != true
+
+    private fun authenticate(accessor: StompHeaderAccessor) {
         val tokenFromHeader = accessor.getFirstNativeHeader("Authorization")?.takeIf { it.isNotBlank() }
         val tokenFromSession = accessor.sessionAttributes
             ?.get(WebSocketAuthHandshakeHandler.ATTR_TOKEN)
@@ -84,6 +88,5 @@ class WebSocketConnectInterceptor(
         }
         accessor.sessionId?.let { sessionAuthInfoRegistry.register(it, authInfo) }
         log.debug("CONNECT 성공: userId={}, sessionId={}", authInfo.userId, accessor.sessionId)
-        return message
     }
 }

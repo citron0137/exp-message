@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component
 import site.rahoon.message.monolithic.common.websocket.config.WebSocketInboundInterceptorContributor
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 20)
+@Order(Ordered.HIGHEST_PRECEDENCE + WidgetWebSocketInboundInterceptorContributor.ORDER_OFFSET)
 class WidgetWebSocketInboundInterceptorContributor(
     private val widgetWebSocketConnectInterceptor: WidgetWebSocketConnectInterceptor,
     private val widgetWebSocketSessionExpiryInterceptor: WidgetWebSocketSessionExpiryInterceptor,
@@ -22,4 +22,8 @@ class WidgetWebSocketInboundInterceptorContributor(
             widgetWebSocketSessionExpiryInterceptor,
             widgetWebSocketSubscribeInterceptor,
         )
+
+    companion object {
+        const val ORDER_OFFSET = 20
+    }
 }

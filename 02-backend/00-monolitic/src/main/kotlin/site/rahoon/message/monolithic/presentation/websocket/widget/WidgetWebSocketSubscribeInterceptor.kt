@@ -20,17 +20,27 @@ class WidgetWebSocketSubscribeInterceptor(
         channel: MessageChannel,
     ): Message<*>? {
         val accessor = StompHeaderAccessor.wrap(message)
-        if (accessor.command != StompCommand.SUBSCRIBE) return message
-        val destination = accessor.destination ?: return message
-        val conversationId = WIDGET_CONVERSATION_TOPIC.find(destination)?.groupValues?.get(1) ?: return message
+        if (accessor.command == StompCommand.SUBSCRIBE) {
+            validateSubscription(accessor)
+        }
+        return message
+    }
+
+    private fun validateSubscription(accessor: StompHeaderAccessor) {
+        val conversationId = resolveConversationId(accessor) ?: return
         val session = WidgetWebSocketSessionAccessor.require(accessor)
         conversationVisitorAccessPolicy.requireReadableConversation(
             conversationId = conversationId,
             channelId = session.channelId,
             visitorId = session.visitorId,
         )
-        return message
     }
+
+    private fun resolveConversationId(accessor: StompHeaderAccessor): String? =
+        accessor.destination
+            ?.let { WIDGET_CONVERSATION_TOPIC.find(it) }
+            ?.groupValues
+            ?.get(1)
 
     companion object {
         val WIDGET_CONVERSATION_TOPIC = Regex("^/topic/widget/conversations/([^/]+)/messages$")

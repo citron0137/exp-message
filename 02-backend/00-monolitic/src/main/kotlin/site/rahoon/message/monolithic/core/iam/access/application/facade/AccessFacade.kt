@@ -48,20 +48,10 @@ class AccessFacade(
      */
     @Transactional
     fun refresh(command: RefreshCommand): AuthSessionResult {
-        val existing =
-            refreshTokenRepository.findByToken(command.refreshToken)
-                ?: throw AccessException(AccessError.REFRESH_TOKEN_NOT_FOUND)
-        if (existing.isExpired(LocalDateTime.now())) {
-            refreshTokenRepository.deleteByToken(existing.token)
-            throw AccessException(AccessError.REFRESH_TOKEN_EXPIRED)
-        }
+        val existing = requireRefreshToken(command.refreshToken)
+        requireNotExpired(existing)
         refreshTokenRepository.deleteByToken(existing.token)
-        val loginPrincipal =
-            loginPrincipalReader.findById(existing.userId)
-                ?: throw AccessException(
-                    error = AccessError.INVALID_TOKEN,
-                    details = mapOf("reason" to "Cannot resolve user for refresh token"),
-                )
+        val loginPrincipal = requireLoginPrincipal(existing.userId)
         val principal =
             AuthenticatedPrincipal(
                 userId = existing.userId,
@@ -71,6 +61,24 @@ class AccessFacade(
             )
         return issueSession(principal)
     }
+
+    private fun requireRefreshToken(refreshToken: String): CoreRefreshToken =
+        refreshTokenRepository.findByToken(refreshToken)
+            ?: throw AccessException(AccessError.REFRESH_TOKEN_NOT_FOUND)
+
+    private fun requireNotExpired(refreshToken: CoreRefreshToken) {
+        if (refreshToken.isExpired(LocalDateTime.now())) {
+            refreshTokenRepository.deleteByToken(refreshToken.token)
+            throw AccessException(AccessError.REFRESH_TOKEN_EXPIRED)
+        }
+    }
+
+    private fun requireLoginPrincipal(userId: String) =
+        loginPrincipalReader.findById(userId)
+            ?: throw AccessException(
+                error = AccessError.INVALID_TOKEN,
+                details = mapOf("reason" to "Cannot resolve user for refresh token"),
+            )
 
     /**
      * Logs out an authenticated principal by revoking its refresh session.

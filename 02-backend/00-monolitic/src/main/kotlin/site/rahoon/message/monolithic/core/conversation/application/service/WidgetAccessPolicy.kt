@@ -23,12 +23,22 @@ class WidgetAccessPolicy(
         publicKey: String,
         rawOrigin: String,
     ): WidgetAccess {
-        val origin =
-            Origin.parse(rawOrigin)
-                ?: throw ConversationException(
-                    error = ConversationError.INVALID_WIDGET_ORIGIN,
-                    details = mapOf("origin" to rawOrigin),
-                )
+        val origin = requireOrigin(rawOrigin)
+        val integration = requireWidgetIntegration(publicKey)
+        requireActiveIntegration(integration)
+        requireAllowedOrigin(integration, origin)
+        val channel = requireActiveChannel(integration.channelId)
+        return WidgetAccess(channel = channel, integration = integration, origin = origin)
+    }
+
+    private fun requireOrigin(rawOrigin: String): Origin =
+        Origin.parse(rawOrigin)
+            ?: throw ConversationException(
+                error = ConversationError.INVALID_WIDGET_ORIGIN,
+                details = mapOf("origin" to rawOrigin),
+            )
+
+    private fun requireWidgetIntegration(publicKey: String): ChannelIntegration {
         val integration =
             channelIntegrationRepository.findByPublicKey(publicKey)
                 ?: throw ConversationException(
@@ -41,23 +51,36 @@ class WidgetAccessPolicy(
                 details = mapOf("publicKey" to publicKey),
             )
         }
+        return integration
+    }
+
+    private fun requireActiveIntegration(integration: ChannelIntegration) {
         if (!integration.isActive()) {
             throw ConversationException(
                 error = ConversationError.CHANNEL_INTEGRATION_DISABLED,
                 details = mapOf("integrationId" to integration.id),
             )
         }
+    }
+
+    private fun requireAllowedOrigin(
+        integration: ChannelIntegration,
+        origin: Origin,
+    ) {
         if (!integration.allowedOrigins.allows(origin)) {
             throw ConversationException(
                 error = ConversationError.CHANNEL_INTEGRATION_ORIGIN_DENIED,
                 details = mapOf("integrationId" to integration.id, "origin" to origin.value),
             )
         }
+    }
+
+    private fun requireActiveChannel(channelId: String): Channel {
         val channel =
-            channelRepository.findById(integration.channelId)
+            channelRepository.findById(channelId)
                 ?: throw ConversationException(
                     error = ConversationError.CHANNEL_NOT_FOUND,
-                    details = mapOf("channelId" to integration.channelId),
+                    details = mapOf("channelId" to channelId),
                 )
         if (channel.status != ChannelStatus.ACTIVE) {
             throw ConversationException(
@@ -65,7 +88,7 @@ class WidgetAccessPolicy(
                 details = mapOf("channelId" to channel.id, "status" to channel.status.name),
             )
         }
-        return WidgetAccess(channel = channel, integration = integration, origin = origin)
+        return channel
     }
 }
 

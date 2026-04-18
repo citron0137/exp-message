@@ -182,7 +182,7 @@ class AdminConversationFacadeUT {
 
     @Test
     fun `sendReply stores agent message and opens conversation`() {
-        // Arrange: Prepare an active channel admin membership and pending conversation. / 준비: active channel admin membership과 pending conversation을 준비한다.
+        // Arrange: Prepare an active channel admin membership and pending conversation.
         val actor = principal(PrincipalGlobalRole.CHANNEL_USER)
         every { channelMembershipRepository.findByChannelIdAndUserId("channel-1", "user-1") } returns
             membership("membership-admin", ChannelMembershipRole.CHANNEL_ADMIN, userId = "user-1")

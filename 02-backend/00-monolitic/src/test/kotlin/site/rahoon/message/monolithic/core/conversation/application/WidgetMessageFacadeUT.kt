@@ -57,7 +57,7 @@ class WidgetMessageFacadeUT {
 
     @Test
     fun `sendVisitorMessage stores message with next conversation sequence`() {
-        // Arrange: Prepare widget access, visitor session, and appendable conversation. / 준비: widget access, visitor session, append 가능한 conversation을 준비한다.
+        // Arrange: Prepare widget access, visitor session, and appendable conversation.
         val session = visitorSession()
         val conversation = ChannelConversation.start("channel-1", "visitor-1")
         every { widgetAccessPolicy.requireAccessibleWidget("wpk_public", "https://acme.com") } returns widgetAccess()

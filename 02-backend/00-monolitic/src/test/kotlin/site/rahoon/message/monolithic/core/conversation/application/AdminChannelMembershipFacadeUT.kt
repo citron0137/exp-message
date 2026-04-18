@@ -91,7 +91,7 @@ class AdminChannelMembershipFacadeUT {
                 facade.createMembership(command(actor, ChannelMembershipRole.CHANNEL_ADMIN))
             }
 
-        // Assert: Verify role escalation is blocked before identity side effects. / 검증: identity side effect 전에 role escalation이 차단되는지 검증한다.
+        // Assert: Role escalation is blocked before identity side effects.
         exception.error shouldBe ConversationError.CHANNEL_MEMBERSHIP_ROLE_NOT_ALLOWED
         verify(exactly = 0) { channelMemberIdentityPort.createOrLoadChannelMember(any()) }
         verify(exactly = 0) { channelMembershipRepository.save(any()) }
@@ -175,7 +175,7 @@ class AdminChannelMembershipFacadeUT {
 
     @Test
     fun `disable rejects channel admin disabling themselves`() {
-        // Arrange: Prepare a channel admin actor targeting their own membership. / 준비: 자기 자신의 membership을 대상으로 하는 channel admin actor를 준비한다.
+        // Arrange: Prepare a channel admin actor targeting their own membership.
         val actor = principal(PrincipalGlobalRole.CHANNEL_USER)
         every { channelMembershipRepository.findById("admin-membership") } returns
             membership("admin-membership", ChannelMembershipRole.CHANNEL_ADMIN, userId = "user-1")
@@ -201,7 +201,7 @@ class AdminChannelMembershipFacadeUT {
 
     @Test
     fun `disable rejects removing the last active channel admin`() {
-        // Arrange: Prepare a platform admin disabling the last active channel admin. / 준비: 마지막 active channel admin을 비활성화하는 platform admin을 준비한다.
+        // Arrange: Prepare a platform admin disabling the last active channel admin.
         val actor = principal(PrincipalGlobalRole.PLATFORM_ADMIN)
         every { channelMembershipRepository.findById("admin-membership") } returns
             membership("admin-membership", ChannelMembershipRole.CHANNEL_ADMIN)
@@ -231,7 +231,7 @@ class AdminChannelMembershipFacadeUT {
 
     @Test
     fun `changeRole allows platform admin to demote channel admin when another active admin remains`() {
-        // Arrange: Prepare a platform admin and at least two active channel admins. / 준비: platform admin과 2명 이상의 active channel admin을 준비한다.
+        // Arrange: Prepare a platform admin and at least two active channel admins.
         val actor = principal(PrincipalGlobalRole.PLATFORM_ADMIN)
         every { channelMembershipRepository.findById("admin-membership") } returns
             membership("admin-membership", ChannelMembershipRole.CHANNEL_ADMIN)
@@ -255,7 +255,7 @@ class AdminChannelMembershipFacadeUT {
                 ),
             )
 
-        // Assert: Verify platform admin can change roles while preserving the last admin invariant. / 검증: 마지막 admin invariant를 지키면 platform admin이 role을 변경할 수 있는지 검증한다.
+        // Assert: Platform admin can change roles while preserving the last admin invariant.
         result.role shouldBe ChannelMembershipRole.AGENT
     }
 
