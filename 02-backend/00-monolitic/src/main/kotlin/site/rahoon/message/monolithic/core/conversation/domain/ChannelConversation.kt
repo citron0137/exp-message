@@ -8,7 +8,9 @@ data class ChannelConversation(
     val channelId: String,
     val visitorId: String,
     val status: ChannelConversationStatus,
+    val assigneeMembershipId: String?,
     val lastMessageSequence: Long,
+    val lastMessageAt: LocalDateTime?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
     val closedAt: LocalDateTime?,
@@ -43,6 +45,41 @@ data class ChannelConversation(
             sequence = nextSequence,
         )
     }
+
+    /**
+     * Returns a conversation copy with latest message summary values.
+     */
+    fun recordMessage(
+        sequence: Long,
+        messageCreatedAt: LocalDateTime,
+    ): ChannelConversation =
+        copy(
+            lastMessageSequence = sequence,
+            lastMessageAt = messageCreatedAt,
+            updatedAt = messageCreatedAt,
+        )
+
+    /**
+     * Returns a conversation copy with the requested status.
+     */
+    fun changeStatus(
+        nextStatus: ChannelConversationStatus,
+        now: LocalDateTime = LocalDateTime.now(),
+    ): ChannelConversation =
+        when (nextStatus) {
+            ChannelConversationStatus.PENDING -> copy(status = ChannelConversationStatus.PENDING, updatedAt = now, closedAt = null)
+            ChannelConversationStatus.OPEN -> copy(status = ChannelConversationStatus.OPEN, updatedAt = now, closedAt = null)
+            ChannelConversationStatus.DORMANT -> copy(status = ChannelConversationStatus.DORMANT, updatedAt = now, closedAt = null)
+            ChannelConversationStatus.CLOSED -> copy(status = ChannelConversationStatus.CLOSED, updatedAt = now, closedAt = now)
+        }
+
+    /**
+     * Returns a conversation copy assigned to a channel membership.
+     */
+    fun assignTo(
+        membershipId: String?,
+        now: LocalDateTime = LocalDateTime.now(),
+    ): ChannelConversation = copy(assigneeMembershipId = membershipId, updatedAt = now)
 
     /**
      * Returns an open conversation copy.
@@ -86,7 +123,9 @@ data class ChannelConversation(
                 channelId = channelId,
                 visitorId = visitorId,
                 status = ChannelConversationStatus.PENDING,
+                assigneeMembershipId = null,
                 lastMessageSequence = 0,
+                lastMessageAt = null,
                 createdAt = now,
                 updatedAt = now,
                 closedAt = null,

@@ -9,6 +9,11 @@ interface ChannelMembershipRepository {
     fun save(membership: ChannelMembership): ChannelMembership
 
     /**
+     * Finds a channel membership by identifier.
+     */
+    fun findById(id: String): ChannelMembership?
+
+    /**
      * Finds channel memberships by channel identifier.
      */
     fun findByChannelId(channelId: String): List<ChannelMembership>

@@ -1,23 +1,14 @@
-package site.rahoon.message.monolithic.core.conversation.infrastructure.persistence.channelconversation
+package site.rahoon.message.monolithic.core.conversation.infrastructure.persistence.conversationquery
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
-import jakarta.persistence.Index
 import jakarta.persistence.Table
 import java.time.LocalDateTime
 
 @Entity
-@Table(
-    name = "cv_channel_conversations",
-    indexes = [
-        Index(name = "idx_cv_channel_conversations_channel_id", columnList = "channel_id"),
-        Index(name = "idx_cv_channel_conversations_visitor_id", columnList = "visitor_id"),
-        Index(name = "idx_cv_channel_conversations_status", columnList = "status"),
-        Index(name = "idx_cv_channel_conversations_channel_status", columnList = "channel_id,status"),
-    ],
-)
-class ChannelConversationEntity(
+@Table(name = "cv_channel_conversations")
+class AdminConversationQueryEntity(
     @Id
     @Column(name = "id", length = 36)
     var id: String,

@@ -8,6 +8,7 @@ import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import site.rahoon.message.monolithic.core.conversation.application.port.ChannelIntegrationRepository
+import site.rahoon.message.monolithic.core.conversation.application.port.ChannelMembershipRepository
 import site.rahoon.message.monolithic.core.conversation.application.query.AdminChannelIntegrationQueryService
 import site.rahoon.message.monolithic.core.conversation.application.service.ChannelAccessPolicy
 import site.rahoon.message.monolithic.core.conversation.domain.AllowedOrigins
@@ -20,15 +21,17 @@ import java.time.LocalDateTime
 
 class AdminChannelIntegrationQueryServiceUT {
     private lateinit var channelIntegrationRepository: ChannelIntegrationRepository
+    private lateinit var channelMembershipRepository: ChannelMembershipRepository
     private lateinit var queryService: AdminChannelIntegrationQueryService
 
     @BeforeEach
     fun setUp() {
         channelIntegrationRepository = mockk()
+        channelMembershipRepository = mockk()
         queryService =
             AdminChannelIntegrationQueryService(
                 channelIntegrationRepository = channelIntegrationRepository,
-                channelAccessPolicy = ChannelAccessPolicy(),
+                channelAccessPolicy = ChannelAccessPolicy(channelMembershipRepository),
             )
     }
 

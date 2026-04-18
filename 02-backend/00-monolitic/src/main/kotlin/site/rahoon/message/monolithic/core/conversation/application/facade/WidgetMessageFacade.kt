@@ -53,8 +53,13 @@ class WidgetMessageFacade(
                 clientMessageId = command.clientMessageId,
                 content = MessageContent.text(command.content),
             )
-        channelConversationRepository.save(sequenceIssue.conversation)
         val savedMessage = conversationMessageRepository.save(message)
+        channelConversationRepository.save(
+            sequenceIssue.conversation.recordMessage(
+                sequence = savedMessage.sequence,
+                messageCreatedAt = savedMessage.createdAt,
+            ),
+        )
         visitorSessionRepository.save(session.touch())
         return ConversationMessageResult.from(savedMessage)
     }

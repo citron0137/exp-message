@@ -100,6 +100,48 @@ enum class ConversationError(
         developerMessage = "The conversation operation requires PLATFORM_ADMIN.",
         category = ErrorCategory.FORBIDDEN,
     ),
+    CHANNEL_ACCESS_DENIED(
+        code = "CONVERSATION_CHANNEL_ACCESS_DENIED",
+        userMessage = "채널 접근 권한이 없습니다.",
+        developerMessage = "The principal does not have access to the channel.",
+        category = ErrorCategory.FORBIDDEN,
+    ),
+    CHANNEL_ADMIN_REQUIRED(
+        code = "CONVERSATION_CHANNEL_ADMIN_REQUIRED",
+        userMessage = "채널 관리자 권한이 필요합니다.",
+        developerMessage = "The conversation operation requires PLATFORM_ADMIN or CHANNEL_ADMIN.",
+        category = ErrorCategory.FORBIDDEN,
+    ),
+    CHANNEL_MEMBERSHIP_NOT_FOUND(
+        code = "CONVERSATION_CHANNEL_MEMBERSHIP_NOT_FOUND",
+        userMessage = "채널 멤버를 찾을 수 없습니다.",
+        developerMessage = "The channel membership was not found.",
+        category = ErrorCategory.NOT_FOUND,
+    ),
+    CHANNEL_MEMBERSHIP_NOT_ASSIGNABLE(
+        code = "CONVERSATION_CHANNEL_MEMBERSHIP_NOT_ASSIGNABLE",
+        userMessage = "이 대화에 할당할 수 없는 채널 멤버입니다.",
+        developerMessage = "The channel membership cannot be assigned to the conversation.",
+        category = ErrorCategory.CONFLICT,
+    ),
+    CHANNEL_CONVERSATION_STATUS_CHANGE_NOT_ALLOWED(
+        code = "CONVERSATION_CHANNEL_CONVERSATION_STATUS_CHANGE_NOT_ALLOWED",
+        userMessage = "대화 상태를 변경할 수 없습니다.",
+        developerMessage = "The channel conversation status transition is not allowed.",
+        category = ErrorCategory.CONFLICT,
+    ),
+    INVALID_ADMIN_INBOX_CURSOR(
+        code = "CONVERSATION_INVALID_ADMIN_INBOX_CURSOR",
+        userMessage = "대화 목록 커서가 올바르지 않습니다.",
+        developerMessage = "The admin inbox cursor is invalid.",
+        category = ErrorCategory.BAD_REQUEST,
+    ),
+    INVALID_ADMIN_INBOX_FILTER(
+        code = "CONVERSATION_INVALID_ADMIN_INBOX_FILTER",
+        userMessage = "대화 목록 필터가 올바르지 않습니다.",
+        developerMessage = "The admin inbox filter is invalid.",
+        category = ErrorCategory.BAD_REQUEST,
+    ),
     ;
 
     override val boundedContext: BoundedContext = BoundedContext.CONVERSATION

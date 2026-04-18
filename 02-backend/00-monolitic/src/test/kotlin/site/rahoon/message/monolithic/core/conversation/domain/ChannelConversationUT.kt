@@ -20,7 +20,9 @@ class ChannelConversationUT {
         conversation.channelId shouldBe channelId
         conversation.visitorId shouldBe visitorId
         conversation.status shouldBe ChannelConversationStatus.PENDING
+        conversation.assigneeMembershipId.shouldBeNull()
         conversation.lastMessageSequence shouldBe 0
+        conversation.lastMessageAt.shouldBeNull()
         conversation.closedAt.shouldBeNull()
     }
 
@@ -36,6 +38,33 @@ class ChannelConversationUT {
         issue.sequence shouldBe 1
         issue.conversation.lastMessageSequence shouldBe 1
         issue.conversation.id shouldBe conversation.id
+    }
+
+    @Test
+    fun `recordMessage stores latest message summary`() {
+        // Arrange: Prepare a conversation and message creation time. / 준비: conversation과 message 생성 시간을 준비한다.
+        val conversation = ChannelConversation.start("channel-1", "visitor-1")
+        val messageCreatedAt = conversation.createdAt.plusMinutes(1)
+
+        // Act: Record the latest message summary. / 실행: 최신 message summary를 기록한다.
+        val recorded = conversation.recordMessage(sequence = 3, messageCreatedAt = messageCreatedAt)
+
+        // Assert: Verify latest message sequence and timestamp are stored. / 검증: 최신 message sequence와 timestamp가 저장되는지 검증한다.
+        recorded.lastMessageSequence shouldBe 3
+        recorded.lastMessageAt shouldBe messageCreatedAt
+        recorded.updatedAt shouldBe messageCreatedAt
+    }
+
+    @Test
+    fun `assignTo stores assignee membership identifier`() {
+        // Arrange: Prepare a conversation without assignee. / 준비: assignee가 없는 conversation을 준비한다.
+        val conversation = ChannelConversation.start("channel-1", "visitor-1")
+
+        // Act: Assign the conversation to a channel membership. / 실행: conversation을 channel membership에 할당한다.
+        val assigned = conversation.assignTo("membership-1")
+
+        // Assert: Verify assignee membership identifier is stored. / 검증: assignee membership identifier가 저장되는지 검증한다.
+        assigned.assigneeMembershipId shouldBe "membership-1"
     }
 
     @Test

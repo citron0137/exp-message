@@ -16,6 +16,11 @@ class ChannelMembershipRepositoryAdapter(
     override fun save(membership: ChannelMembership): ChannelMembership = jpaRepository.save(membership.toEntity()).toDomain()
 
     /**
+     * Finds a channel membership by identifier through JPA.
+     */
+    override fun findById(id: String): ChannelMembership? = jpaRepository.findById(id).orElse(null)?.toDomain()
+
+    /**
      * Finds channel memberships by channel identifier through JPA.
      */
     override fun findByChannelId(channelId: String): List<ChannelMembership> =

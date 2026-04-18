@@ -804,10 +804,59 @@ Phase 4에는 admin inbox realtime, agent reply, read receipt, delivery receipt,
 Reason: WebSocket is a delivery adapter, while message persistence remains the canonical write path.
 이유: WebSocket은 delivery adapter이고 message persistence가 canonical write path이기 때문이다.
 
-## 10. Phase 5: Conversation Operations and Admin Inbox / Phase 5: Conversation 운영 및 Admin Inbox
+## 10. Phase 5A: Admin Inbox Read / Phase 5A: Admin Inbox 조회
 
-Goal: make conversations usable as an operational inbox.
-목표: conversation을 운영 inbox로 사용할 수 있게 만든다.
+Goal: expose the first admin inbox read slice.
+목표: 첫 admin inbox 조회 slice를 노출한다.
+
+Add `lastMessageAt` for inbox sorting.
+Inbox 정렬을 위해 `lastMessageAt`을 추가한다.
+
+Update `lastMessageAt` when widget messages are stored.
+Widget message가 저장될 때 `lastMessageAt`을 갱신한다.
+
+Allow inbox reads for `PLATFORM_ADMIN`.
+`PLATFORM_ADMIN`에게 inbox read를 허용한다.
+
+Allow inbox reads for channel members.
+Channel member에게 inbox read를 허용한다.
+
+Required endpoints:
+필수 endpoint:
+
+```text
+GET /admin/channels/{channelId}/conversations
+GET /admin/channels/{channelId}/conversations/{conversationId}
+GET /admin/channels/{channelId}/conversations/{conversationId}/messages
+```
+
+Use `status` and `limit` for the first inbox list filters.
+첫 inbox list filter로 `status`와 `limit`을 사용한다.
+
+Use `afterSequence` and `limit` for message reads.
+Message read에는 `afterSequence`와 `limit`을 사용한다.
+
+Defer admin inbox cursor support until the next small slice.
+Admin inbox cursor support는 다음 작은 slice로 미룬다.
+
+Near-next filters:
+가까운 다음 filter:
+
+```text
+assignee
+cursor
+```
+
+Reason: admin users need read access before assignment and mutation workflows can be validated.
+이유: assignment 및 mutation workflow를 검증하기 전에 admin 사용자가 읽을 수 있어야 하기 때문이다.
+
+Reason: cursor design should follow real list ordering and filter needs after the first read API exists.
+이유: cursor 설계는 첫 read API가 존재한 뒤 실제 list ordering과 filter 요구를 따라야 하기 때문이다.
+
+## 10B. Phase 5B: Conversation Operations / Phase 5B: Conversation 운영
+
+Goal: make conversations operationally manageable from the admin inbox.
+목표: admin inbox에서 conversation을 운영상 관리할 수 있게 만든다.
 
 Add assignee support.
 Assignee 기능을 추가한다.
@@ -815,8 +864,20 @@ Assignee 기능을 추가한다.
 Prefer assigning to `ChannelMembership`, not directly to `User`.
 직접 `User`에 할당하기보다 `ChannelMembership`에 할당하는 방식을 우선한다.
 
-Add `lastMessageAt` for inbox sorting.
-Inbox 정렬을 위해 `lastMessageAt`을 추가한다.
+Store the assignee as `assigneeMembershipId`.
+Assignee는 `assigneeMembershipId`로 저장한다.
+
+Allow assignment to `CHANNEL_ADMIN` and `AGENT` memberships in the same channel.
+같은 channel의 `CHANNEL_ADMIN` 및 `AGENT` membership에 할당을 허용한다.
+
+Allow status and assignee mutations only for `PLATFORM_ADMIN` or channel `CHANNEL_ADMIN`.
+Status 및 assignee 변경은 `PLATFORM_ADMIN` 또는 해당 channel의 `CHANNEL_ADMIN`에게만 허용한다.
+
+Do not allow `CLOSED` conversations to be reopened.
+`CLOSED` conversation은 다시 열 수 없게 한다.
+
+Allow `CLOSED` conversations to remain readable in the admin inbox.
+`CLOSED` conversation은 admin inbox에서 계속 조회 가능하게 둔다.
 
 Add status and assignee mutation APIs.
 Status 및 assignee 변경 API를 추가한다.
@@ -825,21 +886,22 @@ Required endpoints:
 필수 endpoint:
 
 ```text
-PATCH /channels/{channelId}/conversations/{conversationId}/status
-PATCH /channels/{channelId}/conversations/{conversationId}/assignee
+PATCH /admin/channels/{channelId}/conversations/{conversationId}/status
+PATCH /admin/channels/{channelId}/conversations/{conversationId}/assignee
 ```
 
 Add inbox list filters.
 Inbox list filter를 추가한다.
 
-Recommended filters:
-추천 filter:
+Defer cursor and assignee filters to the next inbox query slice.
+Cursor와 assignee filter는 다음 inbox query slice로 미룬다.
+
+Near-next filters:
+가까운 다음 filter:
 
 ```text
-status
 assignee
 cursor
-limit
 ```
 
 Reason: an inbox needs workflow state, assignment, and activity ordering.
@@ -847,6 +909,61 @@ Reason: an inbox needs workflow state, assignment, and activity ordering.
 
 Reason: status lifecycle already exists, so this phase should focus on assignment, filtering, and operational reads.
 이유: status lifecycle은 이미 있으므로 이 phase는 assignment, filtering, operational read에 집중해야 한다.
+
+## 10C. Phase 5C: Admin Inbox Query Refinement / Phase 5C: Admin Inbox Query 정교화
+
+Goal: make the admin inbox list stable enough for operational pagination and filtering.
+목표: admin inbox list를 운영 pagination 및 filtering에 충분히 안정적으로 만든다.
+
+Use keyset cursor pagination for the admin inbox list.
+Admin inbox list에는 keyset cursor pagination을 사용한다.
+
+Use `COALESCE(lastMessageAt, createdAt)` as the activity timestamp.
+Activity timestamp는 `COALESCE(lastMessageAt, createdAt)`을 사용한다.
+
+Sort inbox rows by activity timestamp and conversation id.
+Inbox row는 activity timestamp와 conversation id로 정렬한다.
+
+```text
+COALESCE(last_message_at, created_at) DESC
+id DESC
+```
+
+Use Base64Url JSON cursor payloads.
+Base64Url JSON cursor payload를 사용한다.
+
+```json
+{
+  "activityAt": "2026-04-18T22:00:00",
+  "id": "conversation-id"
+}
+```
+
+Return `nextCursor` in the list response.
+List response에는 `nextCursor`를 반환한다.
+
+Keep single `status` filtering.
+단일 `status` filtering을 유지한다.
+
+Add assignee filters.
+Assignee filter를 추가한다.
+
+```text
+assigneeMembershipId
+unassigned
+```
+
+Reject requests that combine `assigneeMembershipId` and `unassigned=true`.
+`assigneeMembershipId`와 `unassigned=true`를 함께 사용하는 request는 거부한다.
+
+Validate that `assigneeMembershipId` belongs to the requested channel.
+`assigneeMembershipId`가 요청 channel에 속하는지 검증한다.
+
+Reason: offset pagination is unstable for an inbox whose ordering changes when messages arrive.
+이유: message 도착으로 정렬이 바뀌는 inbox에는 offset pagination이 불안정하기 때문이다.
+
+Reason: using activity timestamp avoids nullable cursor complexity and keeps empty-message conversations visible.
+이유: activity timestamp를 사용하면 nullable cursor 복잡도를 줄이고 message 없는 conversation도 자연스럽게 노출할 수 있기 때문이다.
 
 ## 11. Phase 6: ChannelMembership Management / Phase 6: ChannelMembership 관리
 

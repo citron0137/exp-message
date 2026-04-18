@@ -39,7 +39,7 @@ class AdminChannelFacadeUT {
                 channelRepository = channelRepository,
                 channelMembershipRepository = channelMembershipRepository,
                 customerAdminIdentityPort = customerAdminIdentityPort,
-                channelAccessPolicy = ChannelAccessPolicy(),
+                channelAccessPolicy = ChannelAccessPolicy(channelMembershipRepository),
             )
     }
 

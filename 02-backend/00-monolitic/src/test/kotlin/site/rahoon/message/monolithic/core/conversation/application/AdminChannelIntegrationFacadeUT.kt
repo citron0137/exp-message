@@ -12,6 +12,7 @@ import site.rahoon.message.monolithic.core.conversation.application.facade.Chang
 import site.rahoon.message.monolithic.core.conversation.application.facade.CreateWidgetIntegrationCommand
 import site.rahoon.message.monolithic.core.conversation.application.facade.UpdateChannelIntegrationAllowedOriginsCommand
 import site.rahoon.message.monolithic.core.conversation.application.port.ChannelIntegrationRepository
+import site.rahoon.message.monolithic.core.conversation.application.port.ChannelMembershipRepository
 import site.rahoon.message.monolithic.core.conversation.application.port.ChannelRepository
 import site.rahoon.message.monolithic.core.conversation.application.port.IntegrationKeyGenerator
 import site.rahoon.message.monolithic.core.conversation.application.port.IntegrationSecretHasher
@@ -31,6 +32,7 @@ import java.time.LocalDateTime
 class AdminChannelIntegrationFacadeUT {
     private lateinit var channelRepository: ChannelRepository
     private lateinit var channelIntegrationRepository: ChannelIntegrationRepository
+    private lateinit var channelMembershipRepository: ChannelMembershipRepository
     private lateinit var integrationKeyGenerator: IntegrationKeyGenerator
     private lateinit var integrationSecretHasher: IntegrationSecretHasher
     private lateinit var facade: AdminChannelIntegrationFacade
@@ -39,6 +41,7 @@ class AdminChannelIntegrationFacadeUT {
     fun setUp() {
         channelRepository = mockk()
         channelIntegrationRepository = mockk()
+        channelMembershipRepository = mockk()
         integrationKeyGenerator = mockk()
         integrationSecretHasher = mockk()
         facade =
@@ -47,7 +50,7 @@ class AdminChannelIntegrationFacadeUT {
                 channelIntegrationRepository = channelIntegrationRepository,
                 integrationKeyGenerator = integrationKeyGenerator,
                 integrationSecretHasher = integrationSecretHasher,
-                channelAccessPolicy = ChannelAccessPolicy(),
+                channelAccessPolicy = ChannelAccessPolicy(channelMembershipRepository),
             )
     }
 

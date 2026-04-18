@@ -82,7 +82,7 @@ class WidgetMessageFacadeUT {
         // Assert: Verify message sequence and persistence calls. / 검증: message sequence와 저장 호출을 검증한다.
         result.sequence shouldBe 1
         result.content shouldBe "hello"
-        verify { channelConversationRepository.save(match { it.lastMessageSequence == 1L }) }
+        verify { channelConversationRepository.save(match { it.lastMessageSequence == 1L && it.lastMessageAt != null }) }
         verify { conversationMessageRepository.save(match { it.sequence == 1L && it.senderId == "visitor-1" }) }
     }
 
