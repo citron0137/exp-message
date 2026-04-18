@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import org.springframework.http.HttpStatus
+import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -19,6 +20,9 @@ import site.rahoon.message.monolithic.core.conversation.application.query.Widget
 import site.rahoon.message.monolithic.core.conversation.application.query.WidgetMessageListResult
 import site.rahoon.message.monolithic.core.conversation.application.query.WidgetMessageQueryService
 import site.rahoon.message.monolithic.presentation.http.shared.ApiResponse
+import site.rahoon.message.monolithic.presentation.websocket.admin.AdminConversationWebSocketResponse
+import site.rahoon.message.monolithic.presentation.websocket.admin.AdminConversationWebSocketTopics
+import site.rahoon.message.monolithic.presentation.websocket.widget.WidgetMessageWebSocketResponse
 import java.time.LocalDateTime
 
 @RestController
@@ -26,6 +30,7 @@ import java.time.LocalDateTime
 class WidgetMessageController(
     private val widgetMessageFacade: WidgetMessageFacade,
     private val widgetMessageQueryService: WidgetMessageQueryService,
+    private val messagingTemplate: SimpMessagingTemplate,
 ) {
     /**
      * Sends a visitor message through the widget HTTP API.
@@ -48,6 +53,23 @@ class WidgetMessageController(
                     content = request.content,
                 ),
             )
+        /*
+         * HTTP is kept as a recovery path for widgets that cannot use STOMP. Stored messages
+         * still need to fan out to open widget tabs and admin consoles so every client observes
+         * the same canonical message log regardless of the transport used to create it.
+         */
+        messagingTemplate.convertAndSend(
+            "/topic/widget/conversations/$conversationId/messages",
+            WidgetMessageWebSocketResponse.Message.from(result),
+        )
+        messagingTemplate.convertAndSend(
+            AdminConversationWebSocketTopics.channelConversations(result.channelId),
+            AdminConversationWebSocketResponse.ConversationChanged.from(result, "VISITOR_MESSAGE_SENT"),
+        )
+        messagingTemplate.convertAndSend(
+            AdminConversationWebSocketTopics.conversationMessages(result.channelId, conversationId),
+            AdminConversationWebSocketResponse.Message.from(result),
+        )
         return ApiResponse.success(WidgetMessageResponse.Message.from(result))
     }
 

@@ -70,7 +70,7 @@ if (import.meta.env.DEV) {
     window.ChatWidget.init({
         apiUrl: 'http://localhost:8080',
         wsUrl: 'ws://localhost:8080/ws',
-        channelId: '61f65601-6fae-4c8e-908b-bde692824fc2',
+        publicKey: 'wpk_replace_with_core_public_key',
         theme: 'light'
     });
 }

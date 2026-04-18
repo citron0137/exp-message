@@ -48,6 +48,9 @@ class WebSocketConnectInterceptor(
         if (accessor.sessionAttributes?.containsKey(WebSocketSessionAttributeNames.WIDGET_SESSION) == true) {
             return message
         }
+        if (accessor.sessionAttributes?.containsKey(WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO) == true) {
+            return message
+        }
 
         val tokenFromHeader = accessor.getFirstNativeHeader("Authorization")?.takeIf { it.isNotBlank() }
         val tokenFromSession = accessor.sessionAttributes

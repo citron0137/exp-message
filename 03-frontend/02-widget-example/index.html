@@ -93,9 +93,9 @@
 &lt;!-- 2. Initialize with config --&gt;
 &lt;script&gt;
   ChatWidget.init({
-    apiUrl: 'http://localhost:8080/api',
+    apiUrl: 'http://localhost:8080',
     wsUrl: 'ws://localhost:8080/ws',
-    channelId: 'demo-channel',
+    publicKey: 'your-widget-public-key',
     theme: 'light'
   });
 &lt;/script&gt;</code></pre>
@@ -128,9 +128,9 @@
     // Wait for widget to load
     if (window.ChatWidget) {
       ChatWidget.init({
-        apiUrl: 'http://localhost:8080/api',
+        apiUrl: 'http://localhost:8080',
         wsUrl: 'ws://localhost:8080/ws',
-        channelId: 'demo-channel',
+        publicKey: 'your-widget-public-key',
         theme: 'light'
       });
       console.log('✅ Chat widget initialized');

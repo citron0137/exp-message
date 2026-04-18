@@ -50,10 +50,8 @@ class CoreAdminChannelController(
      * Lists all channels for a platform admin.
      */
     @GetMapping
-    fun list(principal: AuthenticatedPrincipal): ApiResponse<List<AdminChannelResponse.Detail>> =
-        ApiResponse.success(
-            adminChannelFacade.listChannels(principal).map { AdminChannelResponse.Detail.from(it) },
-        )
+    fun list(principal: AuthenticatedPrincipal): ApiResponse<AdminChannelResponse.ListResult> =
+        ApiResponse.success(AdminChannelResponse.ListResult.from(adminChannelFacade.listChannels(principal)))
 
     /**
      * Gets a channel by identifier for a platform admin.
@@ -79,6 +77,17 @@ object AdminChannelRequest {
 }
 
 object AdminChannelResponse {
+    data class ListResult(
+        val items: List<Detail>,
+    ) {
+        companion object {
+            /**
+             * Maps channel results to a list response.
+             */
+            fun from(results: List<ChannelResult>): ListResult = ListResult(items = results.map { Detail.from(it) })
+        }
+    }
+
     data class Create(
         val channel: Detail,
         val initialAdmin: InitialAdmin,

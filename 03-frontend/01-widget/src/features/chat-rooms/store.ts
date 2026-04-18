@@ -1,81 +1,129 @@
 import { create } from 'zustand';
-import { createChatRoomApi, getChatRoomsApi, type ChatRoom } from './api';
+import { bootstrapWidget, createVisitorSession, enterConversation } from './api';
 import { toApiErrorMessage } from '@/shared/http/client';
+import type { WidgetConfig } from '@/types/config';
 
 type RoomStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 interface RoomSessionState {
-    activeRoomId: string | null;
-    activeRoomName: string | null;
-    roomStatus: RoomStatus;
-    errorMessage: string | null;
-    ensureActiveRoom: (channelId?: string) => Promise<void>;
-    resetRoomSession: () => void;
+  publicKey: string | null;
+  channelId: string | null;
+  channelName: string | null;
+  visitorId: string | null;
+  visitorSessionToken: string | null;
+  conversationId: string | null;
+  conversationStatus: string | null;
+  roomStatus: RoomStatus;
+  errorMessage: string | null;
+  ensureConversation: (config: WidgetConfig) => Promise<void>;
+  resetRoomSession: () => void;
 }
 
-function selectReusableRoom(rooms: ChatRoom[]) {
-    if (rooms.length === 0) {
-        return null;
-    }
+function storageKey(publicKey: string) {
+  return `exp-message-widget-session:${publicKey}`;
+}
 
-    const sorted = [...rooms].sort((a, b) => {
-        const left = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-        const right = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-        return right - left;
-    });
+function readStoredSession(publicKey: string) {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const raw = window.localStorage.getItem(storageKey(publicKey));
+  if (!raw) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw) as { token?: string; expiresAt?: string };
+  } catch {
+    window.localStorage.removeItem(storageKey(publicKey));
+    return null;
+  }
+}
 
-    return sorted[0];
+function writeStoredSession(publicKey: string, token: string, expiresAt: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.localStorage.setItem(storageKey(publicKey), JSON.stringify({ token, expiresAt }));
 }
 
 export const useRoomSessionStore = create<RoomSessionState>((set, get) => ({
-    activeRoomId: null,
-    activeRoomName: null,
-    roomStatus: 'idle',
-    errorMessage: null,
-    async ensureActiveRoom(channelId) {
-        const current = get();
-        if (current.roomStatus === 'loading' || current.activeRoomId) {
-            return;
-        }
+  publicKey: null,
+  channelId: null,
+  channelName: null,
+  visitorId: null,
+  visitorSessionToken: null,
+  conversationId: null,
+  conversationStatus: null,
+  roomStatus: 'idle',
+  errorMessage: null,
+  async ensureConversation(config) {
+    const publicKey = config.publicKey?.trim();
+    if (!publicKey) {
+      set({ roomStatus: 'error', errorMessage: 'Widget public key is missing.' });
+      return;
+    }
 
-        set({ roomStatus: 'loading', errorMessage: null });
+    const current = get();
+    if (current.roomStatus === 'loading' || (current.publicKey === publicKey && current.conversationId)) {
+      return;
+    }
 
-        try {
-            const rooms = await getChatRoomsApi();
-            const reusableRoom = selectReusableRoom(rooms);
+    set({ publicKey, roomStatus: 'loading', errorMessage: null });
 
-            if (reusableRoom?.id) {
-                set({
-                    activeRoomId: reusableRoom.id,
-                    activeRoomName: reusableRoom.name,
-                    roomStatus: 'ready',
-                    errorMessage: null,
-                });
-                return;
-            }
+    try {
+      const bootstrap = await bootstrapWidget(publicKey);
+      const stored = readStoredSession(publicKey);
+      const session =
+        stored?.token && stored.expiresAt && new Date(stored.expiresAt).getTime() > Date.now()
+          ? null
+          : await createVisitorSession(publicKey, config.visitor);
+      const visitorSessionToken = stored?.token && !session ? stored.token : session?.session.token;
 
-            const createdRoom = await createChatRoomApi(channelId);
-            set({
-                activeRoomId: createdRoom.id,
-                activeRoomName: createdRoom.name ?? 'Customer Chat',
-                roomStatus: 'ready',
-                errorMessage: null,
-            });
-        } catch (error) {
-            set({
-                activeRoomId: null,
-                activeRoomName: null,
-                roomStatus: 'error',
-                errorMessage: toApiErrorMessage(error, 'Unable to prepare chat room'),
-            });
-        }
-    },
-    resetRoomSession() {
-        set({
-            activeRoomId: null,
-            activeRoomName: null,
-            roomStatus: 'idle',
-            errorMessage: null,
-        });
-    },
+      if (!visitorSessionToken) {
+        throw new Error('Visitor session is missing.');
+      }
+
+      if (session) {
+        writeStoredSession(publicKey, session.session.token, session.session.expiresAt);
+      }
+
+      const entry = await enterConversation(publicKey, visitorSessionToken);
+
+      set({
+        publicKey,
+        channelId: bootstrap.channel.id,
+        channelName: bootstrap.channel.name,
+        visitorId: entry.visitor.id,
+        visitorSessionToken,
+        conversationId: entry.conversation.id,
+        conversationStatus: entry.conversation.status,
+        roomStatus: 'ready',
+        errorMessage: null,
+      });
+    } catch (error) {
+      set({
+        channelId: null,
+        channelName: null,
+        visitorId: null,
+        visitorSessionToken: null,
+        conversationId: null,
+        conversationStatus: null,
+        roomStatus: 'error',
+        errorMessage: toApiErrorMessage(error, 'Unable to prepare conversation'),
+      });
+    }
+  },
+  resetRoomSession() {
+    set({
+      publicKey: null,
+      channelId: null,
+      channelName: null,
+      visitorId: null,
+      visitorSessionToken: null,
+      conversationId: null,
+      conversationStatus: null,
+      roomStatus: 'idle',
+      errorMessage: null,
+    });
+  },
 }));

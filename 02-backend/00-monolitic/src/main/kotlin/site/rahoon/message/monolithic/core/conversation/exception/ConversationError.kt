@@ -88,6 +88,12 @@ enum class ConversationError(
         developerMessage = "The channel conversation cannot be viewed by the visitor.",
         category = ErrorCategory.FORBIDDEN,
     ),
+    CHANNEL_CONVERSATION_REPLY_NOT_ALLOWED(
+        code = "CONVERSATION_CHANNEL_CONVERSATION_REPLY_NOT_ALLOWED",
+        userMessage = "현재 대화에 답장할 수 없습니다.",
+        developerMessage = "The channel conversation cannot accept an admin reply.",
+        category = ErrorCategory.FORBIDDEN,
+    ),
     INVALID_MESSAGE_CONTENT(
         code = "CONVERSATION_INVALID_MESSAGE_CONTENT",
         userMessage = "메시지 내용을 확인해주세요.",

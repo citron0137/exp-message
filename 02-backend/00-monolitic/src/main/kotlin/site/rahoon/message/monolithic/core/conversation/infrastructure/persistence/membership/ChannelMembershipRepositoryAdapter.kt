@@ -28,6 +28,12 @@ class ChannelMembershipRepositoryAdapter(
         jpaRepository.findByChannelId(channelId).map { it.toDomain() }
 
     /**
+     * Finds channel memberships by user identifier through JPA.
+     */
+    override fun findByUserId(userId: String): List<ChannelMembership> =
+        jpaRepository.findByUserIdOrderByCreatedAtDescIdDesc(userId).map { it.toDomain() }
+
+    /**
      * Finds memberships by optional role and status filters through JPA.
      */
     override fun findByChannelIdAndFilters(

@@ -1080,7 +1080,62 @@ Reason: existing assignees are operational history, and bulk reassignment should
 Reason: assignment, inbox access, and operator management all depend on membership semantics.
 이유: assignee, inbox access, operator management가 모두 membership 의미론에 의존하기 때문이다.
 
-## 12. Phase 7: Admin Frontend Integration / Phase 7: Admin Frontend 연동
+## 12. Phase 7A: Backend Contract Cleanup and Reply Readiness / Phase 7A: Backend 계약 정리 및 Reply 준비
+
+Goal: make the backend API contract stable before frontend integration.
+목표: frontend 연동 전에 backend API 계약을 안정화한다.
+
+Use consistent list response envelopes.
+일관된 list response envelope을 사용한다.
+
+```text
+{ "items": [...] }
+{ "items": [...], "nextCursor": "...", "hasMore": true }
+```
+
+Keep cursor fields only on paginated lists.
+Cursor field는 pagination이 있는 list에만 둔다.
+
+Return Spring validation and binding failures through the same `ApiResponse.error` envelope.
+Spring validation 및 binding 실패도 동일한 `ApiResponse.error` envelope으로 반환한다.
+
+Add admin reply backend before attaching the conversation detail frontend.
+Conversation detail frontend를 붙이기 전에 admin reply backend를 추가한다.
+
+Use channel membership identity for admin reply sender semantics.
+Admin reply sender 의미에는 channel membership identity를 사용한다.
+
+```text
+visitor message: senderType = VISITOR, senderId = visitorId
+admin reply: senderType = AGENT, senderId = membershipId
+future system event: senderType = SYSTEM, senderId = system
+```
+
+Do not allow `PLATFORM_ADMIN` authority alone to send customer replies.
+`PLATFORM_ADMIN` 권한만으로는 고객 대화에 답장할 수 없게 한다.
+
+Allow replies only from active `CHANNEL_ADMIN` and `AGENT` memberships in the same channel.
+같은 channel의 active `CHANNEL_ADMIN` 및 `AGENT` membership만 답장할 수 있게 한다.
+
+Allow replies to `PENDING`, `OPEN`, and `DORMANT` conversations.
+`PENDING`, `OPEN`, `DORMANT` conversation에는 답장을 허용한다.
+
+Move a conversation to `OPEN` when an admin reply is stored.
+Admin reply가 저장되면 conversation을 `OPEN`으로 이동한다.
+
+Reject replies to `CLOSED` conversations.
+`CLOSED` conversation에는 답장을 거부한다.
+
+Reason: frontend integration should bind to stable response envelopes and error shapes.
+이유: frontend 연동은 안정된 response envelope 및 error shape에 연결되어야 하기 때문이다.
+
+Reason: platform administration and customer-facing operator speech are different authorities.
+이유: platform administration과 고객에게 보이는 operator 발화는 서로 다른 권한이기 때문이다.
+
+Reason: storing membership id as the reply sender keeps historical messages channel-owned and auditable.
+이유: reply sender를 membership id로 저장하면 과거 message가 channel 소유 identity로 남고 audit하기 쉽기 때문이다.
+
+## 12B. Phase 7B: Core Frontend Alignment / Phase 7B: Core Frontend 정렬
 
 Goal: connect the admin frontend to stable backend use cases.
 목표: 안정된 backend use case에 admin frontend를 연결한다.
@@ -1111,6 +1166,74 @@ Reason: frontend integration should not lock the backend into temporary API shap
 
 Reason: backend authorization must be the source of truth.
 이유: backend authorization이 source of truth여야 하기 때문이다.
+
+## 12C. Phase 7C: Workspace-based Admin Console / Phase 7C: Workspace 기반 Admin Console
+
+Goal: make the admin console operate from the current user's available channels.
+목표: admin console이 현재 사용자가 접근 가능한 channel 기준으로 동작하게 한다.
+
+Add a `/admin/me/channels` workspace query.
+`/admin/me/channels` workspace query를 추가한다.
+
+Use the selected workspace as the default channel for inbox operations.
+선택된 workspace를 inbox operation의 기본 channel로 사용한다.
+
+Let `PLATFORM_ADMIN` see all channels and `CHANNEL_USER` see membership channels.
+`PLATFORM_ADMIN`은 모든 channel을 보고 `CHANNEL_USER`는 membership channel을 본다.
+
+Reason: channel id should not be manually typed during normal admin work.
+이유: 일반 admin 작업에서 channel id를 직접 입력하게 만들면 안 되기 때문이다.
+
+## 12D. Phase 7D: Admin Console UX Polish / Phase 7D: Admin Console UX 정리
+
+Goal: make the admin console easier to use before audit and production hardening.
+목표: audit 및 production hardening 전에 admin console을 더 사용하기 쉽게 만든다.
+
+Polish channel detail around widget setup, public key copy, secret copy, and embed snippet copy.
+Channel detail에서 widget setup, public key copy, secret copy, embed snippet copy를 정리한다.
+
+Polish inbox status badges, live connection state, empty states, and refresh behavior.
+Inbox status badge, live connection state, empty state, refresh behavior를 정리한다.
+
+Keep UX changes flexible because the frontend can change more aggressively than the core backend.
+Frontend는 core backend보다 더 적극적으로 바뀔 수 있으므로 UX 변경은 유연하게 둔다.
+
+Reason: the admin console should become an operational tool, not only an API test surface.
+이유: admin console은 API test surface가 아니라 운영 도구가 되어야 하기 때문이다.
+
+## 12E. Phase 7E: Admin Realtime / Phase 7E: Admin Realtime
+
+Goal: keep the admin inbox and open conversation detail synchronized with stored messages.
+목표: admin inbox와 열린 conversation detail을 저장된 message와 동기화한다.
+
+Use the existing `/ws` STOMP endpoint.
+기존 `/ws` STOMP endpoint를 사용한다.
+
+Add core admin WebSocket authentication using the core access token.
+Core access token을 사용하는 core admin WebSocket authentication을 추가한다.
+
+Add channel-scoped admin subscription policies.
+Channel scope의 admin subscription policy를 추가한다.
+
+```text
+/topic/admin/channels/{channelId}/conversations
+/topic/admin/channels/{channelId}/conversations/{conversationId}/messages
+```
+
+Broadcast visitor messages and admin replies to admin topics after the message is stored.
+Message가 저장된 뒤 visitor message와 admin reply를 admin topic으로 broadcast한다.
+
+Use HTTP reload as reconnect recovery.
+Reconnect recovery는 HTTP reload를 사용한다.
+
+Do not add read receipts, typing indicators, presence, or notification fanout in Phase 7E.
+Phase 7E에는 read receipt, typing indicator, presence, notification fanout을 추가하지 않는다.
+
+Reason: realtime delivery must reflect the canonical database message log.
+이유: realtime delivery는 canonical database message log를 반영해야 하기 때문이다.
+
+Reason: subscription authorization must remain backend-enforced even if the frontend has route guards.
+이유: frontend route guard가 있어도 subscription authorization은 backend에서 강제되어야 하기 때문이다.
 
 ## 13. Phase 8: Audit Log / Phase 8: Audit Log
 

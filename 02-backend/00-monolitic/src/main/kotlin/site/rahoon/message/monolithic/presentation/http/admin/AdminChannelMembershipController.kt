@@ -67,11 +67,16 @@ class AdminChannelMembershipController(
         @PathVariable channelId: String,
         @RequestParam(required = false) role: ChannelMembershipRole?,
         @RequestParam(required = false) status: ChannelMembershipStatus?,
-    ): ApiResponse<List<AdminChannelMembershipResponse.Detail>> =
+    ): ApiResponse<AdminChannelMembershipResponse.ListResult> =
         ApiResponse.success(
-            adminChannelMembershipQueryService
-                .listByChannel(actor = principal, channelId = channelId, role = role, status = status)
-                .map { AdminChannelMembershipResponse.Detail.from(it) },
+            AdminChannelMembershipResponse.ListResult.from(
+                adminChannelMembershipQueryService.listByChannel(
+                    actor = principal,
+                    channelId = channelId,
+                    role = role,
+                    status = status,
+                ),
+            ),
         )
 
     /**
@@ -158,6 +163,17 @@ object AdminChannelMembershipRequest {
 }
 
 object AdminChannelMembershipResponse {
+    data class ListResult(
+        val items: List<Detail>,
+    ) {
+        companion object {
+            /**
+             * Maps membership results to a list response.
+             */
+            fun from(results: List<ChannelMembershipResult>): ListResult = ListResult(items = results.map { Detail.from(it) })
+        }
+    }
+
     data class Create(
         val membership: Detail,
         val identity: Identity,

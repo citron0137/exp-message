@@ -34,12 +34,14 @@ ConversationMessage
 - Store the canonical conversation message history.
 - Preserve conversation-scoped message ordering with `sequence`.
 - Provide idempotent visitor message append with `clientMessageId`.
+- Provide idempotent agent reply append with `clientMessageId`.
 - Keep message content validation in `MessageContent`.
 
 ## Behavior
 
 ```text
 ConversationMessage.visitorText(conversationId, channelId, visitorId, sequence, clientMessageId, content)
+ConversationMessage.agentText(conversationId, channelId, membershipId, sequence, clientMessageId, content)
 MessageContent.text(rawValue)
 ```
 
@@ -47,6 +49,7 @@ MessageContent.text(rawValue)
 
 ```text
 WidgetMessageFacade.sendVisitorMessage(command)
+AdminConversationFacade.sendReply(command)
 WidgetMessageQueryService.listMessages(query)
 ```
 
@@ -78,6 +81,14 @@ conversation_id + sequence
 - Phase 3 stores only `TEXT` messages.
 - Phase 3 stores only `VISIBLE` messages.
 - Duplicate visitor append returns the existing message for the idempotency key.
+- Duplicate agent reply append returns the existing message for the idempotency key.
+- Agent reply sender id is the channel membership id, not the IAM user id.
+- Platform admin authority alone cannot create an agent reply.
+- A platform admin must have an active channel membership to reply as a channel operator.
+- Disabled memberships cannot create new agent replies.
+- Replies to `PENDING`, `OPEN`, and `DORMANT` conversations are allowed.
+- Sending an agent reply moves the conversation to `OPEN`.
+- Replies to `CLOSED` conversations are rejected.
 - HTTP and later WebSocket delivery should reuse the same write facade.
 
 ## Non-Ownership

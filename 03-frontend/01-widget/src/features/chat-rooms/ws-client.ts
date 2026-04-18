@@ -2,8 +2,9 @@ import { Client, type IFrame, type IMessage, type StompSubscription } from '@sto
 
 interface ConnectOptions {
   wsUrl: string;
-  accessToken: string;
-  userId: string;
+  publicKey: string;
+  visitorSessionToken: string;
+  conversationId: string;
   onMessage: (message: IMessage) => void;
   onConnectionChange: (state: 'connecting' | 'connected' | 'disconnected' | 'error') => void;
   onStompError: (frame: IFrame) => void;
@@ -11,7 +12,6 @@ interface ConnectOptions {
 
 export interface ChatWsClient {
   disconnect: () => void;
-  refreshAuth: (accessToken: string) => void;
   isConnected: () => boolean;
 }
 
@@ -21,9 +21,9 @@ export function connectMessageSocket(options: ConnectOptions): ChatWsClient {
   const client = new Client({
     brokerURL: options.wsUrl,
     connectHeaders: {
-      Authorization: options.accessToken.startsWith('Bearer ')
-        ? options.accessToken
-        : `Bearer ${options.accessToken}`,
+      publicKey: options.publicKey,
+      visitorSessionToken: options.visitorSessionToken,
+      origin: window.location.origin,
     },
     reconnectDelay: 3000,
     heartbeatIncoming: 10000,
@@ -33,7 +33,7 @@ export function connectMessageSocket(options: ConnectOptions): ChatWsClient {
   options.onConnectionChange('connecting');
 
   client.onConnect = () => {
-    subscription = client.subscribe(`/topic/user/${options.userId}/messages`, options.onMessage);
+    subscription = client.subscribe(`/topic/widget/conversations/${options.conversationId}/messages`, options.onMessage);
     options.onConnectionChange('connected');
   };
 
@@ -58,21 +58,6 @@ export function connectMessageSocket(options: ConnectOptions): ChatWsClient {
       subscription = null;
       client.deactivate();
       options.onConnectionChange('disconnected');
-    },
-    refreshAuth(accessToken) {
-      if (!client.connected) {
-        return;
-      }
-      const authHeader = accessToken.startsWith('Bearer ') ? accessToken : `Bearer ${accessToken}`;
-      try {
-        client.publish({
-          destination: '/app/auth/refresh',
-          headers: { Authorization: authHeader, 'content-type': 'application/json' },
-          body: JSON.stringify({ accessToken }),
-        });
-      } catch {
-        // Ignore publish failures during reconnect windows.
-      }
     },
     isConnected() {
       return client.connected;

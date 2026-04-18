@@ -56,11 +56,11 @@ class CoreAdminChannelIntegrationController(
     fun list(
         principal: AuthenticatedPrincipal,
         @PathVariable channelId: String,
-    ): ApiResponse<List<AdminChannelIntegrationResponse.Detail>> =
+    ): ApiResponse<AdminChannelIntegrationResponse.ListResult> =
         ApiResponse.success(
-            adminChannelIntegrationQueryService
-                .listByChannel(principal, channelId)
-                .map { AdminChannelIntegrationResponse.Detail.from(it) },
+            AdminChannelIntegrationResponse.ListResult.from(
+                adminChannelIntegrationQueryService.listByChannel(principal, channelId),
+            ),
         )
 
     /**
@@ -142,6 +142,17 @@ object AdminChannelIntegrationRequest {
 }
 
 object AdminChannelIntegrationResponse {
+    data class ListResult(
+        val items: List<Detail>,
+    ) {
+        companion object {
+            /**
+             * Maps integration results to a list response.
+             */
+            fun from(results: List<ChannelIntegrationResult>): ListResult = ListResult(items = results.map { Detail.from(it) })
+        }
+    }
+
     data class Create(
         val integration: Detail,
         val secret: String,

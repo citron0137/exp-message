@@ -11,6 +11,8 @@ import org.springframework.stereotype.Controller
 import site.rahoon.message.monolithic.core.conversation.application.facade.ConversationMessageResult
 import site.rahoon.message.monolithic.core.conversation.application.facade.SendWidgetVisitorMessageCommand
 import site.rahoon.message.monolithic.core.conversation.application.facade.WidgetMessageFacade
+import site.rahoon.message.monolithic.presentation.websocket.admin.AdminConversationWebSocketResponse
+import site.rahoon.message.monolithic.presentation.websocket.admin.AdminConversationWebSocketTopics
 import java.time.LocalDateTime
 
 @Controller
@@ -43,6 +45,20 @@ class WidgetMessageWebSocketController(
         messagingTemplate.convertAndSend(
             "/topic/widget/conversations/$conversationId/messages",
             response,
+        )
+        /*
+         * The widget owns the visitor command path, but admin consoles own the operational
+         * response. Broadcasting a compact channel event lets inbox clients refresh only the
+         * affected channel while the conversation topic gives an open detail pane the exact
+         * message to append.
+         */
+        messagingTemplate.convertAndSend(
+            AdminConversationWebSocketTopics.channelConversations(result.channelId),
+            AdminConversationWebSocketResponse.ConversationChanged.from(result, "VISITOR_MESSAGE_SENT"),
+        )
+        messagingTemplate.convertAndSend(
+            AdminConversationWebSocketTopics.conversationMessages(result.channelId, conversationId),
+            AdminConversationWebSocketResponse.Message.from(result),
         )
         return response
     }

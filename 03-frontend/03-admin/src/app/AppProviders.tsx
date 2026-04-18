@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/shared/lib/query-client';
 import { configureHttpAuth } from '@/shared/api/http';
 import { useSessionStore } from '@/shared/store/session-store';
+import { useWorkspaceStore } from '@/shared/store/workspace-store';
 
 export function AppProviders({ children }: PropsWithChildren) {
   useEffect(() => {
@@ -12,7 +13,14 @@ export function AppProviders({ children }: PropsWithChildren) {
       onUnauthorized: () => useSessionStore.getState().clearSession(),
     });
 
-    void useSessionStore.getState().bootstrap();
+    void useSessionStore
+      .getState()
+      .bootstrap()
+      .then(() => {
+        if (useSessionStore.getState().status === 'authenticated') {
+          void useWorkspaceStore.getState().loadChannels();
+        }
+      });
   }, []);
 
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;

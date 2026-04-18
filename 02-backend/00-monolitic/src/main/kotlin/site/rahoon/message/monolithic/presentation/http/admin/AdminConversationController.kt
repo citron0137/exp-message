@@ -1,9 +1,12 @@
 package site.rahoon.message.monolithic.presentation.http.admin
 
 import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -13,6 +16,7 @@ import site.rahoon.message.monolithic.core.conversation.application.facade.Admin
 import site.rahoon.message.monolithic.core.conversation.application.facade.ChangeConversationAssigneeCommand
 import site.rahoon.message.monolithic.core.conversation.application.facade.ChangeConversationStatusCommand
 import site.rahoon.message.monolithic.core.conversation.application.facade.ConversationMessageResult
+import site.rahoon.message.monolithic.core.conversation.application.facade.SendAdminConversationReplyCommand
 import site.rahoon.message.monolithic.core.conversation.application.query.AdminConversationAssigneeResult
 import site.rahoon.message.monolithic.core.conversation.application.query.AdminConversationDetailQuery
 import site.rahoon.message.monolithic.core.conversation.application.query.AdminConversationDetailResult
@@ -27,6 +31,9 @@ import site.rahoon.message.monolithic.core.conversation.application.query.AdminC
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelConversationStatus
 import site.rahoon.message.monolithic.core.iam.access.application.model.AuthenticatedPrincipal
 import site.rahoon.message.monolithic.presentation.http.shared.ApiResponse
+import site.rahoon.message.monolithic.presentation.websocket.admin.AdminConversationWebSocketResponse
+import site.rahoon.message.monolithic.presentation.websocket.admin.AdminConversationWebSocketTopics
+import site.rahoon.message.monolithic.presentation.websocket.widget.WidgetMessageWebSocketResponse
 import java.time.LocalDateTime
 
 @RestController
@@ -34,6 +41,7 @@ import java.time.LocalDateTime
 class AdminConversationController(
     private val adminConversationQueryService: AdminConversationQueryService,
     private val adminConversationFacade: AdminConversationFacade,
+    private val messagingTemplate: SimpMessagingTemplate,
 ) {
     /**
      * Lists conversations for the admin inbox.
@@ -155,6 +163,53 @@ class AdminConversationController(
                 ),
             ),
         )
+
+    /**
+     * Sends an admin reply to a conversation.
+     */
+    @PostMapping("/{conversationId}/messages")
+    fun sendReply(
+        principal: AuthenticatedPrincipal,
+        @PathVariable channelId: String,
+        @PathVariable conversationId: String,
+        @Valid @RequestBody request: AdminConversationRequest.SendReply,
+    ): ApiResponse<AdminConversationResponse.Message> {
+        val result =
+            adminConversationFacade.sendReply(
+                SendAdminConversationReplyCommand(
+                    actor = principal,
+                    channelId = channelId,
+                    conversationId = conversationId,
+                    clientMessageId = request.clientMessageId,
+                    content = request.content,
+                ),
+            )
+
+        /*
+         * Admin replies enter through HTTP because the admin console does not own a realtime
+         * command path yet. The customer widget, however, already subscribes to the conversation
+         * topic for live updates. Broadcasting from the delivery adapter keeps the core facade
+         * transport-neutral while making HTTP replies visible to open widgets immediately.
+         */
+        messagingTemplate.convertAndSend(
+            "/topic/widget/conversations/$conversationId/messages",
+            WidgetMessageWebSocketResponse.Message.from(result),
+        )
+        /*
+         * Admin inbox clients subscribe by channel, not by user. The subscription interceptor
+         * enforces channel membership at subscribe time, so the delivery adapter can broadcast
+         * one channel-scoped event and let connected consoles update their current filters.
+         */
+        messagingTemplate.convertAndSend(
+            AdminConversationWebSocketTopics.channelConversations(channelId),
+            AdminConversationWebSocketResponse.ConversationChanged.from(result, "ADMIN_REPLY_SENT"),
+        )
+        messagingTemplate.convertAndSend(
+            AdminConversationWebSocketTopics.conversationMessages(channelId, conversationId),
+            AdminConversationWebSocketResponse.Message.from(result),
+        )
+        return ApiResponse.success(AdminConversationResponse.Message.from(result))
+    }
 }
 
 object AdminConversationRequest {
@@ -164,6 +219,13 @@ object AdminConversationRequest {
 
     data class ChangeAssignee(
         val assigneeMembershipId: String?,
+    )
+
+    data class SendReply(
+        @field:NotBlank
+        val clientMessageId: String,
+        @field:NotBlank
+        val content: String,
     )
 }
 

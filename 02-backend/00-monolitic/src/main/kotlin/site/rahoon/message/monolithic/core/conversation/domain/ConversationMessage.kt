@@ -41,5 +41,30 @@ data class ConversationMessage(
                 status = ConversationMessageStatus.VISIBLE,
                 createdAt = LocalDateTime.now(),
             )
+
+        /**
+         * Creates a visible agent text message.
+         */
+        fun agentText(
+            conversationId: String,
+            channelId: String,
+            membershipId: String,
+            sequence: Long,
+            clientMessageId: String,
+            content: MessageContent,
+        ): ConversationMessage =
+            ConversationMessage(
+                id = UUID.randomUUID().toString(),
+                conversationId = conversationId,
+                channelId = channelId,
+                sequence = sequence,
+                senderType = ConversationMessageSenderType.AGENT,
+                senderId = membershipId,
+                clientMessageId = clientMessageId,
+                type = ConversationMessageType.TEXT,
+                content = content,
+                status = ConversationMessageStatus.VISIBLE,
+                createdAt = LocalDateTime.now(),
+            )
     }
 }

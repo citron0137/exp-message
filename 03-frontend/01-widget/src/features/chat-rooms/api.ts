@@ -1,52 +1,81 @@
 import { apiRequest } from '@/shared/http/client';
+import type { WidgetConfig } from '@/types/config';
 
-export interface ChatRoom {
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T | null;
+  error?: {
+    message?: string;
+  } | null;
+}
+
+function unwrap<T>(payload: ApiResponse<T>): T {
+  if (!payload.success || payload.data == null) {
+    throw new Error(payload.error?.message ?? 'Request failed.');
+  }
+  return payload.data;
+}
+
+export interface WidgetBootstrap {
+  channel: {
     id: string;
     name: string;
-    lastMessage?: string;
-    unreadCount?: number;
-    updatedAt?: string;
+  };
+  integration: {
+    id: string;
+    type: string;
+    publicKey: string;
+  };
 }
 
-interface WrappedResponse {
-    success?: boolean;
-    data?: unknown;
+export interface VisitorSession {
+  visitor: {
+    id: string;
+    channelId: string;
+    externalId: string | null;
+    displayName: string | null;
+    email: string | null;
+    metadata: Record<string, string>;
+  };
+  session: {
+    token: string;
+    expiresAt: string;
+  };
 }
 
-function unwrapPayload(payload: unknown) {
-    const wrapped = payload as WrappedResponse;
-    return wrapped.data ?? payload;
+export interface WidgetConversationEntry {
+  visitor: VisitorSession['visitor'];
+  conversation: {
+    id: string;
+    channelId: string;
+    visitorId: string;
+    status: string;
+  };
 }
 
-export async function getChatRoomsApi() {
-    const payload = await apiRequest<unknown>({
-        method: 'GET',
-        url: '/chat-rooms',
-    });
-
-    const data = unwrapPayload(payload);
-    if (Array.isArray(data)) {
-        return data as ChatRoom[];
-    }
-
-    return [];
-}
-
-export async function createChatRoomApi(channelId?: string) {
-  const roomName = channelId ? `Channel ${channelId}` : 'Customer Chat';
-  const payload = await apiRequest<unknown>({
+export async function bootstrapWidget(publicKey: string) {
+  const payload = await apiRequest<ApiResponse<WidgetBootstrap>>({
     method: 'POST',
-    url: '/chat-rooms',
-    data: {
-      name: roomName,
-    },
+    url: '/widget/bootstrap',
+    data: { publicKey },
   });
+  return unwrap(payload);
+}
 
-    const data = unwrapPayload(payload) as { id?: string; roomId?: string; name?: string };
-    const id = data.id ?? data.roomId;
-    if (!id) {
-        throw new Error('No room id returned by server.');
-    }
+export async function createVisitorSession(publicKey: string, visitor?: WidgetConfig['visitor']) {
+  const payload = await apiRequest<ApiResponse<VisitorSession>>({
+    method: 'POST',
+    url: '/widget/visitor-sessions',
+    data: { publicKey, visitor },
+  });
+  return unwrap(payload);
+}
 
-    return { id, name: data.name };
+export async function enterConversation(publicKey: string, visitorSessionToken: string) {
+  const payload = await apiRequest<ApiResponse<WidgetConversationEntry>>({
+    method: 'POST',
+    url: '/widget/conversations',
+    data: { publicKey, visitorSessionToken },
+  });
+  return unwrap(payload);
 }

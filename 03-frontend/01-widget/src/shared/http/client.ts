@@ -47,10 +47,16 @@ export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
 
 export function toApiErrorMessage(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) {
-    const message = error.response?.data as { message?: string } | undefined;
-    if (message?.message) {
-      return message.message;
+    const payload = error.response?.data as { message?: string; error?: { message?: string } } | undefined;
+    if (payload?.error?.message) {
+      return payload.error.message;
     }
+    if (payload?.message) {
+      return payload.message;
+    }
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
   }
   return fallback;
 }

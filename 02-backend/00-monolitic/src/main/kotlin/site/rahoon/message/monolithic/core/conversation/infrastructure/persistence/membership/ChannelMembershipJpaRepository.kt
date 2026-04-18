@@ -11,6 +11,11 @@ interface ChannelMembershipJpaRepository : JpaRepository<ChannelMembershipEntity
     fun findByChannelId(channelId: String): List<ChannelMembershipEntity>
 
     /**
+     * Finds membership entities by user identifier.
+     */
+    fun findByUserIdOrderByCreatedAtDescIdDesc(userId: String): List<ChannelMembershipEntity>
+
+    /**
      * Finds membership entities by optional role and status filters.
      */
     @Query(

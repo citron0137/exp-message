@@ -21,6 +21,11 @@ interface ChannelMembershipRepository {
     fun findByChannelId(channelId: String): List<ChannelMembership>
 
     /**
+     * Finds channel memberships by user identifier.
+     */
+    fun findByUserId(userId: String): List<ChannelMembership>
+
+    /**
      * Finds channel memberships by optional role and status filters.
      */
     fun findByChannelIdAndFilters(

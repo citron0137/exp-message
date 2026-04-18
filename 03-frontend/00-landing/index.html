@@ -59,9 +59,9 @@
       var host = window.location.host;
 
       window.ChatWidget.init({
-        apiUrl: window.location.origin + "/api",
-        wsUrl: protocol + "//" + host + "/api/ws",
-        channelId: "landing-default",
+        apiUrl: window.location.origin,
+        wsUrl: protocol + "//" + host + "/ws",
+        publicKey: "your-widget-public-key",
         theme: "light"
       });
     })();
