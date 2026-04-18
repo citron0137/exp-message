@@ -74,7 +74,9 @@ cv_channel_integrations
 ## Non-Ownership
 
 - Channel lifecycle is owned by `Channel`.
-- Visitor identity and conversation sessions are not owned by this aggregate in Phase 1A.
+- Visitor identity and conversation sessions are not owned by this aggregate.
+- Visitor sessions are owned by VisitorSession.
+- Visitor conversation entry is owned by ChannelConversation.
 
 ## Update Rules
 

@@ -10,6 +10,7 @@ import site.rahoon.message.monolithic.core.conversation.application.port.Channel
 import site.rahoon.message.monolithic.core.conversation.application.port.ChannelRepository
 import site.rahoon.message.monolithic.core.conversation.application.query.WidgetBootstrapQuery
 import site.rahoon.message.monolithic.core.conversation.application.query.WidgetBootstrapQueryService
+import site.rahoon.message.monolithic.core.conversation.application.service.WidgetAccessPolicy
 import site.rahoon.message.monolithic.core.conversation.domain.AllowedOrigins
 import site.rahoon.message.monolithic.core.conversation.domain.Channel
 import site.rahoon.message.monolithic.core.conversation.domain.ChannelIntegration
@@ -29,8 +30,11 @@ class WidgetBootstrapQueryServiceUT {
         channelRepository = mockk()
         queryService =
             WidgetBootstrapQueryService(
-                channelIntegrationRepository = channelIntegrationRepository,
-                channelRepository = channelRepository,
+                widgetAccessPolicy =
+                    WidgetAccessPolicy(
+                        channelIntegrationRepository = channelIntegrationRepository,
+                        channelRepository = channelRepository,
+                    ),
             )
     }
 

@@ -52,6 +52,24 @@ enum class ConversationError(
         developerMessage = "The widget request origin is invalid.",
         category = ErrorCategory.BAD_REQUEST,
     ),
+    VISITOR_SESSION_NOT_FOUND(
+        code = "CONVERSATION_VISITOR_SESSION_NOT_FOUND",
+        userMessage = "방문자 세션을 찾을 수 없습니다.",
+        developerMessage = "The visitor session was not found.",
+        category = ErrorCategory.UNAUTHORIZED,
+    ),
+    VISITOR_SESSION_EXPIRED(
+        code = "CONVERSATION_VISITOR_SESSION_EXPIRED",
+        userMessage = "방문자 세션이 만료되었습니다.",
+        developerMessage = "The visitor session has expired.",
+        category = ErrorCategory.UNAUTHORIZED,
+    ),
+    VISITOR_NOT_FOUND(
+        code = "CONVERSATION_VISITOR_NOT_FOUND",
+        userMessage = "방문자를 찾을 수 없습니다.",
+        developerMessage = "The visitor was not found.",
+        category = ErrorCategory.NOT_FOUND,
+    ),
     PLATFORM_ADMIN_REQUIRED(
         code = "CONVERSATION_PLATFORM_ADMIN_REQUIRED",
         userMessage = "운영 관리자 권한이 필요합니다.",
