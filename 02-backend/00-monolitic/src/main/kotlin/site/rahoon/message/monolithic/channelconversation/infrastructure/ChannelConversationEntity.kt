@@ -12,7 +12,7 @@ import java.time.LocalDateTime
  * ChannelConversation 도메인 객체를 위한 JPA Entity
  * id는 ChatRoom id와 1:1 관계를 가집니다.
  */
-@Entity
+@Entity(name = "LegacyChannelConversationEntity")
 @Table(
     name = "channel_conversations",
     indexes = [
