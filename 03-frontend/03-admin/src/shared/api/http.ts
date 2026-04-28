@@ -26,10 +26,7 @@ function isAuthRoute(url?: string) {
   return (
     url.includes('/admin/auth/login') ||
     url.includes('/admin/auth/refresh') ||
-    url.includes('/admin/auth/logout') ||
-    url.includes('/admin/web/auth/login') ||
-    url.includes('/admin/web/auth/refresh') ||
-    url.includes('/admin/web/auth/logout')
+    url.includes('/admin/auth/logout')
   );
 }
 
@@ -89,12 +86,45 @@ export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
   return response.data;
 }
 
+export interface ApiErrorBody {
+  boundedContext: string;
+  code: string;
+  message: string;
+  developerMessage: string;
+  details: Record<string, unknown>;
+  occurredAt: string;
+  path: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T | null;
+  error?: ApiErrorBody | null;
+}
+
+export async function coreRequest<T>(config: AxiosRequestConfig): Promise<T> {
+  const payload = await apiRequest<ApiResponse<T>>(config);
+  if (!payload.success) {
+    throw new Error(payload.error?.message ?? 'Request failed.');
+  }
+  if (payload.data == null) {
+    throw new Error('No data returned by server.');
+  }
+  return payload.data;
+}
+
 export function toApiErrorMessage(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) {
-    const payload = error.response?.data as { message?: string } | undefined;
+    const payload = error.response?.data as { error?: { message?: string }; message?: string } | undefined;
+    if (payload?.error?.message) {
+      return payload.error.message;
+    }
     if (payload?.message) {
       return payload.message;
     }
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
   }
   return fallback;
 }

@@ -14,6 +14,7 @@ import site.rahoon.message.monolithic.common.auth.AuthTokenResolver
 import site.rahoon.message.monolithic.common.auth.CommonAuthInfo
 import site.rahoon.message.monolithic.common.domain.CommonError
 import site.rahoon.message.monolithic.common.domain.DomainException
+import site.rahoon.message.monolithic.common.websocket.config.session.WebSocketSessionAttributeNames
 import site.rahoon.message.monolithic.common.websocket.config.session.WebSocketSessionAuthInfoRegistry
 import java.security.Principal
 
@@ -43,8 +44,18 @@ class WebSocketConnectInterceptor(
         channel: MessageChannel,
     ): Message<*>? {
         val accessor = StompHeaderAccessor.wrap(message)
-        if (accessor.command != StompCommand.CONNECT) return message
+        if (shouldAuthenticate(accessor)) {
+            authenticate(accessor)
+        }
+        return message
+    }
 
+    private fun shouldAuthenticate(accessor: StompHeaderAccessor): Boolean =
+        accessor.command == StompCommand.CONNECT &&
+            accessor.sessionAttributes?.containsKey(WebSocketSessionAttributeNames.WIDGET_SESSION) != true &&
+            accessor.sessionAttributes?.containsKey(WebSocketAuthHandshakeHandler.ATTR_AUTH_INFO) != true
+
+    private fun authenticate(accessor: StompHeaderAccessor) {
         val tokenFromHeader = accessor.getFirstNativeHeader("Authorization")?.takeIf { it.isNotBlank() }
         val tokenFromSession = accessor.sessionAttributes
             ?.get(WebSocketAuthHandshakeHandler.ATTR_TOKEN)
@@ -77,6 +88,5 @@ class WebSocketConnectInterceptor(
         }
         accessor.sessionId?.let { sessionAuthInfoRegistry.register(it, authInfo) }
         log.debug("CONNECT 성공: userId={}, sessionId={}", authInfo.userId, accessor.sessionId)
-        return message
     }
 }

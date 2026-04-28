@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.socket.WebSocketHandler
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler
 import org.springframework.web.util.UriComponentsBuilder
+import site.rahoon.message.monolithic.common.websocket.config.session.WebSocketSessionAttributeNames
 import java.security.Principal
 
 /**
@@ -23,16 +24,24 @@ class WebSocketAuthHandshakeHandler : DefaultHandshakeHandler() {
         wsHandler: WebSocketHandler,
         attributes: MutableMap<String, Any>,
     ): Principal? {
-        val tokenFromQuery =
-            UriComponentsBuilder
-                .fromUri(request.uri)
-                .build()
-                .queryParams
-                .getFirst("access_token")
+        val queryParams = UriComponentsBuilder.fromUri(request.uri).build().queryParams
+        val tokenFromQuery = queryParams.getFirst("access_token")
         val tokenFromHeader = request.headers.getFirst("Authorization")
         val token =
             tokenFromQuery?.takeIf { it.isNotBlank() } ?: tokenFromHeader?.takeIf { it.isNotBlank() }
         token?.let { attributes[ATTR_TOKEN] = it }
+        queryParams
+            .getFirst("publicKey")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { attributes[WebSocketSessionAttributeNames.WIDGET_PUBLIC_KEY] = it }
+        queryParams
+            .getFirst("visitorSessionToken")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { attributes[WebSocketSessionAttributeNames.WIDGET_VISITOR_SESSION_TOKEN] = it }
+        request.headers
+            .getFirst("Origin")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { attributes[WebSocketSessionAttributeNames.WIDGET_ORIGIN] = it }
         return null
     }
 

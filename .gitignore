@@ -1,6 +1,12 @@
 # Dependencies
 node_modules/
 
+# Frontend build artifacts
+03-frontend/03-admin/dist/
+03-frontend/01-widget/dist/
+03-frontend/00-landing/widget.iife.js
+03-frontend/02-widget-example/widget.iife.js
+
 # Lock files (root: husky only)
 package-lock.json
 pnpm-lock.yaml

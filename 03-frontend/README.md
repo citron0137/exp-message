@@ -59,7 +59,7 @@ Add two scripts to your HTML:
   ChatWidget.init({
     apiUrl: "https://api.example.com",
     wsUrl: "wss://api.example.com/ws",
-    channelId: "your-channel-id",
+    publicKey: "your-widget-public-key",
     theme: "light",
   });
 </script>
@@ -69,5 +69,5 @@ Add two scripts to your HTML:
 
 - `apiUrl`: Backend API endpoint
 - `wsUrl`: WebSocket endpoint
-- `channelId`: Channel identifier
+- `publicKey`: Widget integration public key
 - `theme`: 'light' or 'dark'

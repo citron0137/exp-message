@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.web.socket.WebSocketHandler
 import site.rahoon.message.monolithic.common.websocket.config.auth.WebSocketAuthHandshakeHandler
+import site.rahoon.message.monolithic.common.websocket.config.session.WebSocketSessionAttributeNames
 import java.net.URI
 
 /**
@@ -68,6 +69,21 @@ class WebSocketAuthHandshakeHandlerUT {
 
         principal.shouldBeNull()
         attributes.containsKey(WebSocketAuthHandshakeHandler.ATTR_TOKEN) shouldBe false
+    }
+
+    @Test
+    fun `widget query credentials and origin header are stored in session attributes`() {
+        val request = mockk<ServerHttpRequest>()
+        every { request.uri } returns URI.create("http://localhost/ws?publicKey=wpk_public&visitorSessionToken=wvs_raw")
+        every { request.headers } returns HttpHeaders().apply { set("Origin", "https://acme.com") }
+
+        val attributes = mutableMapOf<String, Any>()
+        val principal = testableHandler.determineUserPublic(request, mockk(relaxed = true), attributes)
+
+        principal.shouldBeNull()
+        attributes[WebSocketSessionAttributeNames.WIDGET_PUBLIC_KEY] shouldBe "wpk_public"
+        attributes[WebSocketSessionAttributeNames.WIDGET_VISITOR_SESSION_TOKEN] shouldBe "wvs_raw"
+        attributes[WebSocketSessionAttributeNames.WIDGET_ORIGIN] shouldBe "https://acme.com"
     }
 
     private class TestableWebSocketAuthHandshakeHandler : WebSocketAuthHandshakeHandler() {

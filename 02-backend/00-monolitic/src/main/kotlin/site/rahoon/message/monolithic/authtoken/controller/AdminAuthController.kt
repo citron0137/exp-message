@@ -16,7 +16,7 @@ import site.rahoon.message.monolithic.common.controller.component.IpAddressUtils
  * 로그인, 토큰 갱신, 로그아웃 API 제공
  */
 @RestController
-@RequestMapping("/admin/auth")
+@RequestMapping("/legacy/admin/auth")
 class AdminAuthController(
     private val authTokenApplicationService: AuthTokenApplicationService,
 ) {

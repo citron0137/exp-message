@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { loginAdminApi, logoutAdminApi, refreshAdminApi } from '@/features/auth/api';
 import { toApiErrorMessage } from '@/shared/api/http';
+import { useWorkspaceStore } from '@/shared/store/workspace-store';
 
-export type AdminRole = 'OWNER' | 'ADMIN' | 'AGENT';
+export type GlobalRole = 'PLATFORM_ADMIN' | 'CHANNEL_USER';
 export type SessionStatus = 'loading' | 'authenticated' | 'anonymous';
 
 interface SessionState {
@@ -10,7 +11,8 @@ interface SessionState {
   accessToken: string | null;
   email: string | null;
   userId: string | null;
-  role: AdminRole | null;
+  sessionId: string | null;
+  globalRole: GlobalRole | null;
   errorMessage: string | null;
   login: (email: string, password: string) => Promise<void>;
   refresh: () => Promise<string>;
@@ -24,7 +26,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   accessToken: null,
   email: null,
   userId: null,
-  role: null,
+  sessionId: null,
+  globalRole: null,
   errorMessage: null,
 
   async login(email, password) {
@@ -35,17 +38,20 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       set({
         status: 'authenticated',
         accessToken: auth.accessToken,
-        role: auth.role,
+        globalRole: auth.globalRole,
         userId: auth.userId,
+        sessionId: auth.sessionId,
         email,
         errorMessage: null,
       });
+      void useWorkspaceStore.getState().loadChannels();
     } catch (error) {
       set({
         status: 'anonymous',
         accessToken: null,
-        role: null,
+        globalRole: null,
         userId: null,
+        sessionId: null,
         errorMessage: toApiErrorMessage(error, 'Login failed.'),
       });
       throw error;
@@ -58,9 +64,11 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     set({
       status: 'authenticated',
       accessToken: auth.accessToken,
-      role: auth.role,
+      globalRole: auth.globalRole,
       userId: auth.userId,
+      sessionId: auth.sessionId,
     });
+    void useWorkspaceStore.getState().loadChannels();
 
     return auth.accessToken;
   },
@@ -89,8 +97,10 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       accessToken: null,
       email: null,
       userId: null,
-      role: null,
+      sessionId: null,
+      globalRole: null,
       errorMessage: null,
     });
+    useWorkspaceStore.setState({ channels: [], activeChannelId: null, loading: false, errorMessage: null });
   },
 }));

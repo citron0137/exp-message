@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import site.rahoon.message.monolithic.common.controller.filter.CommonAuthInfoArgumentResolver
+import site.rahoon.message.monolithic.presentation.http.auth.CoreAuthArgumentResolver
 
 /**
  * WebMvc 설정
@@ -12,9 +13,12 @@ import site.rahoon.message.monolithic.common.controller.filter.CommonAuthInfoArg
 @Configuration
 class WebMvcConfig(
     private val commonAuthInfoArgumentResolver: CommonAuthInfoArgumentResolver,
+    private val coreAuthArgumentResolver: CoreAuthArgumentResolver,
 ) : WebMvcConfigurer {
     override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
-        // AuthInfoArgumentResolver를 가장 먼저 등록하여 validation 전에 처리되도록 함
-        resolvers.add(0, commonAuthInfoArgumentResolver)
+        // Register core auth first so new presentation controllers do not use legacy auth.
+        resolvers.add(0, coreAuthArgumentResolver)
+        // Register legacy auth after core auth for existing controllers.
+        resolvers.add(1, commonAuthInfoArgumentResolver)
     }
 }

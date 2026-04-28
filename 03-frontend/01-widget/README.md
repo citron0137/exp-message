@@ -30,7 +30,7 @@ Add two scripts to your HTML page (similar to Google Analytics):
   ChatWidget.init({
     apiUrl: 'https://api.example.com',
     wsUrl: 'wss://api.example.com/ws',
-    channelId: 'your-channel-id',
+    publicKey: 'your-widget-public-key',
     theme: 'light'
   });
 </script>
@@ -42,7 +42,7 @@ Add two scripts to your HTML page (similar to Google Analytics):
 |--------|------|-------------|
 | `apiUrl` | string | Backend API endpoint |
 | `wsUrl` | string | WebSocket endpoint |
-| `channelId` | string | Channel identifier |
+| `publicKey` | string | Widget integration public key |
 | `theme` | 'light' \| 'dark' | Widget theme |
 
 ## Good to Know

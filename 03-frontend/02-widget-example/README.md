@@ -31,9 +31,9 @@ The example shows the two-script integration pattern (similar to Google Analytic
 <!-- 2. Initialize with config -->
 <script>
   ChatWidget.init({
-    apiUrl: 'http://localhost:8080/api',
+    apiUrl: 'http://localhost:8080',
     wsUrl: 'ws://localhost:8080/ws',
-    channelId: 'demo-channel',
+    publicKey: 'your-widget-public-key',
     theme: 'light'
   });
 </script>

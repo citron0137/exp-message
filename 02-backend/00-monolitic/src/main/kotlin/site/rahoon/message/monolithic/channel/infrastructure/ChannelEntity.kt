@@ -11,7 +11,7 @@ import java.time.LocalDateTime
 /**
  * Channel 도메인 객체를 위한 JPA Entity
  */
-@Entity
+@Entity(name = "LegacyChannelEntity")
 @Table(
     name = "channels",
     indexes = [

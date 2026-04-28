@@ -3,69 +3,48 @@ import { Send } from 'lucide-react';
 import { useChatStore } from './chat-store';
 
 interface ChatRoomViewProps {
-  roomId: string;
+  publicKey: string;
+  visitorSessionToken: string;
+  conversationId: string;
   roomName: string;
   wsUrl?: string;
-  accessToken?: string | null;
-  userId?: string | null;
-  currentUserId?: string | null;
 }
 
-export default function ChatRoomView({ roomId, roomName, wsUrl, accessToken, userId, currentUserId }: ChatRoomViewProps) {
+export default function ChatRoomView({ publicKey, visitorSessionToken, conversationId, roomName, wsUrl }: ChatRoomViewProps) {
   const [message, setMessage] = useState('');
   const listRef = useRef<HTMLDivElement | null>(null);
-  const scrollRestoreRef = useRef<{ top: number; height: number } | null>(null);
   const messages = useChatStore((state) => state.messages);
   const loadingInitial = useChatStore((state) => state.loadingInitial);
   const loadingMore = useChatStore((state) => state.loadingMore);
-  const hasNext = useChatStore((state) => state.hasNext);
+  const hasMore = useChatStore((state) => state.hasMore);
   const sending = useChatStore((state) => state.sending);
   const errorMessage = useChatStore((state) => state.errorMessage);
   const connectionStatus = useChatStore((state) => state.connectionStatus);
   const initRoom = useChatStore((state) => state.initRoom);
   const loadMore = useChatStore((state) => state.loadMore);
   const sendMessage = useChatStore((state) => state.sendMessage);
-  const refreshSocketAuth = useChatStore((state) => state.refreshSocketAuth);
 
   useEffect(() => {
     void initRoom({
-      roomId,
+      publicKey,
+      visitorSessionToken,
+      conversationId,
       wsUrl,
-      accessToken,
-      userId,
     });
-  }, [accessToken, initRoom, roomId, userId, wsUrl]);
+  }, [conversationId, initRoom, publicKey, visitorSessionToken, wsUrl]);
 
   useEffect(() => {
-    if (accessToken) {
-      refreshSocketAuth(accessToken);
+    const element = listRef.current;
+    if (element) {
+      element.scrollTop = element.scrollHeight;
     }
-  }, [accessToken, refreshSocketAuth]);
-
-  useEffect(() => {
-    if (loadingMore || !listRef.current || !scrollRestoreRef.current) {
-      return;
-    }
-
-    const next = requestAnimationFrame(() => {
-      const element = listRef.current;
-      const restore = scrollRestoreRef.current;
-      if (!element || !restore) {
-        return;
-      }
-      const heightDiff = element.scrollHeight - restore.height;
-      element.scrollTop = restore.top + heightDiff;
-      scrollRestoreRef.current = null;
-    });
-
-    return () => cancelAnimationFrame(next);
-  }, [loadingMore, messages.length]);
+  }, [messages.length]);
 
   async function handleSend() {
     if (!message.trim()) {
       return;
     }
-    await sendMessage(message);
+    await sendMessage(publicKey, visitorSessionToken, message);
     setMessage('');
   }
 
@@ -74,7 +53,7 @@ export default function ChatRoomView({ roomId, roomName, wsUrl, accessToken, use
       <div className="border-b border-gray-200 bg-white px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <p className="text-xs text-gray-500">Room</p>
+            <p className="text-xs text-gray-500">Channel</p>
             <p className="text-sm font-semibold text-gray-900">{roomName}</p>
           </div>
           <span
@@ -93,14 +72,14 @@ export default function ChatRoomView({ roomId, roomName, wsUrl, accessToken, use
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         {loadingInitial && <div className="text-sm text-gray-500">Loading messages...</div>}
-        {!loadingInitial && hasNext && (
+        {!loadingInitial && hasMore && (
           <button
             type="button"
             className="mx-auto block rounded-md border border-gray-300 px-3 py-1 text-xs text-gray-600"
-            onClick={() => void loadMore()}
+            onClick={() => void loadMore(publicKey, visitorSessionToken)}
             disabled={loadingMore}
           >
-            {loadingMore ? 'Loading...' : 'Load older messages'}
+            {loadingMore ? 'Loading...' : 'Load more'}
           </button>
         )}
         {messages.length === 0 && !loadingInitial && (
@@ -108,19 +87,9 @@ export default function ChatRoomView({ roomId, roomName, wsUrl, accessToken, use
             Chat is ready. Start your conversation.
           </div>
         )}
-        <div
-          ref={listRef}
-          className="flex flex-1 flex-col gap-2 overflow-y-auto"
-          onScroll={(event) => {
-            const element = event.currentTarget;
-            if (element.scrollTop < 24 && hasNext && !loadingMore) {
-              scrollRestoreRef.current = { top: element.scrollTop, height: element.scrollHeight };
-              void loadMore();
-            }
-          }}
-        >
+        <div ref={listRef} className="flex flex-1 flex-col gap-2 overflow-y-auto">
           {messages.map((item) => {
-            const isMine = currentUserId != null && item.userId === currentUserId;
+            const isMine = item.senderType === 'VISITOR';
             return (
               <div key={item.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div

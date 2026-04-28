@@ -1,75 +1,62 @@
-import { apiRequest } from '@/shared/api/http';
-import type { AdminRole } from '@/shared/store/session-store';
+import { coreRequest } from '@/shared/api/http';
+import type { GlobalRole } from '@/shared/store/session-store';
 
 interface AuthPayload {
   accessToken: string;
-  role: string;
+  accessTokenExpiresAt: string;
+  refreshToken: string;
+  refreshTokenExpiresAt: string;
   userId: string;
-}
-
-interface WrappedResponse {
-  data?: AuthPayload;
+  sessionId: string;
+  globalRole: GlobalRole;
 }
 
 function parseAuthPayload(payload: unknown): AuthPayload {
-  const wrapped = payload as WrappedResponse;
-  const data = wrapped.data ?? (payload as AuthPayload);
+  const data = payload as AuthPayload;
 
-  if (!data.accessToken || !data.userId || !data.role) {
+  if (!data.accessToken || !data.userId || !data.sessionId || !data.globalRole) {
     throw new Error('Invalid auth payload.');
   }
 
-  return {
-    accessToken: data.accessToken,
-    role: data.role,
-    userId: data.userId,
-  };
-}
-
-function toAdminRole(role: string): AdminRole | null {
-  if (role === 'OWNER' || role === 'ADMIN' || role === 'AGENT') {
-    return role;
-  }
-  if (role === 'USER') {
-    return 'AGENT';
-  }
-  return null;
+  return data;
 }
 
 export async function loginAdminApi(email: string, password: string) {
-  const payload = await apiRequest<unknown>({
+  const payload = await coreRequest<unknown>({
     method: 'POST',
-    url: '/admin/web/auth/login',
+    url: '/admin/auth/login',
     data: { email, password },
   });
 
   const data = parseAuthPayload(payload);
   return {
     accessToken: data.accessToken,
-    role: toAdminRole(data.role),
+    globalRole: data.globalRole,
     userId: data.userId,
+    sessionId: data.sessionId,
   };
 }
 
 export async function refreshAdminApi() {
   // Refresh token is expected from HttpOnly cookie.
-  const payload = await apiRequest<unknown>({
+  const payload = await coreRequest<unknown>({
     method: 'POST',
-    url: '/admin/web/auth/refresh',
+    url: '/admin/auth/refresh',
     data: {},
   });
 
   const data = parseAuthPayload(payload);
   return {
     accessToken: data.accessToken,
-    role: toAdminRole(data.role),
+    globalRole: data.globalRole,
     userId: data.userId,
+    sessionId: data.sessionId,
   };
 }
 
 export async function logoutAdminApi() {
-  await apiRequest<unknown>({
+  await coreRequest<unknown>({
     method: 'POST',
-    url: '/admin/web/auth/logout',
+    url: '/admin/auth/logout',
   });
 }
